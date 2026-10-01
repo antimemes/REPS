@@ -230,6 +230,7 @@ function RunFacets({ events, activity, definitions, filter, link }: {
   if (filter?.by === "kind" && !kinds.includes(filter.value)) kinds.push(filter.value);
   const namespace = filter?.by === "namespace" ? filter.value
     : filter?.by === "kind" ? kindNamespace(filter.value) : null;
+  const namespaceKinds = namespace ? kinds.filter((kind) => kindNamespace(kind) === namespace) : [];
   type Facet = { filter: StreamFilter; label: string };
   const roots = new Map<string, Facet>();
   for (const kind of kinds) {
@@ -249,20 +250,19 @@ function RunFacets({ events, activity, definitions, filter, link }: {
       || (facet.filter?.by === "namespace" && facet.filter.value === namespace);
     return <a key={key} href={link(facet.filter)} data-filter={key} aria-current={active ? "true" : undefined}
       title={facet.filter ? `${facet.filter.by}: ${facet.filter.value}` : "All events"}
-      className={cn("rounded-full border px-2.5 py-0.5 max-md:inline-flex max-md:items-center max-md:py-1.5", active ? "border-primary bg-primary/10 text-foreground"
+      className={cn("shrink-0 rounded-full border px-2.5 py-0.5 max-md:inline-flex max-md:items-center max-md:py-1.5", active ? "border-primary bg-primary/10 text-foreground"
         : "border-transparent text-muted-foreground hover:border-ring hover:text-foreground")}>
-      {facet.filter?.by === "actor" && <span className="text-muted-foreground">actor: </span>}{facet.label}
+      {facet.label}
     </a>;
   };
-  return <nav aria-label="Stream filters" className="max-h-48 shrink-0 space-y-1.5 overflow-y-auto border-b px-2.5 py-2 text-xs">
-    <div className="flex flex-wrap items-center gap-1.5" data-facet-level="namespaces">
+  return <nav aria-label="Stream filters" className="max-h-48 shrink-0 space-y-1.5 overflow-y-auto border-b px-2.5 py-2 text-xs max-md:max-h-none max-md:overflow-y-visible">
+    <div className="flex flex-wrap items-center gap-1.5 max-md:flex-nowrap max-md:overflow-x-auto" data-facet-level="namespaces">
       {[{ filter: null, label: "all" }, ...roots.values()].map(chip)}
     </div>
-    {namespace && <div className="flex flex-wrap items-center gap-1.5 border-l-2 pl-2" data-facet-level="kinds" aria-label={`${namespace} kinds`}>
-      {kinds.filter((kind) => kindNamespace(kind) === namespace)
-        .map((kind) => chip({ filter: { by: "kind", value: kind }, label: kind }))}
+    {namespaceKinds.length > 1 && <div className="flex flex-wrap items-center gap-1.5 border-l-2 pl-2 max-md:flex-nowrap max-md:overflow-x-auto" data-facet-level="kinds" aria-label={`${namespace} kinds`}>
+      {namespaceKinds.map((kind) => chip({ filter: { by: "kind", value: kind }, label: kind }))}
     </div>}
-    {!!actors.length && <div className="flex flex-wrap items-center gap-1.5" aria-label="Actor filters">{actors.map(chip)}</div>}
+    {!!actors.length && <div className="flex flex-wrap items-center gap-1.5 border-t pt-1 max-md:flex-nowrap max-md:overflow-x-auto" data-facet-level="actors" aria-label="Actor filters">{actors.map(chip)}</div>}
   </nav>;
 }
 

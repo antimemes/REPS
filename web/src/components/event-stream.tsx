@@ -9,7 +9,7 @@ import type { Ev, FullEvent, ParamDecl, ResultDecl } from "@/shared/types";
 import { fetchFullEvent, fmtVal, uiState } from "@/lib/data";
 import { highlightJson } from "@/lib/markdown";
 import { formatJsonText } from "@/lib/json-text";
-import { duration, runHref, runUsage } from "@/lib/run-view";
+import { duration, runHref } from "@/lib/run-view";
 import { exitLabel, stripAnsi } from "@/lib/event-display";
 import { FieldValue, RunEndFacts, RunStartCard, SharedResult } from "@/components/shared-event-rows";
 import { LiveDot, MdView, StateBadge, Segmented } from "@/components/bits";
@@ -88,7 +88,7 @@ function HintedSummary({ e, hint, labels }: { e: Ev; hint: RenderHint; labels: M
     {title && title !== actor && <span className="font-medium">{title}</span>}
     {hint.badge && Boolean(fieldAt(e.event, hint.badge)) && <span data-hint-badge="" className="rounded border px-1 text-[10px] text-muted-foreground">
       {hint.badge.split(".").at(-1)}</span>}
-    {body && <span className="line-clamp-2 min-w-0 text-xs text-muted-foreground">{body}</span>}
+    {body && <span className="line-clamp-2 min-w-0 max-md:basis-full text-xs text-muted-foreground group-open/row:hidden">{body}</span>}
   </>;
 }
 
@@ -104,16 +104,10 @@ function HintFields({ e, hint }: { e: Ev; hint: RenderHint }) {
   </dl>;
 }
 
-/* The legend gathers hinted actors; model facts stay here instead of repeating in rows. */
+/* Hinted actor identities supply row labels. Model facts belong to each call. */
 export interface AgentInfo {
   id: string;
   name: string;
-  model?: string;
-  /* distinct models the provider REPORTED serving (llm.call output.model) —
-     what actually ran, vs `model` = what was requested */
-  served?: string[];
-  via?: string;
-  calls: number;
 }
 
 export interface StreamProfile {
@@ -123,9 +117,7 @@ export interface StreamProfile {
   /* default gutter mode — constant today; the seam a per-experiment manifest
      hint will set later (same precursor pattern as showAgent) */
   gutterMode: GutterMode;
-  /* the agents legend: role-ish name, model+provider, telemetry provenance.
-     TODO(manifest-hints): a future per-experiment hint could DECLARE agent
-     definitions (roles, models, provenance) instead of deriving them here. */
+  /* Actor IDs and display names from the stream's rendering hints. */
   agents: AgentInfo[];
 }
 export function deriveProfile(events: Ev[], definitions: EventDefinition[] = []): StreamProfile {
@@ -134,16 +126,7 @@ export function deriveProfile(events: Ev[], definitions: EventDefinition[] = [])
   for (const e of events) {
     const actor = actorFor(e, definitions);
     if (actor !== null) {
-      const a = agents.get(actor) ?? { id: actor, name: labels.get(actor) ?? actor, calls: 0 };
-      if (e.event.type === "llm.call") {
-        a.calls += 1;
-        if (typeof e.event.model === "string") a.model = e.event.model;
-        const served = e.event.output?.model;
-        if (typeof served === "string" && !(a.served ?? []).includes(served))
-          a.served = [...(a.served ?? []), served];
-      }
-      if (typeof e.event.via === "string") a.via = e.event.via;
-      agents.set(actor, a);
+      agents.set(actor, { id: actor, name: labels.get(actor) ?? actor });
     }
   }
   return {
@@ -153,46 +136,6 @@ export function deriveProfile(events: Ev[], definitions: EventDefinition[] = [])
     gutterMode: "absolute",
     agents: [...agents.values()],
   };
-}
-
-/* the legend strip — the single home for model names, provider prefixes, and
-   via provenance; row headers carry only per-row facts */
-function AgentsLegend({ agents }: { agents: AgentInfo[] }) {
-  if (!agents.length) return null;
-  return (
-    <div className="flex flex-wrap items-center gap-1.5 border-b bg-muted/20 px-2.5 py-1">
-      {agents.map((a) => (
-        <span
-          key={a.id}
-          className="inline-flex items-baseline gap-1.5 rounded-md border bg-background px-2 py-0.5 text-[11px]"
-          title={`agent ${a.id}`
-            + `${a.model ? ` · requested ${a.model}` : ""}`
-            + `${a.served?.length ? ` · provider reported serving ${a.served.join(", ")}` : ""}`
-            + `${a.calls ? ` · ${a.calls} llm call(s)` : ""}`
-            + `${a.via ? ` · telemetry via ${a.via} — harness-normalized secondary record` : ""}`}
-        >
-          <span className="font-semibold">{a.name}</span>
-          {/* the model the provider REPORTED serving leads; the requested id is
-              only shown when it told us something different (alias, deployment) */}
-          {a.served?.length ? (
-            <span className="font-mono text-foreground">{a.served.join(" · ")}</span>
-          ) : a.model ? (
-            <span className="font-mono text-muted-foreground">{a.model.split("/").pop()}</span>
-          ) : null}
-          {a.model && a.served?.length === 1 && a.served[0] !== a.model.split("/").pop() &&
-            a.served[0] !== a.model && (
-            <span className="text-muted-foreground/60">← {a.model}</span>
-          )}
-          {(a.served?.length ?? 0) > 1 && (
-            <span className="rounded bg-amber-500/15 px-1 text-[10px] text-amber-700 dark:text-amber-400">
-              varied
-            </span>
-          )}
-          {a.via && <span className="text-muted-foreground/60">— {a.via}</span>}
-        </span>
-      ))}
-    </div>
-  );
 }
 
 /* per-call facts (model, tokens, latency, provenance) appear in the open row's
@@ -270,8 +213,6 @@ function primaryArg(name: string, args: unknown): string {
 interface SharedContext {
   previousCalls: Map<number, Ev>;
   results: ResultDecl[];
-  usage: ReturnType<typeof runUsage>;
-  resultsReported: number;
   latestStatus?: number;
   platform?: string;
   summaryHref: string;
@@ -344,12 +285,11 @@ function Row({ e: eProp, definitions, profile, gutter, fetchFull, context, diskR
           </span>
         )}
         {/* collapsed-row preview: first ~2 clamped lines of whichever component
-            exists, flowing INLINE right after the agent chip (no reserved slot,
-            no indent) — the stream reads as a trajectory without opening
-            anything. Hidden once the row is open. */}
+            exists, below the actor on phones and inline on desktop.
+            Hidden once the row is open. */}
         {(content.trim() || reasoning.trim() || toolSum) && (
           <span className={cn(
-            "line-clamp-2 min-w-0 flex-1 whitespace-pre-wrap text-xs group-open/row:hidden",
+            "line-clamp-2 min-w-0 max-md:basis-full md:flex-1 whitespace-pre-wrap text-xs group-open/row:hidden",
             content.trim() ? "text-muted-foreground"
               : reasoning.trim() ? "italic text-muted-foreground"
               : "font-mono text-[11px] text-muted-foreground",
@@ -382,12 +322,9 @@ function Row({ e: eProp, definitions, profile, gutter, fetchFull, context, diskR
         <span className="text-muted-foreground">
           {duration(e.event.duration_s)} · {exitLabel(e.event.exit_code, context.platform)}
         </span>
-        <span className="text-xs text-muted-foreground" title="Derived from the stream's llm.call and result records">
-          derived: {context.usage.calls} calls · {context.usage.input}+{context.usage.output} tokens · {context.resultsReported} results
-        </span>
       </>
     );
-    payload = <RunEndFacts record={e} usage={context.usage} resultsReported={context.resultsReported} platform={context.platform} />;
+    payload = <RunEndFacts record={e} platform={context.platform} />;
   } else if (e.event.type === "log") {
     const colors: Record<string, string> = {
       debug: "bg-muted text-muted-foreground", info: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
@@ -448,7 +385,7 @@ function Row({ e: eProp, definitions, profile, gutter, fetchFull, context, diskR
         <HintIcon hint={hint} fallback={s.Icon} className={cn("shrink-0 self-center", s.icon, quiet ? "size-3 opacity-60" : "size-3.5")} />
         <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-2 text-sm">{summary}</span>
       </summary>
-      <div className="space-y-1.5 py-1.5 pl-[12rem] pr-3">
+      <div className="space-y-1.5 py-1.5 pl-3 pr-3 md:pl-9">
         {payload}
         <details data-raw-disclosure="" onToggle={(event) => { if (event.currentTarget.open) ensureFull(); }}>
           <summary className="cursor-pointer text-[10px] uppercase tracking-wider text-muted-foreground">raw event</summary>
@@ -526,8 +463,7 @@ export function EventStream({ events, state, cid, rid, definitions = [], visible
   const startFacts = fullStart?.record.run === startRecord?.run ? fullStart?.record.event : startRecord?.event;
   const context: SharedContext = {
     previousCalls: history,
-    results: startFacts?.result_definitions ?? [], usage: runUsage(events),
-    resultsReported: events.filter((e) => e.event.type === "result").length,
+    results: startFacts?.result_definitions ?? [],
     latestStatus: events.filter((e) => e.event.type === "status").at(-1)?.seq,
     platform: startFacts?.runtime?.platform,
     summaryHref: runHref(cid ?? startFacts?.condition ?? "", rid ?? startRecord?.run ?? "", { tab: "summary", filter: null }),
@@ -585,7 +521,6 @@ export function EventStream({ events, state, cid, rid, definitions = [], visible
         </span>
       </div>
       {facets}
-      <AgentsLegend agents={profile.agents} />
       <div ref={paneRef} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto">
         {virt && start > 0 && <div style={{ height: start * EST }} aria-hidden />}
         {windowed.map((e) => <Row key={e.seq} e={e} definitions={definitions}

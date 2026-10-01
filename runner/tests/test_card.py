@@ -32,6 +32,22 @@ def test_card_is_exact_copies_plus_stream_projection(tmp_path):
     }
 
 
+def test_usage_includes_input_cache_reads_and_writes(tmp_path):
+    script = '''#!/bin/sh
+adb-emit llm-call --model mock/x --input '[]' --output '{"usage":{"input_tokens":3,"input_tokens_cache_read":4,"input_tokens_cache_write":2,"output_tokens":5}}' </dev/null
+adb-emit llm-call --model mock/x --input '[]' --output '{"usage":{"input_tokens":7,"input_tokens_cache_read":11,"input_tokens_cache_write":13,"output_tokens":17}}' </dev/null
+adb-emit llm-call --model mock/x --input '[]' --output '{}' </dev/null
+adb-emit custom --kind t.usage --data '{"usage":{"input_tokens":99999}}'
+'''
+    result, _, store = run_fixture(tmp_path, script=script)
+    assert result.state == "completed"
+    card = json.loads((store.dir / "run.json").read_text())
+    # (3 + 4 + 2) + (7 + 11 + 13): only recorded model-call usage counts.
+    expected = {"input_tokens": 40, "output_tokens": 22}
+    assert card["derived"]["usage"] == expected
+    assert derive_card(read_events(store.dir))["derived"]["usage"] == expected
+
+
 def test_agent_counts_use_only_model_calls_without_loading_schema(tmp_path):
     # A consumer-only schema export need not be available on the launching machine.
     manifest = {**MANIFEST, "schema": {"version": 0, "models": "unused:Payload",

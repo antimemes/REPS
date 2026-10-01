@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import test from "node:test";
 import { copyBadRunCorpus, badCardNames, badStreamNames, badRunNames } from "../../test/bad-run-corpus.ts";
 import { RunReader } from "./runs.ts";
-import { runSummary } from "../lib/run-view.ts";
+import { resultDeclarations } from "../lib/run-readability.ts";
 import { envelope, fixtureCard } from "../../test/event-fixtures.ts";
 import { conditionName } from "../lib/identity.ts";
 
@@ -138,10 +138,9 @@ test("liveness comes from card mtime without heartbeat or total event/result cou
   } finally { await rm(root, { recursive: true }); }
 });
 
-test("summary treats non-array declarations as undeclared", () => {
-  const events = [envelope({ type: "result", name: "score", value: 42 })];
+test("non-array result declarations have no declared names", () => {
   for (const definitions of [undefined, null, {}, { score: {} }, "score", 3])
-    assert.deepEqual(runSummary(events, definitions), {});
+    assert.deepEqual(resultDeclarations(definitions), []);
 });
 
 test("HTTP cards and hints load independently of streams; event endpoints agree on diagnostics and raw metadata stays verbatim", async () => {

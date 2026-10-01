@@ -20,7 +20,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import assert from "node:assert/strict";
 import { renderToStaticMarkup } from "react-dom/server";
-import { LLMCallFailures } from "../src/components/llm-call-failures";
 import { EventStream, RawEvent, deriveProfile } from "../src/components/event-stream";
 import { RunView } from "../src/pages/run";
 import { RunsTable } from "../src/pages/runs";
@@ -111,7 +110,8 @@ assert.match(rendered, /id="ev-1"/);
 assert.ok(!rendered.includes("<script>"));
 assert.ok(!rendered.includes("[object Object]"));
 assert.deepEqual(deriveProfile(messages, hintDefinitions).agents.map((a) => a.name), ["Mayor"]);
-assert.equal(deriveProfile(messages, hintDefinitions).agents[0]!.calls, 0);
+assert.equal(deriveProfile(messages, hintDefinitions).agentCount, 1);
+assert.equal(deriveProfile(messages, hintDefinitions).showAgent, false);
 assert.match(rendered, /from run start/);
 assert.ok(rendered.indexOf('id="ev-0"') < rendered.indexOf('id="ev-1"'));
 assert.ok(!rendered.includes("data-event-group"));
@@ -149,6 +149,8 @@ async function historicalRunWithCurrentHints() {
     const events = records.map(parseEnvelope);
     const profile = deriveProfile(events, definitions);
     assert.deepEqual(profile.agents.map((a) => [a.id, a.name]), [["persona_0", "John"], ["framework", "framework"]]);
+    assert.equal(profile.agentCount, 2);
+    assert.equal(profile.showAgent, true);
     const html = renderToStaticMarkup(<EventStream review events={events} definitions={definitions} state="completed" />);
     assert.match(html, /Current <b>hint<\/b>/);
     assert.match(html, /title="persona_0">John<\/span>/);
@@ -159,7 +161,7 @@ async function historicalRunWithCurrentHints() {
     assert.match(filtered, /title="persona_0">John<\/span>/);
     const group = renderToStaticMarkup(<EventStream events={events} visibleEvents={events.slice(2)}
       definitions={definitions} state="completed" />);
-    assert.match(group, /title="agent persona_0 · 1 llm call\(s\)"><span class="font-semibold">John<\/span>/);
+    assert.match(group, /title="persona_0">John<\/span>/);
     console.log("historical run renders with current build hints, row labels, and actor ID hovers");
   } finally { await rm(root, { recursive: true }); }
 }
@@ -207,22 +209,6 @@ const errorHtml = renderToStaticMarkup(<EventStream events={[envelope({
   ...modelData, error: "connection refused", output: { model: "m", choices: [] },
 })]} state="completed" />);
 assert.match(errorHtml, /connection refused/);
-
-// Failure warnings derive solely from recorded call events, including live
-// streams without run.end. Other diagnostics are not failed model calls.
-const callEvents: Ev[] = [
-  { type: "llm.call", error: { kind: "ConnectionError", message: "offline" } },
-  { type: "llm.call", error: null },
-  { type: "llm.call", error: { kind: "RateLimitError", message: "busy" } },
-  { type: "log", level: "error", message: "unrelated diagnostic" },
-].map((event, seq) => envelope(event, seq));
-for (const ending of [[], [{ type: "run.end", state: "completed" }]]) {
-  const warning = renderToStaticMarkup(<LLMCallFailures events={[...callEvents, ...ending.map((event) => envelope(event))]} />);
-  assert.match(warning, /2\/3 model calls failed/);
-}
-for (const healthy of [[], [{ type: "llm.call" }], [{ type: "llm.call", error: null }]]) {
-  assert.equal(renderToStaticMarkup(<LLMCallFailures events={healthy.map((event) => envelope(event))} />), "");
-}
 
 // Optional catalog documentation uses the real safe renderer, including in old
 // manifests that predate the field. Raw HTML must remain inert.
@@ -349,9 +335,19 @@ const completed = [...partial,
   envelope({ type: "result", name: "collapsed", value: false }, 7, "2026-09-16T12:00:07.000000Z"),
   envelope({ type: "run.end", state: "completed", duration_s: 8, exit_code: 0 }, 8, "2026-09-16T12:00:08.000000Z")];
 const now = Date.parse("2026-09-16T12:00:10Z");
+const runMeta = (events: Ev[]) => {
+  const ended = events.some(({ event }) => event.type === "run.end");
+  return fixtureMeta(events, {
+    results: ended ? { score: 0, collapsed: false } : { score: 0 },
+    usage: { input_tokens: 9, output_tokens: 5 },
+    counts: { llm_calls: 2, failed_calls: 1, llm_calls_by_agent: { Mayor: 1, other: 1 },
+      by_kind: { "run.start": 1, log: 1, "llm.call": 2, result: ended ? 2 : 1,
+        "test.message": 1, status: 1, ...(ended ? { "run.end": 1 } : {}) } },
+  });
+};
 const renderRun = (events: Ev[], query = "", extra = {}) => renderToStaticMarkup(
   <RunView cid="condition" rid="run" events={events} definitions={hintDefinitions}
-    query={query} now={now} {...extra} meta={{ ...fixtureMeta(events), ...(extra as { meta?: object }).meta }} />);
+    query={query} now={now} {...extra} meta={{ ...runMeta(events), ...(extra as { meta?: object }).meta }} />);
 for (const events of [completed, partial]) {
   const summary = renderRun(events, "tab=summary");
   assert.match(summary, /data-run-tab="summary"/);
@@ -374,7 +370,8 @@ for (const events of [completed, partial]) {
   assert.match(stream, /data-run-tab="stream"/);
   assert.ok(!/replicate/i.test(stream));
   assert.match(stream, /aria-label="Stream filters"/);
-  assert.match(stream, /agent Mayor/); // legend remains inside the stream
+  const callHeader = stream.split('id="ev-2"')[1]!.split("</summary>")[0]!;
+  assert.match(callHeader, /title="Mayor">Mayor<\/span>/); // actor remains in the row header
   assert.ok(!stream.includes('aria-label="Results"'));
   assert.ok(!stream.includes('aria-label="Inputs"'));
   assert.ok(!stream.includes("fullscreen"));
@@ -397,18 +394,28 @@ assert.match(stale, /possibly interrupted/);
 assert.match(stale, /interrupted\?/);
 // A terminal card can render a summary before the stream has finished loading.
 assert.match(renderRun(partial, "tab=summary", { meta: { state: "completed", heartbeat_at: "2026-09-16T11:59:00Z" } }), /aria-label="Outcome"/);
-const noStart = renderRun(partial.slice(1), "tab=summary", { meta: fixtureMeta(partial) });
+const noStart = renderRun(partial.slice(1), "tab=summary", { meta: runMeta(partial) });
 assert.match(noStart, /data-result-name="collapsed"/);
 assert.match(noStart, /actual-input/);
-const cached = fixtureMeta(completed);
+const cached = runMeta(completed);
 cached.derived!.results = { score: 12345, collapsed: false };
 cached.derived!.counts.llm_calls = 987;
+cached.derived!.counts.failed_calls = 321;
 cached.derived!.counts.llm_calls_by_agent = { "card-only-agent": 987 };
 cached.derived!.usage = { input_tokens: 876, output_tokens: 765 };
-const cachedView = renderRun(completed, "tab=summary", { meta: cached });
-assert.match(cachedView, />12345</);
-assert.match(cachedView, /987 calls/);
-assert.match(cachedView, /876\+765 tokens/);
+// Card totals win over different live/completed records and a stream not yet loaded.
+for (const [records, state] of [[partial, "running"], [completed, "completed"], [[], "completed"]] as const) {
+  const cachedView = renderRun([...records], "tab=summary", { meta: { ...cached, state } });
+  assert.match(cachedView, />12345</);
+  assert.match(cachedView, /987 calls/);
+  assert.match(cachedView, /321 failed calls/);
+  assert.match(cachedView, /876\+765 tokens/);
+}
+// A zero-failure card stays neutral even if a loaded call has an error.
+for (const records of [[], [envelope({ type: "llm.call" })], [envelope({ type: "llm.call", error: null })], partial]) {
+  const healthy = { ...cached, derived: { ...cached.derived!, counts: { ...cached.derived!.counts, failed_calls: 0 } } };
+  assert.match(renderRun(records, "tab=summary", { meta: healthy }), /class="text-muted-foreground">0 failed calls<\/span>/);
+}
 // Actor activity comes from loaded records and hints, including custom-only actors.
 const customActor = envelope({ type: "custom", kind: "test.message",
   data: { speaker: "Observer", text: "No model calls from this actor" } }, 9);
@@ -422,32 +429,44 @@ assert.match(observerStream, /id="ev-9"/);
 assert.ok(!observerStream.includes('id="ev-2"'));
 // Follow actual links rendered by the activity section, then inspect the filtered stream.
 const activityHtml = renderRun(completed, "tab=summary").split('aria-label="Activity"')[1]!.split("</section>")[0]!;
-for (const [filter, expected, absent] of [["kind:llm.call", [2, 3], [0, 1, 4, 5, 6, 7, 8]],
-  ["actor:Mayor", [2, 5], [0, 1, 3, 4, 6, 7, 8]]] as const) {
+for (const [filter, activeFacet, expected, absent] of [["kind:llm.call", "namespace:llm", [2, 3], [0, 1, 4, 5, 6, 7, 8]],
+  ["actor:Mayor", "actor:Mayor", [2, 5], [0, 1, 3, 4, 6, 7, 8]]] as const) {
   const link = [...activityHtml.matchAll(/href="([^"]+)"/g)].map((match) => match[1]!.replaceAll("&amp;", "&"))
     .find((href) => new URLSearchParams(hashRoute(href).query).get("filter") === filter)!;
   assert.ok(link);
   const destination = renderRun(completed, hashRoute(link).query);
   assert.match(destination, /data-run-tab="stream"/);
-  assert.match(destination, new RegExp(`data-filter="${filter}" aria-current="true"`));
+  assert.match(destination, new RegExp(`data-filter="${activeFacet}" aria-current="true"`));
   for (const seq of expected) assert.ok(destination.includes(`id="ev-${seq}"`));
   for (const seq of absent) assert.ok(!destination.includes(`id="ev-${seq}"`));
 }
 console.log("run page guard ok — completed/partial tabs, pending results, progress, provenance, and activity links");
 
-// Namespace chips disclose only their own second row and retain deep links.
+// Only namespaces with multiple kinds need a second row; deep links still filter.
 const allKinds = renderRun(completed, "tab=stream");
 assert.match(allKinds, /data-filter="namespace:run"/);
 assert.match(allKinds, /data-filter="namespace:llm"/);
 assert.match(allKinds, /data-filter="kind:status"/);
 assert.ok(!allKinds.includes('data-facet-level="kinds"'));
 assert.ok(!allKinds.includes('data-filter="kind:llm.call"'));
+const actorChips = [...allKinds.matchAll(/data-filter="actor:([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)];
+assert.ok(actorChips.length > 0);
+for (const [chip, actor, label] of actorChips) {
+  assert.ok(chip.includes(`title="actor: ${actor}"`));
+  assert.equal(label, actor); // names stand alone; identity stays in the tooltip
+}
 const namespaced = renderRun(completed, "tab=stream&filter=namespace%3Arun");
 assert.match(namespaced, /data-facet-level="kinds" aria-label="run kinds"/);
 for (const kind of ["run.start", "run.end"])
   assert.ok(namespaced.includes(`data-filter="kind:${kind}"`));
 assert.ok(!namespaced.includes('id="ev-2"'));
-assert.match(renderRun(completed, "tab=stream&filter=kind%3Allm.call"), /data-filter="namespace:llm" aria-current="true"/);
+for (const filter of ["namespace:llm", "kind:llm.call"]) {
+  const singleKind = renderRun(completed, `tab=stream&filter=${encodeURIComponent(filter)}`);
+  assert.match(singleKind, /data-filter="namespace:llm" aria-current="true"/);
+  assert.ok(!singleKind.includes('data-facet-level="kinds"'));
+  for (const seq of [2, 3]) assert.ok(singleKind.includes(`id="ev-${seq}"`));
+  assert.ok(!singleKind.includes('id="ev-0"'));
+}
 
 const facts = renderToStaticMarkup(<ResultFacts definitions={[
   ...runDefinitions, { name: "rate", type: { kind: "float" }, unit: "fish/month", description: "Monthly harvest" },
@@ -528,7 +547,7 @@ const sharedRows = [
   { type: "llm.call", output: { choices: [{ message: { content: "A reply" } }], usage: { input_tokens: 17, output_tokens: 5 } } },
   { type: "custom", kind: "test.message", data: { speaker: "Mayor", text: "Custom **hint**" } },
   { type: "status", detail: "Latest progress" },
-  // These obsolete fields must never supply the derived figures.
+  // Obsolete aggregate fields belong only in the raw record disclosure.
   { type: "run.end", state: "interrupted", duration_s: 65, exit_code: -15,
     usage_totals: { llm_calls: 999999, input_tokens: 999999 }, summary: { ignored: 999999 } },
 ].map((event, seq) => envelope(event, seq));
@@ -562,9 +581,26 @@ assert.match(startCard, /href="https:\/\/github.com\/owner\/repo\/tree\/abc123\/
 assert.match(startCard, /href="#\/run\/condition\/run\?tab=summary"/);
 assert.ok(!htmlText(startCard).includes("/nix/store/"));
 const endFacts = beforeRaw(sharedView(sharedRows.at(-1)!));
-for (const text of ["1m 5s", "exit -15 (SIGTERM)", "Derived from stream:", "1 model calls", "17 input tokens", "5 output tokens", "3 results reported"])
+for (const text of ["interrupted", "1m 5s", "exit -15 (SIGTERM)"])
   assert.ok(htmlText(endFacts).includes(text), text);
+for (const text of ["derived:", "Derived from stream", "model calls", "input tokens", "output tokens", "results reported"])
+  assert.ok(!htmlText(endFacts).includes(text), text);
+assert.ok(!endFacts.includes("data-derived"));
 assert.ok(!endFacts.includes("999999"));
+const rowHeader = (view: string) => view.match(/<summary\b[\s\S]*?<\/summary>/)![0];
+const endHeader = rowHeader(endFacts);
+const endBody = endFacts.slice(endFacts.indexOf('data-run-end-facts=""'));
+for (const facts of [endHeader, endBody]) {
+  for (const text of ["interrupted", "1m 5s", "exit -15 (SIGTERM)"])
+    assert.ok(htmlText(facts).includes(text), text);
+}
+// Removing the calls and repeated results cannot change the run.end presentation.
+const lifecycleOnly = sharedRows.filter(({ event }) => event.type === "run.start" || event.type === "run.end");
+const lifecycleEnd = beforeRaw(renderToStaticMarkup(<EventStream review events={lifecycleOnly}
+  visibleEvents={[sharedRows.at(-1)!]} definitions={hintDefinitions} state="interrupted"
+  cid="condition" rid="run" diskRecords={diskRows} />));
+assert.equal(htmlText(rowHeader(lifecycleEnd)), htmlText(endHeader));
+assert.equal(lifecycleEnd.slice(lifecycleEnd.indexOf('data-run-end-facts=""')), endBody);
 assert.match(beforeRaw(sharedView(sharedRows[2]!)), /First line\nSecond line/);
 assert.match(beforeRaw(sharedView(sharedRows[2]!)), /text-amber-700/);
 for (const index of [3, 4]) {
@@ -577,7 +613,7 @@ assert.match(htmlText(beforeRaw(sharedView(sharedRows[5]!))), /Harvest1\.235fish
 assert.match(htmlText(beforeRaw(sharedView(sharedRows[7]!))), /Collapsedno/);
 assert.ok(!beforeRaw(sharedView(sharedRows[1]!)).includes("data-latest-status"));
 assert.match(beforeRaw(sharedView(sharedRows[10]!)), /data-latest-status/);
-console.log("shared row guard ok — structured lifecycle, derived totals, typed results, latest status, log levels, clean terminal lines");
+console.log("shared row guard ok — lifecycle event facts, typed results, latest status, log levels, clean terminal lines");
 
 // Producer toolchains use the shared schema hint without a bespoke renderer.
 const producer = envelope({ type: "producer.python", implementation: "CPython", version: "3.13.14",
@@ -641,7 +677,7 @@ const continued = [...input,
 const llmRows = [
   envelope({ type: "llm.call", agent: "a", input }, 0),
   envelope({ type: "llm.call", agent: "b", input: [] }, 1),
-  envelope({ type: "llm.call", agent: "a", input: continued, model: "requested", output: {
+  envelope({ type: "llm.call", agent: "a", input: continued, model: "requested", via: "sdk", output: {
     model: "served", usage: { input_tokens_cache_read: 12 }, choices: [{ stop_reason: "max_tokens", message: { role: "assistant", content: "New **answer**" } }],
   } }, 2),
   envelope({ type: "llm.call", agent: "a", input }, 3),
@@ -657,10 +693,12 @@ assert.match(deltaView, /New <b>answer<\/b>/);
 assert.match(deltaView, /<details data-reasoning="" class=/); // No open attribute.
 assert.match(htmlText(deltaView), /reasoning · 14 characters/);
 assert.match(deltaView, /data-tool-call="call-1"[\s\S]*data-tool-arguments[\s\S]*data-tool-result="call-1"[\s\S]*<b>Found<\/b>/);
-for (const text of ["requested requested", "served served", "stop reason: max_tokens", "cache read: 12 tokens"])
-  assert.ok(htmlText(deltaView).includes(text), text);
+const callMeta = htmlText(deltaView.match(/<div[^>]*data-llm-meta=""[^>]*>([\s\S]*?)<\/div>/)![1]!);
+for (const text of ["requested requested", "served served", "via sdk", "stop reason: max_tokens", "cache read: 12 tokens"])
+  assert.ok(callMeta.includes(text), text);
 const resetView = llmView(3);
-assert.match(resetView, /history differs from the previous call/);
+assert.ok(!resetView.includes("history differs from the previous call"));
+assert.ok(!resetView.includes("show all") && !resetView.includes("new messages"));
 assert.match(resetView, /<details data-message-role="system" class=/);
 assert.match(resetView, /<b>system<\/b> · First rule<\/summary>/);
 assert.match(resetView, /Old <b>question<\/b>/);

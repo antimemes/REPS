@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { compileSchemas } from "./render-hints.ts";
 import { hashRoute, matchesRunFilter, readRunTab, readRunView, rememberRunTab, runActivity,
-  runHref, runSummary, runUsage, selectRunTab, type StreamFilter } from "./run-view.ts";
+  runHref, selectRunTab, type StreamFilter } from "./run-view.ts";
 
 const definitions = compileSchemas([{ oneOf: [
   { properties: { type: { const: "llm.call" } }, "x-adb-render": { actor: "agent" } },
@@ -75,27 +75,4 @@ test("activity counts and actor/kind links select the same events, including unk
   }
   assert.equal(events.filter((e) => matchesRunFilter(e, { by: "kind", value: "absent" }, definitions)).length, 0);
   assert.deepEqual(events.filter((e) => matchesRunFilter(e, { by: "kind", value: "custom" }, definitions)), [events[3]]);
-});
-
-test("usage derives from calls for live and completed runs, including cached input", () => {
-  const events = [
-    { type: "llm.call", output: { usage: { input_tokens: 3, input_tokens_cache_read: 4, input_tokens_cache_write: 2, output_tokens: 5 } } },
-    { type: "llm.call", error: "offline" },
-    { type: "log", level: "error", message: "not a model call" },
-    { type: "custom", kind: "inspect.event", data: { usage: { input_tokens: 99999 } } },
-  ].map((event, seq) => envelope(event, seq));
-  assert.deepEqual(runUsage(events), { calls: 2, input: 9, output: 5, failed: 1 });
-  assert.deepEqual(runUsage([...events, envelope({ type: "run.end", state: "completed", duration_s: 1, exit_code: 0 })]),
-    { calls: 2, input: 9, output: 5, failed: 1 });
-});
-
-test("results derive from the last event per declared name, leaving missing values absent", () => {
-  const events = [
-    { type: "result", name: "score", value: 1 },
-    { type: "result", name: "undeclared", value: 999 },
-    { type: "result", name: "score", value: 0 },
-  ].map((event, seq) => envelope(event, seq));
-  const definitions = [{ name: "score", type: { kind: "int" } }, { name: "pending", type: { kind: "bool" } }];
-  assert.deepEqual(runSummary(events, definitions), { score: 0 });
-  assert.deepEqual(runSummary([...events, envelope({ type: "run.end", state: "completed", duration_s: 1, exit_code: 0 })], definitions), { score: 0 });
 });

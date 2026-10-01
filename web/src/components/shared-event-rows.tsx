@@ -4,7 +4,7 @@ import { Check, Copy } from "lucide-react";
 import type { Ev, ParamDecl, ParamType, ResultDecl } from "@/shared/types";
 import { containsElision } from "@/lib/event-transport";
 import { exitLabel, fetchRefHref, storePackage } from "@/lib/event-display";
-import { duration, runUsage } from "@/lib/run-view";
+import { duration } from "@/lib/run-view";
 import { StateBadge } from "@/components/bits";
 import { fmtNum } from "@/components/results";
 
@@ -94,19 +94,13 @@ export function RunStartCard({ record, summaryHref, paramDeclarations = {} }: {
   </section>;
 }
 
-export function RunEndFacts({ record, usage, resultsReported, platform }: {
-  record: Ev; usage: ReturnType<typeof runUsage>; resultsReported: number; platform?: string;
+export function RunEndFacts({ record, platform }: {
+  record: Ev; platform?: string;
 }) {
   return <div data-run-end-facts="" className="space-y-2 rounded-md border bg-muted/20 p-3 text-sm">
     <div className="flex flex-wrap items-center gap-2"><StateBadge state={record.event.state} />
       <span>duration {duration(record.event.duration_s)}</span>
       <span>{exitLabel(record.event.exit_code, platform)}</span></div>
-    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" data-derived="">
-      <span className="font-medium">Derived from stream:</span>
-      <span>{usage.calls} model calls</span><span>{usage.input} input tokens</span>
-      <span>{usage.output} output tokens</span>
-      <span title="Number of result records, including repeated names">{resultsReported} results reported</span>
-    </div>
   </div>;
 }
 

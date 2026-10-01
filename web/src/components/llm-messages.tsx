@@ -84,6 +84,7 @@ export function LLMCallMessages({ record, previous, active, loadRecord }: {
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" data-llm-meta="">
       {served && served !== event.model ? <><span>requested {event.model}</span><span>served {served}</span></>
         : event.model && <span>model {event.model}</span>}
+      {event.via && <span>via {String(event.via)}</span>}
       {choices.map((choice: { stop_reason?: string }, index: number) => choice.stop_reason && choice.stop_reason !== "stop"
         ? <span key={index}>stop reason{choices.length > 1 ? ` (${index + 1})` : ""}: {choice.stop_reason}</span> : null)}
       {cacheRead != null && <span>cache read: {cacheRead} tokens</span>}
@@ -93,7 +94,6 @@ export function LLMCallMessages({ record, previous, active, loadRecord }: {
       <h4 className="text-xs font-semibold">Input</h4>
       {waiting ? <p className="text-xs text-muted-foreground">Loading recorded history…</p> : <>
         {error && <p role="alert" className="text-xs text-destructive">Could not load previous call; showing all messages. <button onClick={() => setAttempt((n) => n + 1)}>retry</button></p>}
-        {delta.differs && <p className="text-xs text-muted-foreground">history differs from the previous call</p>}
         {delta.start > 0 && <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span>{input.length - delta.start} new messages</span>
           <button className="underline" onClick={() => setShowAll((value) => !value)}>

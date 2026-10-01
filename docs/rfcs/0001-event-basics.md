@@ -90,12 +90,12 @@ the description and units. Series positions belong in custom observations,
 such as `govsim.state.resource`, rather than in results.
 
 The runner retains every result event and validates names against the manifest.
-An undeclared name or repeated declared name produces a warning log. Consumers
-derive the summary from the last result event per declared name, excluding
-undeclared names and leaving missing results absent. Consumers also derive call
-counts and usage from `llm.call` records alone. `run.end` contains only process
-facts: `state`, `duration_s`, and `exit_code`; it carries no derived summary or
-usage totals.
+An undeclared name or repeated declared name produces a warning log. The runner
+derives the summary from the last result event per declared name, excluding
+undeclared names and leaving missing results absent. Consumers read results,
+call counts and usage totals from `run.json`'s `derived` section, maintained by
+the runner. `run.end` contains only process facts: `state`, `duration_s`, and
+`exit_code`; it carries no derived summary or usage totals.
 
 ## 3. Stream and experiment schemas
 

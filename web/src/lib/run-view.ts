@@ -1,6 +1,5 @@
-/* Run navigation and aggregates derived only from recorded event fields. */
+/* Run navigation and activity links for recorded events. */
 import type { Ev } from "../shared/types.ts";
-import { object } from "./run-readability.ts";
 import { actorFor, actorLabels, eventKind, kindNamespace, schemaKinds, type EventDefinition } from "./render-hints.ts";
 
 export type RunTab = "summary" | "stream";
@@ -62,32 +61,6 @@ export function runActivity(events: Ev[], definitions: EventDefinition[]) {
     if (actor !== null) actors.set(actor, (actors.get(actor) ?? 0) + 1);
   }
   return { kinds, actors: [...actors].map(([id, count]) => ({ id, label: labels.get(id) ?? id, count })) };
-}
-
-/** Results are a reader projection: declared names only, last recorded value wins. */
-export function runSummary(events: Ev[], definitions: unknown): Record<string, unknown> {
-  const names = new Set((Array.isArray(definitions) ? definitions : [])
-    .filter((entry): entry is { name: string } => object(entry) && typeof entry.name === "string").map(({ name }) => name));
-  return Object.fromEntries(events.filter(({ event }) => event.type === "result"
-    && names.has(event.name)).map(({ event }) => [event.name, event.value]));
-}
-
-const count = (value: unknown): number => typeof value === "number" && Number.isFinite(value) ? value : 0;
-export function runUsage(events: Ev[]) {
-  const calls = events.filter((e) => e.event.type === "llm.call");
-  const observed = calls.reduce((totals, event) => {
-    const usage = event.event.output?.usage ?? {};
-    // Inspect input_tokens excludes cache reads and writes.
-    totals.input += count(usage.input_tokens) + count(usage.input_tokens_cache_read) + count(usage.input_tokens_cache_write);
-    totals.output += count(usage.output_tokens);
-    return totals;
-  }, { input: 0, output: 0 });
-  return {
-    calls: calls.length,
-    input: observed.input,
-    output: observed.output,
-    failed: calls.filter((e) => e.event.error != null).length,
-  };
 }
 
 export function elapsedSeconds(start: unknown, now: number): number | null {

@@ -25,16 +25,19 @@ async function main() {
   const events = records;
   const meta = cardMeta(JSON.parse(readFileSync(join(run, "run.json"), "utf8")));
   const manifest = manifests.find((m) => m.name === records[0].experiment);
-  // A prefix of the same captured run demonstrates pending results and progress.
-  const firstState = events.findIndex((e) => e.event.kind === "govsim.state");
-  const partial = events.slice(0, firstState >= 0 ? firstState + 2 : Math.max(1, Math.floor(events.length / 2)))
-    .filter((e) => e.event.type !== "run.end");
+  // A startup snapshot demonstrates a running run with pending results. Supply
+  // its card explicitly, before any calls or results, without recomputing totals.
+  const partial = events.slice(0, 1);
+  const partialMeta = { ...fixtureMeta(partial, {
+    results: {}, served_models: [], usage: { input_tokens: 0, output_tokens: 0 },
+    counts: { llm_calls: 0, failed_calls: 0, by_kind: { "run.start": 1 }, llm_calls_by_agent: {} },
+    last_seq: partial[0].seq, last_event_at: partial[0].ts,
+  }), state: "running" as const };
   const css = readdirSync("dist/assets").filter((f) => f.endsWith(".css"))
     .map((f) => readFileSync(join("dist/assets", f), "utf8")).join("\n");
   mkdirSync(output, { recursive: true });
   for (const [prefix, snapshot] of [["", events], ["partial-", partial]] as const) {
     const now = Date.parse(snapshot.at(-1)!.ts) + 1500;
-    const snapshotMeta = prefix ? { ...fixtureMeta(snapshot), heartbeat_at: snapshot.at(-1)!.ts } : meta;
     const views = [
       { name: "summary", query: "tab=summary" },
       { name: "stream", query: "tab=stream" },
@@ -44,7 +47,7 @@ async function main() {
     ];
     for (const view of views) {
       const markup = renderToStaticMarkup(<RunView review events={snapshot} diskRecords={diskRecords}
-        definitions={compileSchemas(schemas)} meta={snapshotMeta} manifest={manifest} now={now}
+        definitions={compileSchemas(schemas)} meta={prefix ? partialMeta : meta} manifest={manifest} now={now}
         query={view.query} cid={meta.condition} rid={records[0].run} />);
       const path = join(output, `${prefix}${view.name}.html`);
       writeFileSync(path, `<!doctype html><html><head><meta charset="utf-8">

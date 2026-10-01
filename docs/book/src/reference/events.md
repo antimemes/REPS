@@ -155,8 +155,9 @@ The viewer resolves hints from the exported schemas. Unhinted kinds show their
 kind and collapsed JSON. The stream renders every row in sequence order; use
 facet filters to narrow bursts of activity.
 Facets group schema kinds by their first dotted namespace, with individual kinds
-in a second row. Undotted tags have their own chips. The actor legend includes
-all hinted events.
+in a second row when the selected namespace has multiple kinds. Undotted tags
+have their own chips. A separate actor facet row filters by actors found across
+all hinted events in the run, using their display names and showing IDs on hover.
 `actor` identifies an actor; `actor_label` supplies its display name. The viewer
 seeds labels from registry events across the entire run, then applies per-row
 labels in transcript order. A row's own label takes precedence over the map;

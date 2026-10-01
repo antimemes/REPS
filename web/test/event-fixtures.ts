@@ -1,29 +1,16 @@
-import type { Ev, EventPayload } from "../src/shared/types.ts";
+import type { Ev, EventPayload, RunCard, RunDerived } from "../src/shared/types.ts";
+import { cardMeta } from "../src/lib/run-readability.ts";
 
 export const envelope = (event: EventPayload, seq = 0, ts = "2026-09-16T12:00:00.000000Z"): Ev => ({
   v: 0, ts, run: "20260916t120000z-012345abcdef", experiment: "example", schema: 0, seq, event,
 });
 
-import type { RunCard } from "../src/shared/types.ts";
-import { runSummary, runUsage } from "../src/lib/run-view.ts";
-import { eventKind } from "../src/lib/render-hints.ts";
-import { cardMeta } from "../src/lib/run-readability.ts";
-
-/** Independent test projection; production summary views consume the runner's card. */
-export function fixtureCard(events: Ev[]): RunCard {
+/** Test card scaffolding; totals are supplied explicitly, as they are by the runner. */
+export function fixtureCard(events: Ev[], derived: Partial<RunDerived> = {}): RunCard {
   const first = events[0] ?? envelope({ type: "run.start" });
   const start: EventPayload = events.find(e => e.event.type === "run.start")?.event ?? { type: "run.start" };
   const end = events.find(e => e.event.type === "run.end");
   const last = events.at(-1) ?? first;
-  const usage = runUsage(events);
-  const byKind = new Map<string, number>(), callsByAgent = new Map<string, number>();
-  for (const record of events) {
-    const kind = eventKind(record);
-    byKind.set(kind, (byKind.get(kind) ?? 0) + 1);
-    const { type, agent } = record.event;
-    if (type === "llm.call" && typeof agent === "string")
-      callsByAgent.set(agent, (callsByAgent.get(agent) ?? 0) + 1);
-  }
   return {
     identity: { run: first.run, condition: start.condition ?? "condition", experiment: first.experiment, schema: first.schema },
     inputs: { params: start.params ?? {}, seed: start.seed ?? 1 },
@@ -33,14 +20,13 @@ export function fixtureCard(events: Ev[]): RunCard {
     definitions: { results: start.result_definitions ?? [] },
     lifecycle: { state: end?.event.state ?? "running", started_at: first.ts,
       ...(end ? { finished_at: end.ts, duration_s: end.event.duration_s ?? 0, exit_code: end.event.exit_code ?? 0 } : {}) },
-    derived: { results: runSummary(events, start.result_definitions),
-      served_models: [...new Set(events.filter(e => e.event.type === "llm.call")
-        .map(e => e.event.output?.model).filter((model): model is string => typeof model === "string" && !!model))].sort(),
-      usage: { input_tokens: usage.input, output_tokens: usage.output },
-      counts: { llm_calls: usage.calls, failed_calls: usage.failed,
-        by_kind: Object.fromEntries(byKind), llm_calls_by_agent: Object.fromEntries(callsByAgent) },
+    derived: { results: {}, served_models: [],
+      usage: { input_tokens: 0, output_tokens: 0 },
+      counts: { llm_calls: 0, failed_calls: 0, by_kind: {}, llm_calls_by_agent: {} },
       last_seq: last.seq, last_event_at: last.ts,
-      ...(events.some(e => e.event.type === "status") ? { last_status: [...events].reverse().find(e => e.event.type === "status")!.event.detail } : {}) },
+      ...(events.some(e => e.event.type === "status") ? { last_status: [...events].reverse().find(e => e.event.type === "status")!.event.detail } : {}),
+      ...derived },
   };
 }
-export const fixtureMeta = (events: Ev[]) => ({ ...cardMeta(fixtureCard(events)), heartbeat_at: events.at(-1)?.ts });
+export const fixtureMeta = (events: Ev[], derived: Partial<RunDerived> = {}) =>
+  ({ ...cardMeta(fixtureCard(events, derived)), heartbeat_at: events.at(-1)?.ts });
