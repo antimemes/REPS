@@ -201,7 +201,9 @@
 .vega-figure pre { white-space: pre; overflow-wrap: normal; }
 @media (max-width: 600px) { .vega-figure { padding: .5rem; } }
 
-/* GovSim figures retain complete labels; narrow displays scroll the figure. */
+/* Desktop retains complete GovSim labels; phones use compact facet headers. */
+.hover-guidance { display: none; }
+@media (hover: hover) and (pointer: fine) { .hover-guidance { display: inline; } }
 .govsim-results { margin-block: 1.5rem; }
 .govsim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: .5rem; background: var(--color-muted); }
 .govsim-controls label { display: flex; flex-direction: column; gap: .4rem; font-size: .85rem; font-weight: 600; }

@@ -61,37 +61,38 @@ export function CmdSettings() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
-    const onDown = (e: MouseEvent) => {
+    const onDown = (e: PointerEvent) => {
       if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false);
     };
     window.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onDown);
+    document.addEventListener("pointerdown", onDown);
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("pointerdown", onDown);
     };
   }, [open]);
 
   const set = (patch: Partial<CmdPrefs>) => setCmdPrefs(patch);
 
   return (
-    <div ref={wrap} className="relative">
+    <div ref={wrap} className="md:relative">
       <Button
         variant="ghost"
         size="sm"
-        className="w-full justify-start gap-2.5 px-2.5 text-muted-foreground"
+        className="h-10 w-7 gap-0 px-0 text-muted-foreground max-md:has-[>svg]:px-0 md:h-8 md:w-full md:justify-start md:gap-2.5 md:px-2.5"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="true"
         aria-expanded={open}
+        aria-label="settings"
       >
         <Settings />
-        settings
+        <span className="hidden md:inline">settings</span>
       </Button>
 
       {open && (
         <div
           role="menu"
-          className="absolute bottom-full left-0 z-50 mb-2 w-[24rem] space-y-2 rounded-lg border bg-background p-3 shadow-lg"
+          className="absolute top-full right-0 z-50 mt-2 w-[min(24rem,calc(100vw-2rem))] space-y-2 rounded-lg border bg-background p-3 shadow-lg md:top-auto md:right-auto md:bottom-full md:left-0 md:mt-0 md:mb-2"
         >
           <div className="text-xs font-semibold">Commands adapt to your setup</div>
           <code className="block overflow-x-auto rounded border bg-muted/40 p-2 font-mono text-[11px] whitespace-pre">

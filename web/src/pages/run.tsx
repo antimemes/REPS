@@ -140,7 +140,7 @@ function ReadableRunView({ cid, rid, query = "", preferredTab = null, events, de
     <nav aria-label="Run tabs" className="flex shrink-0 gap-4 border-b">
       {(["summary", "stream"] as const).map((name) => <a key={name} href={href(name)}
         aria-current={tab === name ? "page" : undefined} data-tab={name}
-        className={cn("border-b-2 px-1 pb-2 text-sm", tab === name
+        className={cn("border-b-2 px-1 pb-2 text-sm max-md:min-h-10 max-md:py-2", tab === name
           ? "border-primary font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>
         {name === "summary" ? "Summary" : "Stream"}
       </a>)}
@@ -249,7 +249,7 @@ function RunFacets({ events, activity, definitions, filter, link }: {
       || (facet.filter?.by === "namespace" && facet.filter.value === namespace);
     return <a key={key} href={link(facet.filter)} data-filter={key} aria-current={active ? "true" : undefined}
       title={facet.filter ? `${facet.filter.by}: ${facet.filter.value}` : "All events"}
-      className={cn("rounded-full border px-2.5 py-0.5", active ? "border-primary bg-primary/10 text-foreground"
+      className={cn("rounded-full border px-2.5 py-0.5 max-md:inline-flex max-md:items-center max-md:py-1.5", active ? "border-primary bg-primary/10 text-foreground"
         : "border-transparent text-muted-foreground hover:border-ring hover:text-foreground")}>
       {facet.filter?.by === "actor" && <span className="text-muted-foreground">actor: </span>}{facet.label}
     </a>;

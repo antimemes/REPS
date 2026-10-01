@@ -180,10 +180,11 @@ export function ResultChip({ name, value, unit, definition }: {
 }
 
 /* Reader-derived values with optional observed result values, deduped by name. */
-export function ResultChips({ summary, metrics, definitions }: {
+export function ResultChips({ summary, metrics, definitions, mobileLimit }: {
   definitions?: ResultDecl[];
   summary?: Record<string, unknown>;
   metrics?: { name: string; value: unknown; unit?: string | null }[];
+  mobileLimit?: number;
 }) {
   const declarations = resultDeclarations(definitions);
   const latest = new Map((Array.isArray(metrics) ? metrics : []).map((metric) => [metric.name, metric]));
@@ -192,8 +193,16 @@ export function ResultChips({ summary, metrics, definitions }: {
   const names = [...declared.filter((name) => Object.hasOwn(values, name)),
     ...Object.keys(values).filter((name) => !declared.includes(name))];
   if (!names.length) return null;
-  return <>{names.map((name) => <ResultChip key={name} name={name} value={values[name]}
-    definition={declarations.find((result) => result.name === name)} unit={latest.get(name)?.unit} />)}</>;
+  return <>{names.map((name, index) => <span key={name}
+    className={cn("contents", mobileLimit !== undefined && index >= mobileLimit && "max-md:hidden")}>
+    <ResultChip name={name} value={values[name]}
+      definition={declarations.find((result) => result.name === name)} unit={latest.get(name)?.unit} />
+  </span>)}
+    {mobileLimit !== undefined && names.length > mobileLimit && <span
+      className={cn(BASE, NEUTRAL, "md:hidden")} aria-label={`${names.length - mobileLimit} more results on the run page`}>
+      +{names.length - mobileLimit}
+    </span>}
+  </>;
 }
 
 /* scorer values flattened to leaves. New streams arrive pre-flattened (the spec's

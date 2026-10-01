@@ -49,12 +49,19 @@ const RED_ICON = "text-red-600 dark:text-red-400";
 const EMPTY_FLAG =
   "rounded border border-dashed border-amber-500/60 px-1 font-mono text-[10px] text-amber-700 dark:text-amber-400";
 
-const Gutter = ({ g }: { g?: GutterInfo }) => (
-  <span title={g?.title} className="w-[16ch] shrink-0 select-none whitespace-pre text-right font-mono text-[10px] tabular-nums">
-    <span className="text-muted-foreground/40">{g?.label.slice(0, g.unchanged)}</span>
-    <span className="text-foreground/90">{g?.label.slice(g.unchanged)}</span>
-  </span>
-);
+const Gutter = ({ g }: { g?: GutterInfo }) => {
+  const seconds = g?.label.split(".")[0] ?? "";
+  return <span title={g?.title} className="w-[9ch] shrink-0 select-none whitespace-pre text-right font-mono text-[10px] tabular-nums md:w-[16ch]">
+    <span className="md:hidden">
+      <span className="text-muted-foreground/40">{seconds.slice(0, g?.unchanged ?? 0)}</span>
+      <span className="text-foreground/90">{seconds.slice(g?.unchanged ?? 0)}</span>
+    </span>
+    <span className="hidden md:inline">
+      <span className="text-muted-foreground/40">{g?.label.slice(0, g.unchanged)}</span>
+      <span className="text-foreground/90">{g?.label.slice(g.unchanged)}</span>
+    </span>
+  </span>;
+};
 
 function HintIcon({ hint, fallback = FALLBACK.Icon, className }: {
   hint: RenderHint | null; fallback?: typeof Info; className?: string;

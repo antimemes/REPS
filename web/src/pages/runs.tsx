@@ -18,6 +18,7 @@ import { ParamChip } from "@/components/param-value";
 import { RenderBoundary, UnreadableBadge, displayRun } from "@/components/read-errors";
 import { ResultChips } from "@/components/results";
 import { conditionHref } from "@/lib/conditions";
+import { cn } from "@/lib/utils";
 
 export function RunsPage() {
   const runs = useRunsPoll();
@@ -63,15 +64,15 @@ export function RunsTable({ runs: suppliedRuns, hideExperiment = false }: { runs
     : ["condition", "run", "experiment", "params", "state", "results", "started"];
   return (
     <Card className="overflow-hidden py-0">
-      <Table>
-        <TableHeader>
+      <Table className="max-md:block max-md:[&_td]:block max-md:[&_td]:min-w-0 max-md:[&_td]:border-0 max-md:[&_td]:p-0 max-md:[&_td]:[overflow-wrap:anywhere]">
+        <TableHeader className="max-md:hidden">
           <TableRow>
             {cols.map((h) => <TableHead key={h}>{h}</TableHead>)}
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="max-md:block">
           {runs.length === 0 && (
-            <TableRow>
+            <TableRow className="max-md:block max-md:p-3">
               <TableCell colSpan={cols.length} className="text-muted-foreground">no runs match</TableCell>
             </TableRow>
           )}
@@ -87,7 +88,7 @@ export function RunsTable({ runs: suppliedRuns, hideExperiment = false }: { runs
 }
 
 function UnreadableRow({ run, reason, columns }: { run: RunMeta; reason: string; columns: number }) {
-  return <TableRow data-run={run.run}>
+  return <TableRow data-run={run.run} className="max-md:block max-md:p-3">
     <TableCell colSpan={columns}>
       <a href={`#/run/${encodeURIComponent(run.condition)}/${encodeURIComponent(run.run)}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
         <UnreadableBadge /><code className="text-xs">{run.run}</code>
@@ -103,29 +104,35 @@ function RunRow({ run: r, varied, hideExperiment }: { run: RunMeta; varied: stri
   const served = Array.isArray(r.derived?.served_models) ? r.derived.served_models : [];
   const different = served.filter((model) => model !== requested);
   const vk = [...new Set([...varied, ...(requested && different.length ? ["model"] : [])])];
+  const previewParam = vk.includes("model") ? "model" : vk[0];
   const allParams = p
     ? Object.entries(p).map(([k, v]) => `${k}=${fmtVal(v)}`).join("\n")
     : "";
   return (
     <TableRow
       data-run={r.run}
-      className="cursor-pointer"
+      className="cursor-pointer max-md:grid max-md:grid-cols-[auto_minmax(0,1fr)] max-md:gap-x-2 max-md:gap-y-1 max-md:p-3"
       onClick={(e) =>
         /* canonical run link — the bare-id route the runner also prints;
            the resolver bounces to the full route instantly (list cached) */
         void navigateWithGlow(e.currentTarget, `#/runs/${r.run}`,
           () => prefetchRun(r.condition, r.run))}
     >
-      <TableCell className="font-mono text-xs"><a href={conditionHref(r.condition)} onClick={(e) => e.stopPropagation()} className="hover:underline">{(r.condition ?? "").slice(0, 12)}</a></TableCell>
-      <TableCell className="font-mono text-xs">{r.run}</TableCell>
-      {!hideExperiment && <TableCell>{r.experiment}</TableCell>}
-      <TableCell title={allParams}>
+      <TableCell className="font-mono text-xs max-md:col-start-1 max-md:row-start-3"><a href={conditionHref(r.condition)} onClick={(e) => e.stopPropagation()} className="hover:underline">{(r.condition ?? "").slice(0, 12)}</a></TableCell>
+      <TableCell className="font-mono text-xs max-md:col-span-2 max-md:row-start-2">{r.run}</TableCell>
+      {!hideExperiment && <TableCell className="max-md:col-start-2 max-md:row-start-3 max-md:text-xs max-md:text-muted-foreground">{r.experiment}</TableCell>}
+      <TableCell title={allParams} className="max-md:col-span-2 max-md:row-start-4">
         {!p ? (
           <span className="text-muted-foreground">…</span>
         ) : vk.length ? (
           <span className="flex flex-wrap gap-1">
-            {vk.map((k) => <ParamChip key={k} name={k} value={p[k]} />)}
-            {different.length > 0 && <span className="text-xs text-muted-foreground" title="Model names returned by the endpoint">
+            {vk.map((k) => <span key={k} className={cn("contents", k !== previewParam && "max-md:hidden")}>
+              <ParamChip name={k} value={p[k]} />
+            </span>)}
+            {vk.length > 1 && <span className="inline-flex items-center rounded-full border bg-muted/50 px-2 text-[11px] md:hidden">
+              +{vk.length - 1} params
+            </span>}
+            {different.length > 0 && <span className="text-xs text-muted-foreground max-md:hidden" title="Model names returned by the endpoint">
               → served: {different.join(", ")}
             </span>}
           </span>
@@ -133,13 +140,13 @@ function RunRow({ run: r, varied, hideExperiment }: { run: RunMeta; varied: stri
           <span className="text-muted-foreground">{different.length ? `served: ${different.join(", ")}` : "—"}</span>
         )}
       </TableCell>
-      <TableCell><StateBadge state={displayState(r)} /></TableCell>
-      <TableCell>
+      <TableCell className="max-md:col-start-1 max-md:row-start-1"><StateBadge state={displayState(r)} /></TableCell>
+      <TableCell className="max-md:col-span-2 max-md:row-start-5">
         <span className="flex flex-wrap gap-1">
-          <ResultChips summary={r.summary} definitions={r.result_definitions} />
+          <ResultChips summary={r.summary} definitions={r.result_definitions} mobileLimit={3} />
         </span>
       </TableCell>
-      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+      <TableCell className="whitespace-nowrap text-xs text-muted-foreground max-md:col-start-2 max-md:row-start-1 max-md:justify-self-end">
         {(r.started_at ?? "").replace("T", " ").slice(0, 19)}
       </TableCell>
     </TableRow>

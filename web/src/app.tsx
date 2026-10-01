@@ -2,7 +2,7 @@
    dependency). Routes: #/ overview, #/experiments/<name>, #/runs, #/jobs
    (the launch queue + worker registry), #/runs/<rid>
    (the canonical run link — bare run id → resolver), and #/run/<cid>/<rid> (the
-   resolved detail route). The shell is h-screen; list pages scroll in <main>, the
+   resolved detail route). The shell is h-dvh; list pages scroll in <main>, the
    run page manages its own inner scrolling (fixed head/tabs, scrollable panes). */
 
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
@@ -68,13 +68,13 @@ export function App() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-hidden md:flex-row">
       <Sidebar section={section} dark={dark} onToggleTheme={toggle} />
       <main
         className={
           fullHeight
-            ? "min-w-0 flex-1 overflow-hidden px-5 py-4"
-            : "min-w-0 flex-1 overflow-y-auto px-5 py-4 pb-16"
+            ? "min-h-0 min-w-0 flex-1 overflow-hidden px-4 py-3 md:px-5 md:py-4"
+            : "min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-3 pb-16 md:px-5 md:py-4 md:pb-16"
         }
       >
         <div className={fullHeight ? "mx-auto h-full max-w-6xl" : "mx-auto max-w-6xl"}>

@@ -1,7 +1,8 @@
 import { useContext, useState } from 'react';
 import type { TopLevelSpec } from 'vega-lite';
 import { RunDataContext, VegaChart } from './vega-chart';
-import { hasOutcome, matchesSettings, outcomes, prepareFigure, scenarios, treatments, type Filters, type Metric } from '../lib/govsim-figure';
+import { compactFigureSpec, hasOutcome, matchesSettings, outcomes, prepareFigure, scenarios, treatments, type Filters, type Metric } from '../lib/govsim-figure';
+import { useMediaQuery } from '../lib/use-media-query';
 
 const fmt = (value: number | null) => value === null ? '—' : value.toLocaleString('en-US', { maximumFractionDigits: 3 });
 
@@ -10,6 +11,7 @@ export function GovSimFigure({ spec }: { spec: TopLevelSpec }) {
   const [scenario, setScenario] = useState('fish');
   const [treatment, setTreatment] = useState('baseline_concurrent');
   const [metric, setMetric] = useState<Metric>('result_survival_months');
+  const phone = useMediaQuery('(max-width: 767px)');
   if (rows === null) return <p>Loading run data…</p>;
   const filters: Filters = { scenario, treatment, rounds: '0', embedder: 'all' };
   const base = rows.filter(row => matchesSettings(row, filters));
@@ -27,18 +29,24 @@ export function GovSimFigure({ spec }: { spec: TopLevelSpec }) {
   const treatmentLabel = treatments[treatment as keyof typeof treatments];
   // The figure's exported SVG carries the selection and sample-size context.
   const chart: TopLevelSpec = {
-    ...spec,
+    ...(phone ? compactFigureSpec(spec) : spec),
     title: {
       text: `${scenarioLabel} · ${treatmentLabel}`,
-      subtitle: [
+      subtitle: phone ? [
+        `${outcomes[metric].label} · ${total} completed runs`,
+        `${groups.length} model–condition groups · full scenario`,
+        `Embedder: ${embedders.join(', ') || 'none recorded'}`,
+        'Dots: runs · Diamond: median · Bar: IQR',
+        'Shading: normalized KDE (n ≥ 5)',
+      ] : [
         `${outcomes[metric].label} | ${total} completed runs | ${groups.length} model–condition groups`,
         `Length: full scenario · Embedder: ${embedders.join(', ') || 'none recorded'}`,
         'Dots: runs · Diamond: median · Bar: IQR · Shading: normalized KDE (n ≥ 5)',
       ],
-      anchor: 'start', fontSize: 16, subtitleFontSize: 12, subtitleLineHeight: 18, offset: 18,
+      anchor: 'start', fontSize: 16, subtitleFontSize: phone ? 10 : 12, subtitleLineHeight: phone ? 15 : 18, offset: 18,
     },
     params: [
-      { name: 'outcomeAxis', value: outcomes[metric].axis },
+      { name: 'outcomeAxis', value: phone ? outcomes[metric].axis.split(/ (?=\()/) : outcomes[metric].axis },
       { name: 'modelDomain', value: [...new Set(rows.map(row => String(row.param_model)))].sort() },
     ],
   };
@@ -53,9 +61,9 @@ export function GovSimFigure({ spec }: { spec: TopLevelSpec }) {
     </div>
     {treatment.includes('paraphrase') && <p className="govsim-caption">Optional upstream variant, fishing only: alternative wording of the baseline instructions. Not listed in the authors’ <a href="https://github.com/giorgiopiatti/GovSim#table-of-experiments">table of paper experiments</a>.</p>}
     <p className="govsim-sample-note" role="status"><strong>{total} plotted runs</strong> across {groups.length} model–condition groups. {excluded} excluded ({groups.reduce((n, g) => n + g.incomplete, 0)} not completed; {groups.reduce((n, g) => n + g.missing, 0)} missing outcome). Each dot is one simulation run.</p>
-    {points.length ? <RunDataContext value={points}><VegaChart spec={chart} horizontalPadding={330} minPlotWidth={420} /></RunDataContext> : <p className="govsim-empty">No completed runs with this outcome match the selection. Choose an available condition in the sample-size table below.</p>}
+    {points.length ? <RunDataContext value={points}><VegaChart spec={chart} horizontalPadding={phone ? 170 : 330} minPlotWidth={phone ? 220 : 420} /></RunDataContext> : <p className="govsim-empty">No completed runs with this outcome match the selection. Choose an available condition in the sample-size table below.</p>}
     <p className="govsim-caption"><strong>Dots:</strong> individual runs, colored by model. <strong>Diamond:</strong> median. <strong>Bar:</strong> middle 50% of outcomes (IQR), not a confidence interval. <strong>n:</strong> plotted runs.</p>
-    {metric === 'result_survival_months' && <p className="govsim-caption">Survival at the time limit is right-censored: the resource might have survived longer. Hover over a run to check whether it collapsed.</p>}
+    {metric === 'result_survival_months' && <p className="govsim-caption">Survival at the time limit is right-censored: the resource might have survived longer.<span className="hover-guidance"> Hover over a run to check whether it collapsed.</span></p>}
     <details className="govsim-methods"><summary>Statistical methods</summary>
       <p className="govsim-caption">Violins use Gaussian kernel density estimation with Scott’s bandwidth, restricted to the observed range. They appear only for groups with at least 5 runs and nonzero variation. Width is normalized per group and does not represent sample size.</p>
       <p className="govsim-caption">Dots with identical outcomes are separated vertically for visibility. Quartiles use linear interpolation. Distinct recorded conditions are never pooled into one violin; colors remain consistent across selections. Repeated seeds do not necessarily represent independent replicates.</p>

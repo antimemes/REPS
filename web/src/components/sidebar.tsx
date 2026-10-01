@@ -33,21 +33,21 @@ export function Sidebar({
   const executor = useExecutorPoll();
   const active = jobs?.filter((j) => !JOB_TERMINAL.has(j.state)).length ?? 0;
   return (
-    <aside className="flex w-44 shrink-0 flex-col border-r bg-card/50">
-      <a href="#/" className="px-4 py-3.5 font-mono text-lg font-bold tracking-widest no-underline">
+    <aside className="flex w-full shrink-0 items-center border-b bg-card/50 px-2 md:w-44 md:flex-col md:items-stretch md:border-r md:border-b-0 md:px-0">
+      <a href="#/" className="flex min-h-10 items-center font-mono text-lg font-bold tracking-widest no-underline md:px-4 md:py-3.5">
         adb
       </a>
-      <nav className="flex-1 space-y-0.5 px-2">
+      <nav className="flex gap-2 md:block md:flex-1 md:space-y-0.5 md:px-2">
         {NAV.filter((item) => item.section !== "jobs" || executor?.enabled).map(({ section: s, href, label, Icon }) => (
           <a
             key={s}
             href={href}
             className={cn(
-              "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground no-underline transition-colors hover:bg-accent hover:text-accent-foreground",
+              "flex min-h-10 items-center gap-1 rounded-md px-1.5 py-1.5 text-xs text-muted-foreground no-underline transition-colors hover:bg-accent hover:text-accent-foreground md:min-h-0 md:gap-2.5 md:px-2.5 md:text-sm",
               s === section && "bg-accent font-medium text-accent-foreground",
             )}
           >
-            <Icon className="size-4" />
+            <Icon className="size-4 shrink-0" />
             {label}
             {s === "jobs" && active > 0 && (
               <span className="ml-auto rounded-full bg-primary/15 px-1.5 text-[10px] font-medium tabular-nums text-primary">
@@ -57,18 +57,18 @@ export function Sidebar({
           </a>
         ))}
       </nav>
-      <div className="space-y-1 border-t p-2">
+      <div className="relative ml-auto flex items-center md:static md:ml-0 md:block md:space-y-1 md:border-t md:p-2">
         {!publishedMode() && <ConnectedDot />}
         <CmdSettings />
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start gap-2.5 px-2.5 text-muted-foreground"
+          className="h-10 w-7 gap-0 px-0 text-muted-foreground max-md:has-[>svg]:px-0 md:h-8 md:w-full md:justify-start md:gap-2.5 md:px-2.5"
           onClick={onToggleTheme}
           aria-label="toggle theme"
         >
           {dark ? <Sun /> : <Moon />}
-          {dark ? "light mode" : "dark mode"}
+          <span className="hidden md:inline">{dark ? "light mode" : "dark mode"}</span>
         </Button>
       </div>
     </aside>
@@ -79,11 +79,11 @@ function ConnectedDot() {
   const { live } = usePollHealth();
   return (
     <div
-      className="flex items-center gap-2 px-2.5 py-0.5 text-[11px] text-muted-foreground/80"
+      className="flex items-center gap-2 px-1 py-0.5 text-[11px] text-muted-foreground/80 md:px-2.5"
       title="webui ↔ adb-web server connectivity (background polls, every 2s). Not run liveness — that dot sits next to each live stream."
     >
       <span className={cn("size-1.5 rounded-full", live ? "bg-emerald-500" : "bg-amber-500")} />
-      {live ? "connected" : "offline"}
+      <span className="hidden md:inline">{live ? "connected" : "offline"}</span>
     </div>
   );
 }

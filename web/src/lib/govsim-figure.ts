@@ -1,4 +1,17 @@
 import type { ExplorationRow } from './exploration-data.ts';
+import type { TopLevelSpec } from 'vega-lite';
+
+/** Labels are facet headers, not a y axis. Stack them above each phone-sized
+ * plot, keeping sample sizes on a separate line so ellipses cannot hide them. */
+export function compactFigureSpec(spec: TopLevelSpec): TopLevelSpec {
+  if (!('facet' in spec) || !('row' in spec.facet) || !spec.facet.row) return spec;
+  const row = spec.facet.row;
+  return { ...spec, facet: { ...spec.facet, row: { ...row, title: null,
+    header: { ...row.header, title: null, labelOrient: 'top', labelAnchor: 'start', labelLimit: 130,
+      // Split on the double space before `(n = …)` emitted by prepareFigure's model_label below.
+      labelPadding: 8, labelExpr: "split(replace(replace(datum.label, /^[^/]+\\//, ''), ' · condition ', ' · #'), '  ')" },
+  } } };
+}
 
 export const scenarios = { fish: 'Fishing', sheep: 'Sheep farming', pollution: 'Pollution' };
 export const treatments = {
