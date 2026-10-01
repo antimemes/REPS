@@ -3,12 +3,13 @@
 from copy import deepcopy
 import json
 from types import SimpleNamespace
+from unittest.mock import Mock, call
 
 import pytest
 from openai.types.chat import ChatCompletion
 
 from adb_events.inspect_chat import ChatMessageAssistant, ContentReasoning, ContentText
-from adb_experiment.llm import ChatClient
+from adb_experiment.llm import ChatClient, EmptyResponse, ServedModelMismatch
 from adb_providers import PROVIDERS
 
 
@@ -97,6 +98,93 @@ def test_failure_retains_effective_request(event_capture):
     assert event["output"]["choices"] == []
     assert event["call"]["response"] is None
     assert event["metadata"]["test.phase"] == "harvest"
+
+
+@pytest.fixture
+def sdk_request_client(monkeypatch):
+    request, sleep = Mock(), Mock()
+    monkeypatch.setattr("openai.resources.chat.completions.Completions.create", request)
+    monkeypatch.setattr("adb_experiment.llm.time.sleep", sleep)
+    monkeypatch.setenv("AZURE_OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("AZURE_OPENAI_BASE_URL", "https://resource.openai.azure.com/openai/v1/")
+    client = ChatClient("azure/alias", temperature=0.2, seed=17, max_tokens=80)
+    return client, request, sleep
+
+
+def test_empty_responses_retry_until_a_choice_is_returned(event_capture, sdk_request_client):
+    client, request, sleep = sdk_request_client
+    _, reply = client_and_reply()
+    empty = reply.model_copy(update={"model": "", "choices": []})
+    request.side_effect = [empty, empty, reply]
+    original = reply.model_dump(mode="json")
+
+    result = client.chat.completions.create(model="sent", messages=[])
+
+    assert result is reply
+    assert result.choices[0].message.content == "answer"
+    assert request.call_count == 3
+    assert sleep.call_args_list == [call(1), call(2)]
+    assert client.n_calls == 1
+    [event] = event_capture.read()
+    assert event["retries"] == 2
+    assert event["error"] is None
+    assert not event["call"]["error"]
+    assert event["call"]["response"] == original
+    assert all(attempt.kwargs == event["call"]["request"] for attempt in request.call_args_list)
+
+
+def test_exhausted_empty_responses_record_failure_and_last_id(event_capture, sdk_request_client):
+    client, request, sleep = sdk_request_client
+    _, reply = client_and_reply()
+    replies = [reply.model_copy(update={"id": f"empty-{i}", "model": "", "choices": []})
+               for i in range(8)]
+    request.side_effect = replies
+
+    with pytest.raises(EmptyResponse, match="azure/alias.*8 attempts.*empty-7") as failure:
+        client.chat.completions.create(model="sent", messages=[])
+
+    assert request.call_count == 8
+    assert sleep.call_args_list == [call(delay) for delay in (1, 2, 4, 8, 16, 32, 60)]
+    assert client.n_calls == 1
+    [event] = event_capture.read()
+    assert event["retries"] == 8
+    assert event["error"] == str(failure.value)
+    assert event["call"]["error"] is True
+    assert event["call"]["response"] is None
+    assert event["call"]["request"]["seed"] == 17
+    assert event["output"]["choices"] == []
+    assert event["output"]["model"] == ""
+    assert event["output"]["usage"] is None
+    assert event["working_time"] >= 0
+    assert event["completed"] is not None
+
+    # Exhaustion must not consume the first-success routing check or leak retries.
+    reply.model = "wrong-model"
+    request.side_effect = None
+    request.return_value = reply
+    with pytest.raises(ServedModelMismatch):
+        client.chat.completions.create(model="sent", messages=[])
+    success, log = event_capture.read()
+    assert success["retries"] == 0
+    assert log["level"] == "error"
+
+
+@pytest.mark.parametrize("content", ["", None])
+def test_empty_content_with_a_choice_is_not_retried(event_capture, sdk_request_client, content):
+    client, request, sleep = sdk_request_client
+    _, reply = client_and_reply()
+    reply.choices[0].message.content = content
+    request.return_value = reply
+
+    result = client.chat.completions.create(model="sent", messages=[])
+
+    assert result.choices[0].message.content == ""
+    request.assert_called_once()
+    sleep.assert_not_called()
+    [event] = event_capture.read()
+    assert event["retries"] == 0
+    assert event["error"] is None
+    assert len(event["output"]["choices"]) == 1
 
 
 def test_producer_metadata_is_snapshotted_and_stays_out_of_request(event_capture):

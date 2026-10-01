@@ -192,10 +192,15 @@ The event library depends only on Pydantic. There is no tracing runtime.
 | `output` | Required `ModelOutput`: all choices, completion text, optional usage, fallback, time, metadata and error. Failed calls can have empty choices. |
 | `call` | Optional raw provider request/response, error flag and timing, using Inspect's `ModelCall` fields. |
 | `error` | Optional error string. |
-| `retries` | Optional non-negative integer counting observed HTTP 429/5xx responses, including the final rejection on exhaustion. Zero means none; `None` (omitted on the wire) means unknown. Does not count connection failures or timeouts. When the wire field is absent or null, the Python property uses historical `metadata["adb_experiment.retries"]`, or zero if `metadata["adb_experiment.backend"]` is present. |
+| `retries` | Optional non-negative integer counting observed HTTP 429/5xx responses and HTTP 200 responses with empty `choices`, including the final failed attempt on exhaustion. A call whose every attempt returned empty choices is recorded with `error`. Zero means none; `None` (omitted on the wire) means unknown. Does not count connection failures or timeouts. When the wire field is absent or null, the Python property uses historical `metadata["adb_experiment.retries"]`, or zero if `metadata["adb_experiment.backend"]` is present. |
 | `completed`, `working_time` | Optional UTC completion datetime and working duration in seconds. |
 | `metadata` | Producer notes with producer-prefixed keys; shared readers and web views do not depend on keys. A key needed by two producers becomes a field. |
 | `agent` | Optional attribution. The shared client uses its constructed agent; Inspect uses the model role when set, otherwise the caller's agent. |
+
+SDK retries and empty-response retries are counted in the same `retries` field, so
+one record can exceed the per-layer cap: up to 8 attempts in the empty-response
+loop, each allowing 9 HTTP attempts (the initial request plus 8 SDK retries), for
+at most 72 HTTP attempts.
 
 Messages have system, user, assistant or tool roles. Content is text or typed
 blocks for text, reasoning, images, audio, video, documents, server-side tool use,

@@ -78,7 +78,7 @@ def sdk_client(monkeypatch, handler):
     return ChatClient("azure/alias")
 
 
-def test_sdk_retries_are_per_call_including_overlapping_calls(event_capture, monkeypatch):
+def test_http_and_empty_retries_are_per_call_including_overlapping_calls(event_capture, monkeypatch):
     _, reply = client_and_reply()
     attempts = {}
     lock, barrier = Lock(), Barrier(2)
@@ -95,17 +95,21 @@ def test_sdk_retries_are_per_call_including_overlapping_calls(event_capture, mon
         if attempt == 1 and name in {"retry", "clean"}:
             barrier.wait(timeout=5)
         code = [429, 503, 200][min(attempt - 1, 2)] if name == "retry" else 200
-        return httpx.Response(code, json=reply.model_dump(mode="json") if code == 200 else {"error": {"message": "busy"}})
+        body = reply.model_dump(mode="json") if code == 200 else {"error": {"message": "busy"}}
+        if name == "retry" and attempt == 3:
+            body.update(model="", choices=[])
+        return httpx.Response(code, json=body)
 
     client = sdk_client(monkeypatch, handler)
+    monkeypatch.setattr("adb_experiment.llm.time.sleep", lambda delay: None)
     def call(name):
         return client.chat.completions.create(model="alias", messages=[{"role": "user", "content": name}])
     with ThreadPoolExecutor(max_workers=2) as pool:
         list(pool.map(call, ["retry", "clean"]))
     call("next")
     events = {e["call"]["request"]["messages"][0]["content"]: e for e in event_capture.read()}
-    assert attempts == {"retry": 3, "clean": 1, "next": 1}
-    assert events["retry"]["retries"] == 2
+    assert attempts == {"retry": 4, "clean": 1, "next": 1}
+    assert events["retry"]["retries"] == 3
     assert all(events[name]["retries"] == 0 for name in ("clean", "next"))
     assert all(event["metadata"] is None for event in events.values())
 

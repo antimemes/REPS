@@ -34,6 +34,7 @@ class Verification:
     model_mismatches: tuple[tuple[str, str], ...]
     max_tokens_stops: int
     content_filter_stops: int
+    empty_responses: int
     producer_warnings: tuple[str, ...]
 
 
@@ -253,8 +254,9 @@ def verify_run(run_dir: Path, *, manifest: Path | None = None, catalog: Path | N
                   and not served_model_matches(call.model, call.output.model)}
     stops = sum(any(choice.stop_reason == "max_tokens" for choice in call.output.choices) for call in calls)
     filtered = sum(any(choice.stop_reason == "content_filter" for choice in call.output.choices) for call in calls)
+    empty = sum(not call.output.choices and not call.error for call in calls)
     return Verification(len(records), len({value for value in values.values() if value}),
-                        tuple(sorted(mismatches)), stops, filtered, producer_warnings)
+                        tuple(sorted(mismatches)), stops, filtered, empty, producer_warnings)
 
 
 def verify_cli(argv: list[str]) -> int:
@@ -288,7 +290,8 @@ def verify_cli(argv: list[str]) -> int:
     for warning in result.producer_warnings:
         print(f"verify: WARN: {warning}", file=sys.stderr)
     print(f"verify: max_tokens stops: {result.max_tokens_stops}; "
-          f"content_filter stops: {result.content_filter_stops} (llm.call records)")
+          f"content_filter stops: {result.content_filter_stops}; "
+          f"empty_responses: {result.empty_responses} (llm.call records)")
     state = "FAIL" if result.model_mismatches else "PASS"
     print(f"verify: {state}: {result.records} records; experiment union, secrets scan "
           f"({result.credential_values} known credential values), card match, producer audit, declared results, and request seeds match")

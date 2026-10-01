@@ -268,8 +268,38 @@ def test_all_served_models_checked_once_per_pair_and_truncated_calls_counted(sav
     monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
     assert cli.main() == int(mismatch)
     output = capsys.readouterr()
-    assert f"max_tokens stops: {len(calls) - 1}; content_filter stops: 1 (llm.call records)" in output.out
+    assert f"max_tokens stops: {len(calls) - 1}; content_filter stops: 1; empty_responses: 0 (llm.call records)" in output.out
     assert output.err.count("WARN: served model mismatch") == (2 if mismatch else 0)
+
+
+def test_silent_empty_responses_are_reported_without_failing_or_changing_records(saved, monkeypatch, capsys):
+    directory, manifest = saved
+    calls = [
+        LLMCall(model="azure/gpt-5-nano", input=[], output=ModelOutput(model="", choices=[])),
+        LLMCall(model="azure/gpt-5-nano", input=[], output=ModelOutput(
+            model="gpt-5-nano", choices=[ChatCompletionChoice(
+                message=ChatMessageAssistant(content=""), stop_reason="stop")])),
+        LLMCall(model="azure/gpt-5-nano", input=[], output=ModelOutput(model="", choices=[]),
+                error="HTTP 429: rate limit exceeded"),
+    ]
+
+    def insert(rows):
+        rows[-1:-1] = [{**rows[0], "event": call.model_dump(mode="json", exclude_none=True)} for call in calls]
+        for seq, row in enumerate(rows):
+            row["seq"] = seq
+
+    rewrite_stream(directory, insert)
+    (directory / "run.json").write_text(json.dumps(derive_card(read_events(directory))))
+    before = digest_files(directory)
+    result = verify_run(directory, manifest=manifest, environment={})
+    assert result.empty_responses == 1
+    assert result.model_mismatches == ()
+    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    assert cli.main() == 0
+    output = capsys.readouterr()
+    assert "max_tokens stops: 0; content_filter stops: 0; empty_responses: 1 (llm.call records)" in output.out
+    assert "verify: PASS:" in output.out
+    assert digest_files(directory) == before
 
 
 def test_custom_payload_is_checked_against_experiment_union(saved):

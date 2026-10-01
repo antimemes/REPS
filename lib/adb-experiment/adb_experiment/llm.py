@@ -66,6 +66,8 @@ _MOCK_LINES = (
     "Fair enough. What would you like to do next?",
 )
 
+_MAX_RETRIES = 8
+
 
 def deterministic_pick(seed: int, text: str, n: int) -> int:
     """A pure (seed, text) -> [0, n) index — the mock backend's only randomness."""
@@ -196,6 +198,10 @@ class ServedModelMismatch(SystemExit):
     """
 
 
+class EmptyResponse(RuntimeError):
+    """The provider returned no choices on every attempt."""
+
+
 class ChatClient:
     """See module docstring. `mock_responder` (messages -> str) customizes the mock
     backend's reply; the default picks deterministically from a neutral line bank."""
@@ -218,7 +224,7 @@ class ChatClient:
         self._count_lock = threading.Lock()
         self._model_lock = threading.Lock()
         self._model_checked = False
-        self._retry_count: ContextVar[int] = ContextVar("http_retries", default=0)
+        self._retry_count: ContextVar[int] = ContextVar("call_retries", default=0)
         self._temperature = temperature
         self._seed = seed
         self._max_tokens = max_tokens
@@ -242,7 +248,7 @@ class ChatClient:
                     self._retry_count.set(self._retry_count.get() + 1)
 
             sdk = openai.OpenAI(
-                api_key=endpoint.api_key, base_url=endpoint.base_url, max_retries=8,
+                api_key=endpoint.api_key, base_url=endpoint.base_url, max_retries=_MAX_RETRIES,
                 # Preserve SDK timeout/connection defaults. Context-local counts
                 # keep overlapping calls independent, including failed calls.
                 http_client=openai.DefaultHttpxClient(event_hooks={"response": [count_retry]}),
@@ -251,10 +257,21 @@ class ChatClient:
             # closed over, so _create never handles an Optional client; a def (not a
             # lambda) so the Any return is declared rather than inferred-unknown
             def request(kw: dict[str, Any]) -> Any:
-                # cast, not an ignore: the SDK's stream/non-stream overloads can't
-                # resolve through a dynamic **kw, so the result is declared Any at
-                # this boundary (the one place the raw SDK response enters)
-                return cast(Any, sdk.chat.completions.create(**kw))
+                for attempt in range(1, _MAX_RETRIES + 1):
+                    # cast, not an ignore: the SDK's stream/non-stream overloads can't
+                    # resolve through a dynamic **kw, so the result is declared Any at
+                    # this boundary (the one place the raw SDK response enters)
+                    response = cast(Any, sdk.chat.completions.create(**kw))
+                    if response.choices:
+                        return response
+                    # Like the HTTP hook, count the final failed attempt too.
+                    self._retry_count.set(self._retry_count.get() + 1)
+                    if attempt == _MAX_RETRIES:
+                        raise EmptyResponse(
+                            f"Empty choices for model {self.model_id!r} after {attempt} attempts "
+                            f"(last response id: {response.id!r})"
+                        )
+                    time.sleep(min(2 ** (attempt - 1), 60))
 
             self._request = request
         # the one surface frameworks use; duck-typed so no SDK subclassing is needed
