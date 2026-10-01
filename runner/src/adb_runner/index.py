@@ -14,6 +14,7 @@ from typing import Any, TYPE_CHECKING
 from urllib.parse import urlsplit
 
 import boto3
+import yaml
 from botocore.exceptions import ClientError
 from adb_events import Json
 from adb_events.models.base import serialize_utc_datetime
@@ -40,7 +41,15 @@ class Store:
 
 
 def read_stores(path: Path) -> list[Store]:
-    value: Json = json.loads(path.read_bytes())
+    raw = path.read_bytes()
+    value: Json
+    if path.suffix.lower() in {".yaml", ".yml"}:
+        try:
+            value = yaml.safe_load(raw)
+        except yaml.YAMLError:
+            raise PublishError("invalid YAML store list") from None
+    else:
+        value = json.loads(raw)
     if not isinstance(value, dict) or type(value.get("v")) is not int or value.get("v") != 0:
         raise PublishError("store list must be {v: 0, stores: [...]}")
     entries = value.get("stores")
@@ -241,7 +250,7 @@ def build(stores: list[Store], directory: Path, catalog: Path, dry_run: bool) ->
 
 def index_cli(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="adb-runner index", description=__doc__)
-    parser.add_argument("--stores", required=True, type=Path, metavar="FILE")
+    parser.add_argument("--stores", required=True, type=Path, metavar="FILE", help="YAML or JSON store list")
     parser.add_argument("--catalog", required=True, type=Path, metavar="DIR", help="manifest directory (<name>.json and assets/<name>/)")
     parser.add_argument("--to", required=True, metavar="DIR", help="index directory, deleted and rewritten in full")
     parser.add_argument("--dry-run", action="store_true", help="print filtered store counts, files and sizes; write nothing")

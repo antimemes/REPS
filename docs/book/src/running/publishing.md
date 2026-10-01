@@ -89,30 +89,30 @@ Workspaces are never uploaded. See the [published layout](../reference/layout.md
 ## Build and serve an index
 
 Experiment buckets contain only `runs/`. A separate, replaceable index lets a
-static browser discover those runs. Keep `stores.json` and `site.json` in the
+static browser discover those runs. Keep `stores.yaml` and `site.json` in the
 site repository. Write the store list yourself; ADB does not infer a public URL
-from an S3 address. `data.example.org` below is an example store hostname.
+from an S3 address. Store lists accept YAML (`.yaml` or `.yml`) or JSON.
+`data.example.org` below is an example store hostname.
 
-```json
-{
-  "v": 0,
-  "stores": [
-    {
-      "s3": "s3://my-experiment-bucket/adb-v1",
-      "profile": "research",
-      "url": "https://data.example.org/experiments/adb-v1",
-      "experiments": ["govsim"]
-    }
-  ]
-}
+```yaml
+v: 0
+stores:
+  - s3: s3://my-experiment-bucket/adb-v1
+    profile: research
+    url: https://data.example.org/experiments/adb-v1
+    experiments:
+      - govsim
+    exclude:
+      - runs:
+          - <run-id>
+        reason: Provider outage invalidated these results.
 ```
 
 `url` must expose the same prefix over public HTTPS. Optional `experiments`,
 `conditions` and `runs` lists filter exact recorded values and intersect.
 Leave a filter out to include everything; an empty list includes nothing.
 
-An optional `exclude` list removes runs even when the inclusion filters select them:
-`"exclude": [{"runs": ["<run id>"], "reason": "Provider outage invalidated these results."}]`.
+An optional `exclude` list removes runs even when the inclusion filters select them.
 Each entry requires a non-empty list of run IDs and a non-empty reason, because the
 store list is the site operator's record of what it chose not to show. A run ID can
 appear in only one exclusion entry per store. Exclusions are logged with their
@@ -141,7 +141,7 @@ mkdir -p site
 cp -R "$web_dist"/. site/
 chmod -R u+w site
 cp site.json site/site.json
-adb-runner index --stores stores.json --catalog "$catalog" --to site/index
+adb-runner index --stores stores.yaml --catalog "$catalog" --to site/index
 ```
 
 Deploy the resulting `site/` directory. Only CI uses AWS profiles; the browser

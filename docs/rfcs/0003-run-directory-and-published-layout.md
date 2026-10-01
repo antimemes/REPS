@@ -68,10 +68,25 @@ Chunked objects for live runs are deferred because record identity is independen
 
 Indexes are derived from complete card/stream pairs, rebuilt in full, never
 authoritative, and live outside experiment buckets. Original objects retain their bytes.
-A user-written store list selects sources; ADB never infers public URLs from S3:
+A user-written YAML or JSON store list selects sources; ADB never infers public URLs from S3:
 
-```json
-{"v":0,"stores":[{"s3":"s3://bucket/prefix","profile":"research","url":"https://data.example.org/prefix","experiments":["govsim"],"conditions":["condition-id"],"runs":["run-id","excluded-run-id"],"exclude":[{"runs":["excluded-run-id"],"reason":"Provider outage invalidated these results."}]}]}
+```yaml
+v: 0
+stores:
+  - s3: s3://bucket/prefix
+    profile: research
+    url: https://data.example.org/prefix
+    experiments:
+      - govsim
+    conditions:
+      - condition-id
+    runs:
+      - run-id
+      - excluded-run-id
+    exclude:
+      - runs:
+          - excluded-run-id
+        reason: Provider outage invalidated these results.
 ```
 
 `s3` and optional `profile` select access; `url` is the public HTTPS base for the

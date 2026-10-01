@@ -157,6 +157,69 @@ def test_store_filters(stores, tmp_path, filters, expected):
     assert [manifest["name"] for manifest in catalog["manifests"]] == [entry["name"] for entry in root["experiments"]]
 
 
+@pytest.mark.parametrize("suffix", [".yaml", ".yml", ".YAML"])
+def test_yaml_store_list_supports_comments_and_folded_exclusion_reasons(stores, catalog, tmp_path, capsys, suffix):
+    _, json_path, value, _, _ = stores
+    reason = "Provider outage. Original records remain in the bucket."
+    value["stores"][0]["exclude"] = [{
+        "runs": ["20260918t120000z-000000000001", "20260918t120000z-000000000002"],
+        "reason": reason,
+    }]
+    json_path.write_text(json.dumps(value))
+    path = tmp_path / f"stores{suffix}"
+    path.write_text("""# Site operator's curated sources
+v: 0
+stores:
+  - s3: s3://store-one/prefix
+    profile: first
+    url: https://data.example.org/one
+    exclude:
+      - runs:
+          - 20260918t120000z-000000000001
+          - 20260918t120000z-000000000002
+        reason: >-
+          Provider outage.
+          Original records remain in the bucket.
+  - s3: s3://store-two/prefix
+    profile: second
+    url: https://data.example.org/two
+""")
+    assert index.read_stores(path) == index.read_stores(json_path)
+    destination = tmp_path / "index"
+    assert index.index_cli(["--stores", str(path), "--catalog", str(catalog), "--to", str(destination)]) == 0
+    assert json.loads((destination / "index.json").read_bytes())["runs"] == 1
+    [row] = [json.loads(line) for line in (destination / "experiments/alpha/index.jsonl").read_bytes().splitlines()]
+    assert row["card"]["identity"]["run"] == "20260918t120000z-000000000003"
+    output = capsys.readouterr()
+    excluded = [line for line in output.out.splitlines() if line.startswith("EXCLUDE ")]
+    assert len(excluded) == 2
+    assert all(line.endswith(reason) for line in excluded)
+    assert not output.err
+
+
+@pytest.mark.parametrize("document, message", [
+    ("v: 0\nstores: [", "invalid YAML store list"),
+    ("!!python/object:builtins.object {}", "invalid YAML store list"),
+    ("# Empty document\n", "store list must be"),
+    ("v: false\nstores: []\n", "store list must be"),
+    ("v: 0\nstores:\n  - s3: s3://bucket\n    url: https://example.org\n"
+     "    exclude:\n      - runs: [123]\n        reason: Invalid result.\n",
+     "store exclude runs must be a non-empty list of non-empty strings"),
+])
+def test_invalid_yaml_store_list_fails_before_any_s3_call(tmp_path, catalog, monkeypatch, capsys, document, message):
+    path = tmp_path / "stores.yaml"
+    path.write_text(document)
+    def unexpected_client(_):
+        pytest.fail("invalid store list must be rejected before any S3 call")
+    monkeypatch.setattr(index, "client", unexpected_client)
+    with pytest.raises(index.PublishError, match=message):
+        index.read_stores(path)
+    destination = tmp_path / "index"
+    assert index.index_cli(["--stores", str(path), "--catalog", str(catalog), "--to", str(destination)]) == 1
+    assert message in capsys.readouterr().err
+    assert not destination.exists()
+
+
 def test_exclusions_remove_rows_and_log_the_reason(stores, tmp_path, capsys):
     _, path, value, originals, invoke = stores
     runs = ["20260918t120000z-000000000001", "20260918t120000z-000000000002"]

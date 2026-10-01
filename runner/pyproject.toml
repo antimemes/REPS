@@ -18,6 +18,7 @@ dependencies = [
 [project.optional-dependencies]
 publish = [
     "boto3>=1.43.97",
+    "pyyaml>=6",
     "zstandard>=0.25.0",
 ]
 
@@ -39,6 +40,7 @@ dev = [
     "moto[s3]>=5.2.3",
     "boto3-stubs-lite>=1.43.97",
     "mypy-boto3-s3>=1.43.93",
+    "types-pyyaml>=6",
 ]
 
 [build-system]
