@@ -71,13 +71,14 @@ authoritative, and live outside experiment buckets. Original objects retain thei
 A user-written store list selects sources; ADB never infers public URLs from S3:
 
 ```json
-{"v":0,"stores":[{"s3":"s3://bucket/prefix","profile":"research","url":"https://data.example.org/prefix","experiments":["govsim"],"conditions":["condition-id"],"runs":["run-id"]}]}
+{"v":0,"stores":[{"s3":"s3://bucket/prefix","profile":"research","url":"https://data.example.org/prefix","experiments":["govsim"],"conditions":["condition-id"],"runs":["run-id","excluded-run-id"],"exclude":[{"runs":["excluded-run-id"],"reason":"Provider outage invalidated these results."}]}]}
 ```
 
 `s3` and optional `profile` select access; `url` is the public HTTPS base for the
 same prefix. Optional filters match exact recorded values and intersect;
 omission includes everything, an empty list nothing. An omitted profile uses
-boto3's normal resolution. The destination contains:
+boto3's normal resolution. Exclusions are site curation, recorded with reasons in
+the site's store list, and never touch bucket objects. The destination contains:
 
 ```text
 index.json

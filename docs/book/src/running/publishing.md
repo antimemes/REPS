@@ -110,6 +110,15 @@ from an S3 address. `data.example.org` below is an example store hostname.
 `url` must expose the same prefix over public HTTPS. Optional `experiments`,
 `conditions` and `runs` lists filter exact recorded values and intersect.
 Leave a filter out to include everything; an empty list includes nothing.
+
+An optional `exclude` list removes runs even when the inclusion filters select them:
+`"exclude": [{"runs": ["<run id>"], "reason": "Provider outage invalidated these results."}]`.
+Each entry requires a non-empty list of run IDs and a non-empty reason, because the
+store list is the site operator's record of what it chose not to show. A run ID can
+appear in only one exclusion entry per store. Exclusions are logged with their
+reasons on every rebuild, including `--dry-run`; unknown IDs warn without failing
+the build. Exclusions change only the site's index and never touch bucket objects.
+
 Store profiles select source credentials. The index command writes to a local
 directory that the site deploys.
 The index reads only `ListObjectsV2` and `GetObject`, using each store's profile

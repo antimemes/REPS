@@ -157,6 +157,148 @@ def test_store_filters(stores, tmp_path, filters, expected):
     assert [manifest["name"] for manifest in catalog["manifests"]] == [entry["name"] for entry in root["experiments"]]
 
 
+def test_exclusions_remove_rows_and_log_the_reason(stores, tmp_path, capsys):
+    _, path, value, originals, invoke = stores
+    runs = ["20260918t120000z-000000000001", "20260918t120000z-000000000002"]
+    reason = "Provider outage invalidated these results."
+    value["stores"][0]["exclude"] = [{"runs": runs, "reason": reason}]
+    path.write_text(json.dumps(value))
+    assert index.read_stores(path)[0].exclude == (index.Exclusion(tuple(runs), reason),)
+
+    destination = tmp_path / "index"
+    assert invoke(destination) == 0
+    root = json.loads((destination / "index.json").read_bytes())
+    assert root["runs"] == 1
+    assert root["experiments"] == [{"name": "alpha", "runs": 1}]
+    [row] = [json.loads(line) for line in (destination / "experiments/alpha/index.jsonl").read_bytes().splitlines()]
+    assert row["card"]["identity"]["run"] == "20260918t120000z-000000000003"
+    assert not (destination / "experiments/beta").exists()
+    output = capsys.readouterr()
+    assert [line for line in output.out.splitlines() if line.startswith("EXCLUDE ")] == [
+        f"EXCLUDE s3://{bucket}/{key}: {reason}" for bucket, key in originals if bucket == "store-one"
+    ]
+    assert "STORE s3://store-one/prefix 0 runs" in output.out
+    assert "STORE s3://store-two/prefix 1 runs" in output.out
+    assert not output.err
+
+
+def test_exclusions_win_over_run_inclusion_filters(stores, tmp_path, capsys):
+    _, path, value, _, invoke = stores
+    run = "20260918t120000z-000000000001"
+    value["stores"] = [value["stores"][0] | {
+        "runs": [run], "exclude": [{"runs": [run], "reason": "Invalid result."}],
+    }]
+    path.write_text(json.dumps(value))
+    destination = tmp_path / "index"
+    assert invoke(destination) == 0
+    root = json.loads((destination / "index.json").read_bytes())
+    assert root["runs"] == 0
+    assert root["experiments"] == []
+    assert not (destination / "experiments").exists()
+    output = capsys.readouterr()
+    assert output.out.count("EXCLUDE ") == 1
+    assert "STORE s3://store-one/prefix 0 runs" in output.out
+    assert not output.err
+
+
+def test_unseen_exclusion_warns_without_failing(stores, tmp_path, capsys):
+    _, path, value, _, invoke = stores
+    run = "20260918t120000z-000000000099"
+    value["stores"][0]["exclude"] = [{"runs": [run], "reason": "Invalid result."}]
+    path.write_text(json.dumps(value))
+    destination = tmp_path / "index"
+    assert invoke(destination) == 0
+    assert json.loads((destination / "index.json").read_bytes())["runs"] == 3
+    output = capsys.readouterr()
+    assert output.err == f"index: WARNING: excluded run {run} not found in s3://store-one/prefix\n"
+    assert "EXCLUDE " not in output.out
+
+
+def test_excluded_run_filtered_out_is_still_seen(stores, tmp_path, capsys):
+    _, path, value, _, invoke = stores
+    value["stores"][0].update(experiments=["beta"], exclude=[{
+        "runs": ["20260918t120000z-000000000001"], "reason": "Invalid result.",
+    }])
+    path.write_text(json.dumps(value))
+    destination = tmp_path / "index"
+    assert invoke(destination) == 0
+    assert json.loads((destination / "index.json").read_bytes())["runs"] == 2
+    output = capsys.readouterr()
+    assert "EXCLUDE " not in output.out
+    assert not output.err
+
+
+@pytest.mark.parametrize("existing", [False, True])
+def test_exclusions_and_warnings_are_logged_in_dry_run(stores, tmp_path, capsys, existing):
+    _, path, value, _, invoke = stores
+    runs = ["20260918t120000z-000000000001", "20260918t120000z-000000000002"]
+    absent = "20260918t120000z-000000000099"
+    reason = "Provider outage invalidated these results."
+    value["stores"][0]["exclude"] = [{"runs": [*runs, absent], "reason": reason}]
+    path.write_text(json.dumps(value))
+    destination = tmp_path / "index"
+    marker = destination / "keep.txt"
+    if existing:
+        destination.mkdir()
+        marker.write_bytes(b"keep existing output")
+
+    assert invoke(destination, "--dry-run") == 0
+    output = capsys.readouterr()
+    excluded = [line for line in output.out.splitlines() if line.startswith("EXCLUDE ")]
+    assert len(excluded) == 2
+    assert all(line.endswith(reason) for line in excluded)
+    assert "STORE s3://store-one/prefix 0 runs" in output.out
+    assert "STORE s3://store-two/prefix 1 runs" in output.out
+    assert output.err == f"index: WARNING: excluded run {absent} not found in s3://store-one/prefix\n"
+    if existing:
+        assert list(destination.iterdir()) == [marker]
+        assert marker.read_bytes() == b"keep existing output"
+    else:
+        assert not destination.exists()
+
+
+@pytest.mark.parametrize("exclude, message", [
+    ({"runs": ["r"], "reason": "Invalid."}, "exclude must be a list"),
+    (None, "exclude must be a list"),
+    (["r"], "objects with runs and reason"),
+    ([{"runs": ["r"]}], "objects with runs and reason"),
+    ([{"reason": "Invalid."}], "objects with runs and reason"),
+    ([{"runs": [], "reason": "Invalid."}], "non-empty list of non-empty strings"),
+    ([{"runs": "r", "reason": "Invalid."}], "non-empty list of non-empty strings"),
+    ([{"runs": [1], "reason": "Invalid."}], "non-empty list of non-empty strings"),
+    ([{"runs": [""], "reason": "Invalid."}], "non-empty list of non-empty strings"),
+    ([{"runs": [" "], "reason": "Invalid."}], "non-empty list of non-empty strings"),
+    ([{"runs": ["r"], "reason": ""}], "reason must be a non-empty string"),
+    ([{"runs": ["r"], "reason": " "}], "reason must be a non-empty string"),
+    ([{"runs": ["r"], "reason": 1}], "reason must be a non-empty string"),
+    ([{"runs": ["r"], "reason": "Invalid.", "extra": True}], "objects with runs and reason"),
+    ([{"runs": ["duplicate-id"], "reason": "First."},
+      {"runs": ["duplicate-id"], "reason": "Second."}], "repeats run 'duplicate-id' across entries"),
+])
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_invalid_exclusions_fail_before_any_s3_call(tmp_path, catalog, monkeypatch, capsys, exclude, message, dry_run):
+    path = tmp_path / "stores.json"
+    store = {"s3": "s3://store-one/prefix", "url": "https://data.example.org/one"}
+    # An invalid later entry must also prevent the first store from being opened.
+    path.write_text(json.dumps({"v": 0, "stores": [store, store | {"exclude": exclude}]}))
+    def unexpected_client(_):
+        pytest.fail("invalid exclusion must be rejected before any S3 call")
+    monkeypatch.setattr(index, "client", unexpected_client)
+    with pytest.raises(index.PublishError, match=message):
+        index.read_stores(path)
+    destination = tmp_path / "index"
+    destination.mkdir()
+    marker = destination / "keep.txt"
+    marker.write_bytes(b"keep existing output")
+    assert index.index_cli(["--stores", str(path), "--catalog", str(catalog), "--to", str(destination),
+                            *(["--dry-run"] if dry_run else [])]) == 1
+    output = capsys.readouterr()
+    assert message in output.err
+    assert not output.out
+    assert list(destination.iterdir()) == [marker]
+    assert marker.read_bytes() == b"keep existing output"
+
+
 def test_catalog_only_indexes_selected_manifests_hints_and_dereferenced_assets(stores, catalog, tmp_path, monkeypatch):
     _, _, _, _, invoke = stores
     # An unused registry entry must never be opened.

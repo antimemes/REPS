@@ -25,11 +25,18 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
+class Exclusion:
+    runs: tuple[str, ...]
+    reason: str
+
+
+@dataclass(frozen=True)
 class Store:
     target: Target
     profile: str | None
     url: str
     filters: dict[str, list[str]]
+    exclude: tuple[Exclusion, ...] = ()
 
 
 def read_stores(path: Path) -> list[Store]:
@@ -59,7 +66,27 @@ def read_stores(path: Path) -> list[Store]:
                 if not isinstance(values, list) or not all(isinstance(item, str) for item in values):
                     raise PublishError(f"store {key} must be a list of strings")
                 filters[key] = [item for item in values if isinstance(item, str)]
-        stores.append(Store(parse_target(s3), profile, public.rstrip("/"), filters))
+        excluded = row.get("exclude", [])
+        if not isinstance(excluded, list):
+            raise PublishError("store exclude must be a list of entries")
+        exclusions: list[Exclusion] = []
+        seen: set[str] = set()
+        for entry in excluded:
+            if not isinstance(entry, dict) or set(entry) != {"runs", "reason"}:
+                raise PublishError("store exclude entries must be objects with runs and reason")
+            runs, reason = entry["runs"], entry["reason"]
+            if (not isinstance(runs, list) or not runs
+                    or not all(isinstance(run, str) and run.strip() for run in runs)):
+                raise PublishError("store exclude runs must be a non-empty list of non-empty strings")
+            if not isinstance(reason, str) or not reason.strip():
+                raise PublishError("store exclude reason must be a non-empty string")
+            run_ids = tuple(run for run in runs if isinstance(run, str))
+            for run in run_ids:
+                if run in seen:
+                    raise PublishError(f"store exclude repeats run {run!r} across entries")
+            seen.update(run_ids)
+            exclusions.append(Exclusion(run_ids, reason))
+        stores.append(Store(parse_target(s3), profile, public.rstrip("/"), filters, tuple(exclusions)))
     return stores
 
 
@@ -96,6 +123,8 @@ def collect(stores: list[Store]) -> dict[str, list[bytes]]:
         s3 = client(store.profile)
         prefix = store.target.key("runs/")
         objects = keys(s3, store.target, prefix)
+        exclusions = {run: exclusion for exclusion in store.exclude for run in exclusion.runs}
+        unseen = set(exclusions)
         count = 0
         for key in sorted(objects):
             if not re.fullmatch(r"[^/]+/[^/]+/run\.json", key[len(prefix):]):
@@ -112,15 +141,23 @@ def collect(stores: list[Store]) -> dict[str, list[bytes]]:
                 identity = card.get("identity")
                 if not isinstance(identity, dict):
                     raise PublishError("card must be an object with an identity object")
-                for field in ("experiment", "condition", "run"):
+                for field in ("experiment", "condition"):
                     if not isinstance(identity.get(field), str) or not identity[field]:
                         raise PublishError(f"card identity.{field} must be a non-empty string")
+                run = identity.get("run")
+                if not isinstance(run, str) or not run:
+                    raise PublishError("card identity.run must be a non-empty string")
                 name = identity["experiment"]
                 if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", name):
                     raise PublishError("invalid experiment name")
+                # A known run filtered out of this index is still present in the store.
+                unseen.discard(run)
                 if any(identity[field] not in store.filters[plural]
                        for plural, field in (("experiments", "experiment"), ("conditions", "condition"), ("runs", "run"))
                        if plural in store.filters):
+                    continue
+                if exclusion := exclusions.get(run):
+                    print(f"EXCLUDE s3://{store.target.bucket}/{key}: {exclusion.reason}")
                     continue
                 row = encode({"store": store.url, "card": card})
             except Exception as error:
@@ -128,6 +165,9 @@ def collect(stores: list[Store]) -> dict[str, list[bytes]]:
                 continue
             grouped.setdefault(name, []).append(row)
             count += 1
+        for run in sorted(unseen):
+            print(f"index: WARNING: excluded run {run} not found in "
+                  f"s3://{store.target.bucket}/{store.target.prefix}", file=sys.stderr)
         print(f"STORE s3://{store.target.bucket}/{store.target.prefix} {count} runs")
     return grouped
 
