@@ -53,6 +53,7 @@ def catalog(tmp_path):
 @pytest.fixture
 def stores(saved, tmp_path, monkeypatch, catalog):
     directory, _ = saved
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
     for name in list(os.environ):
         if name.startswith("AWS_"):
             monkeypatch.delenv(name)
@@ -97,6 +98,260 @@ def stores(saved, tmp_path, monkeypatch, catalog):
             assert s3.get_object(Bucket=bucket, Key=key)["Body"].read() == raw
     assert config.read_text() == config_text
     assert credentials.read_text() == credential_text
+
+
+@pytest.fixture
+def s3_calls(monkeypatch):
+    calls = []
+    original = index.client
+    def client(profile):
+        result = original(profile)
+        result.meta.events.register("before-call.s3", lambda model, **kw: calls.append(model.name))
+        return result
+    monkeypatch.setattr(index, "client", client)
+    return calls
+
+
+def directory_bytes(directory):
+    return {path.relative_to(directory): path.read_bytes() for path in directory.rglob("*") if path.is_file()}
+
+
+def test_second_build_uses_cached_cards_with_identical_output(stores, tmp_path, monkeypatch, capsys, s3_calls):
+    s3, _, _, originals, invoke = stores
+    class Clock:
+        @staticmethod
+        def now(tz):
+            return datetime(2026, 10, 1, tzinfo=timezone.utc)
+    monkeypatch.setattr(index, "datetime", Clock)
+    first, second = tmp_path / "first", tmp_path / "second"
+    assert invoke(first) == 0
+    assert s3_calls.count("GetObject") == 3
+    assert s3_calls.count("ListObjectsV2") == 2
+    cache = tmp_path / "cache/adb/index"
+    assert len(directory_bytes(cache)) == 6
+    for (bucket, key), body in originals.items():
+        profile = "first" if bucket == "store-one" else "second"
+        assert (cache / profile / bucket / key).read_bytes() == body
+        assert (cache / profile / bucket / (key + ".etag")).read_text() == s3.head_object(Bucket=bucket, Key=key)["ETag"]
+    output = capsys.readouterr()
+    assert "2 runs (0 cached, 2 fetched)" in output.out
+    assert "1 runs (0 cached, 1 fetched)" in output.out
+
+    s3_calls.clear()
+    assert invoke(second) == 0
+    assert s3_calls == ["ListObjectsV2", "ListObjectsV2"]
+    assert directory_bytes(first) == directory_bytes(second)
+    output = capsys.readouterr()
+    assert "2 runs (2 cached, 0 fetched)" in output.out
+    assert "1 runs (1 cached, 0 fetched)" in output.out
+    assert not output.err
+
+    s3_calls.clear()
+    uncached = tmp_path / "uncached"
+    assert invoke(uncached, "--no-cache") == 0
+    assert s3_calls.count("GetObject") == 3
+    assert directory_bytes(first) == directory_bytes(uncached)
+
+
+def test_same_bucket_with_different_profiles_has_separate_cache_entries(stores, tmp_path, s3_calls, capsys):
+    s3, path, value, originals, invoke = stores
+    value["stores"][1]["s3"] = value["stores"][0]["s3"]
+    path.write_text(json.dumps(value))
+    destination = tmp_path / "index"
+    assert invoke(destination) == 0
+    assert s3_calls.count("GetObject") == 4
+    assert s3_calls.count("ListObjectsV2") == 2
+    cache = tmp_path / "cache/adb/index"
+    assert len(directory_bytes(cache)) == 8
+    for (bucket, key), body in originals.items():
+        if bucket != "store-one":
+            continue
+        for profile in ["first", "second"]:
+            assert (cache / profile / bucket / key).read_bytes() == body
+            assert (cache / profile / bucket / (key + ".etag")).read_text() == s3.head_object(Bucket=bucket, Key=key)["ETag"]
+    capsys.readouterr()
+
+    s3_calls.clear()
+    assert invoke(destination) == 0
+    assert s3_calls == ["ListObjectsV2", "ListObjectsV2"]
+    assert json.loads((destination / "index.json").read_bytes())["runs"] == 4
+    output = capsys.readouterr()
+    assert output.out.count("2 runs (2 cached, 0 fetched)") == 2
+    assert not output.err
+
+
+def test_changed_etag_refetches_only_changed_card(stores, tmp_path, s3_calls):
+    s3, _, _, originals, invoke = stores
+    destination = tmp_path / "index"
+    assert invoke(destination) == 0
+    (bucket, key), original = next(iter(originals.items()))
+    card = json.loads(original)
+    card["inputs"]["params"]["unicode"] = "updated"
+    updated = json.dumps(card).encode()
+    path = tmp_path / "cache/adb/index/first" / bucket / key
+    token = path.with_name(path.name + ".etag")
+    old_etag = token.read_text()
+    try:
+        s3.put_object(Bucket=bucket, Key=key, Body=updated)
+        s3_calls.clear()
+        assert invoke(destination) == 0
+        assert s3_calls.count("GetObject") == 1
+        assert s3_calls.count("ListObjectsV2") == 2
+        assert path.read_bytes() == updated
+        assert token.read_text() != old_etag
+        assert token.read_text() == s3.head_object(Bucket=bucket, Key=key)["ETag"]
+        rows = [json.loads(line) for line in (destination / "experiments/alpha/index.jsonl").read_bytes().splitlines()]
+        assert next(row["card"] for row in rows if row["card"]["identity"]["run"] == card["identity"]["run"]) == card
+    finally:
+        s3.put_object(Bucket=bucket, Key=key, Body=original)
+
+
+def test_deleted_run_is_ignored_without_pruning_cache(stores, tmp_path, s3_calls, capsys):
+    s3, _, _, originals, invoke = stores
+    destination = tmp_path / "index"
+    assert invoke(destination) == 0
+    cache = tmp_path / "cache/adb/index"
+    before = directory_bytes(cache)
+    (bucket, key), original = next(iter(originals.items()))
+    events = key.replace("run.json", "events.jsonl.zst")
+    stream = s3.get_object(Bucket=bucket, Key=events)["Body"].read()
+    try:
+        s3.delete_object(Bucket=bucket, Key=key)
+        s3.delete_object(Bucket=bucket, Key=events)
+        s3_calls.clear()
+        capsys.readouterr()
+        assert invoke(destination) == 0
+        assert s3_calls == ["ListObjectsV2", "ListObjectsV2"]
+        assert json.loads((destination / "index.json").read_bytes())["runs"] == 2
+        assert directory_bytes(cache) == before
+        assert not capsys.readouterr().err
+    finally:
+        s3.put_object(Bucket=bucket, Key=key, Body=original)
+        s3.put_object(Bucket=bucket, Key=events, Body=stream)
+
+
+def test_no_cache_bypasses_reads_and_writes_with_custom_cache(stores, tmp_path, monkeypatch, s3_calls):
+    _, _, _, _, invoke = stores
+    cache = tmp_path / "custom-cache"
+    destination = tmp_path / "index"
+    assert invoke(destination, "--cache-dir", str(cache)) == 0
+    assert not (tmp_path / "cache").exists()
+    before = directory_bytes(cache)
+    assert len(before) == 6
+    read_bytes = Path.read_bytes
+    write_bytes = Path.write_bytes
+    def reading(path):
+        if cache in path.parents:
+            pytest.fail("--no-cache must not read the cache")
+        return read_bytes(path)
+    def writing(path, body):
+        if cache in path.parents:
+            pytest.fail("--no-cache must not write the cache")
+        return write_bytes(path, body)
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "read_bytes", reading)
+        patch.setattr(Path, "write_bytes", writing)
+        s3_calls.clear()
+        assert invoke(destination, "--cache-dir", str(cache), "--no-cache") == 0
+    assert s3_calls.count("GetObject") == 3
+    assert directory_bytes(cache) == before
+
+
+@pytest.mark.parametrize("missing", ["card", "etag"])
+def test_partial_cache_entry_is_refetched(stores, tmp_path, s3_calls, missing):
+    _, _, _, originals, invoke = stores
+    destination = tmp_path / "index"
+    assert invoke(destination) == 0
+    (bucket, key), original = next(iter(originals.items()))
+    path = tmp_path / "cache/adb/index/first" / bucket / key
+    token = path.with_name(path.name + ".etag")
+    (path if missing == "card" else token).unlink()
+    s3_calls.clear()
+    assert invoke(destination) == 0
+    assert s3_calls.count("GetObject") == 1
+    assert path.read_bytes() == original
+    assert token.is_file()
+
+
+@pytest.mark.parametrize("warm", [False, True])
+def test_dry_run_uses_cache_without_writing(stores, tmp_path, monkeypatch, s3_calls, warm):
+    _, _, _, _, invoke = stores
+    if warm:
+        assert invoke(tmp_path / "warm") == 0
+    cache = tmp_path / "cache/adb/index"
+    before = directory_bytes(cache)
+    write_bytes = Path.write_bytes
+    def writing(path, body):
+        if cache in path.parents:
+            pytest.fail("--dry-run must not write the cache")
+        return write_bytes(path, body)
+    monkeypatch.setattr(Path, "write_bytes", writing)
+    s3_calls.clear()
+    assert invoke(tmp_path / "dry", "--dry-run") == 0
+    assert s3_calls.count("GetObject") == (0 if warm else 3)
+    assert s3_calls.count("ListObjectsV2") == 2
+    assert directory_bytes(cache) == before
+    assert cache.exists() is warm
+    assert not (tmp_path / "dry").exists()
+
+
+def test_interrupted_cache_write_leaves_no_matching_etag(stores, tmp_path, monkeypatch, s3_calls):
+    _, _, _, originals, invoke = stores
+    destination = tmp_path / "index"
+    assert invoke(destination) == 0
+    (bucket, key), original = next(iter(originals.items()))
+    path = tmp_path / "cache/adb/index/first" / bucket / key
+    token = path.with_name(path.name + ".etag")
+    token.write_text('"stale"')
+    write_bytes = Path.write_bytes
+    def interrupted(file, body):
+        if file.parent == path.parent:
+            write_bytes(file, body[:4])
+            raise OSError("interrupted write")
+        return write_bytes(file, body)
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "write_bytes", interrupted)
+        assert invoke(destination) == 0
+    assert json.loads((destination / "index.json").read_bytes())["runs"] == 3
+    card = json.loads(original)
+    rows = [json.loads(line) for line in (destination / "experiments/alpha/index.jsonl").read_bytes().splitlines()]
+    assert next(row["card"] for row in rows if row["card"]["identity"]["run"] == card["identity"]["run"]) == card
+    assert path.read_bytes() == original[:4]
+    assert not token.exists()
+    s3_calls.clear()
+    assert invoke(destination) == 0
+    assert s3_calls.count("GetObject") == 1
+    assert path.read_bytes() == original
+    assert token.is_file()
+
+
+def test_unavailable_cache_does_not_drop_runs(stores, tmp_path, s3_calls):
+    _, _, _, _, invoke = stores
+    cache = tmp_path / "not-a-directory"
+    cache.write_bytes(b"keep")
+    destination = tmp_path / "index"
+    assert invoke(destination, "--cache-dir", str(cache)) == 0
+    assert s3_calls.count("GetObject") == 3
+    assert json.loads((destination / "index.json").read_bytes())["runs"] == 3
+    assert cache.read_bytes() == b"keep"
+
+
+def test_missing_listing_etag_never_reuses_cached_card(stores, tmp_path, monkeypatch, s3_calls):
+    _, _, _, originals, invoke = stores
+    (bucket, key), _ = next(iter(originals.items()))
+    listing = index.keys
+    def without_etag(s3, target, prefix):
+        result = listing(s3, target, prefix)
+        if target.bucket == bucket:
+            result[key] = ""
+        return result
+    monkeypatch.setattr(index, "keys", without_etag)
+    destination = tmp_path / "index"
+    assert invoke(destination) == 0
+    assert not (tmp_path / "cache/adb/index/first" / bucket / key).exists()
+    s3_calls.clear()
+    assert invoke(destination) == 0
+    assert s3_calls.count("GetObject") == 1
 
 
 def test_two_stores_wrap_values_and_open_only_source_clients(stores, tmp_path, monkeypatch):
@@ -220,8 +475,12 @@ def test_invalid_yaml_store_list_fails_before_any_s3_call(tmp_path, catalog, mon
     assert not destination.exists()
 
 
-def test_exclusions_remove_rows_and_log_the_reason(stores, tmp_path, capsys):
+@pytest.mark.parametrize("warm", [False, True])
+def test_exclusions_remove_rows_and_log_the_reason(stores, tmp_path, capsys, warm):
     _, path, value, originals, invoke = stores
+    if warm:
+        assert invoke(tmp_path / "warm") == 0
+        capsys.readouterr()
     runs = ["20260918t120000z-000000000001", "20260918t120000z-000000000002"]
     reason = "Provider outage invalidated these results."
     value["stores"][0]["exclude"] = [{"runs": runs, "reason": reason}]
@@ -240,7 +499,7 @@ def test_exclusions_remove_rows_and_log_the_reason(stores, tmp_path, capsys):
     assert [line for line in output.out.splitlines() if line.startswith("EXCLUDE ")] == [
         f"EXCLUDE s3://{bucket}/{key}: {reason}" for bucket, key in originals if bucket == "store-one"
     ]
-    assert "STORE s3://store-one/prefix 0 runs" in output.out
+    assert f"STORE s3://store-one/prefix 0 runs ({2 if warm else 0} cached, {0 if warm else 2} fetched)" in output.out
     assert "STORE s3://store-two/prefix 1 runs" in output.out
     assert not output.err
 

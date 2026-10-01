@@ -124,6 +124,15 @@ directory that the site deploys.
 The index reads only `ListObjectsV2` and `GetObject`, using each store's profile
 without endpoint, region or client-configuration overrides.
 
+Run cards are cached under `$XDG_CACHE_HOME/adb/index` (or `~/.cache/adb/index`),
+keyed by profile (`default` when omitted), bucket, full object key and the listed
+ETag. Every rebuild still lists the store, so the listing determines membership
+and changed ETags trigger a fetch.
+The cache does not affect the index output; `built_at` still records each rebuild's
+time. Use `--cache-dir DIR` to choose another cache directory or `--no-cache` to bypass
+cache reads and writes. `--dry-run` can read existing entries but never writes them.
+Store summaries report cached and fetched cards before filters and exclusions.
+
 The complete `site.json` is:
 
 ```json
