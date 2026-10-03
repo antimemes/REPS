@@ -172,7 +172,7 @@ package directories pass through `cleanImport`, excluding development artifacts;
 their surrounding tests, READMEs and project tooling are outside the source list.
 Changes to shared execution code therefore change every dependent experiment's
 source hash. A GovSim adapter edit changes GovSim's hash without changing
-Concordia's. The runner, web application and documentation remain outside this hash.
+Concordia's. The runner and documentation remain outside this hash.
 The lock is hashed without `[package.metadata.requires-dev]` tables, excluding
 repeated path-dependency test metadata while retaining runtime requirements.
 The filter is covered by `scripts/check-experiment-identity.py` and the synthetic-lock tests run by `nix flake check` (`checks.<system>.identity-lock`).

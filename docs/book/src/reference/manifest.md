@@ -1,6 +1,6 @@
 # Experiment manifest
 
-A manifest is generated JSON describing an experiment's inputs and presentation. The runner uses it for validation, credential discovery and result descriptions; the local interface uses it to build the parameter form.
+A manifest is generated JSON describing an experiment's inputs and presentation. The runner uses it for validation, credential discovery and result descriptions.
 
 Read a packaged manifest with:
 
@@ -14,15 +14,22 @@ nix run .#inspect-hello -- --describe
 | --- | --- |
 | `schema_version` | Currently `1`; results are ordered, named declarations. |
 | `name` | Unique experiment name and app name. |
-| `summary` | Short description shown in the interface. |
+| `summary` | Short description of the experiment. |
+| `readme` | Optional Markdown source from the experiment directory’s `README.md`. |
 | `params` | Object mapping parameter names to declarations. Every key must be bound for a run. |
 | `schema` | Payload union identity and export: `{ "version": 0, "models": "module:attribute", "path": "/nix/store/.../schema.json" }`. Separate from the manifest file's `schema_version`. |
 | `results` | Ordered list of possible result declarations (see below), each with a unique `name`. The runner warns on repeated or undeclared result events; readers derive the last emitted value for each declared name. |
 | `env` | Optional experiment metadata. It does not cause the runner to inject arbitrary variables or provision services. |
 | `origin` | Packaging repository reference, separate from a run's pinned fetch reference. |
-| `links` | External references, each with `label` and `url`, displayed on experiment and run pages when the manifest is available. |
+| `links` | External references, each with `label` and `url`. |
 
 The source identity and executable are wrapper settings, not manifest fields. [`adb.mkExperiment`](../authoring/experiments.md) takes `name`, `summary`, `params`, `program` and `src`, with optional `results`, `schema`, `schemaPython`, `sharedSrcs`, `env` and `links`. Schema defaults to version 0 and `adb_events:Payload`; typed experiments supply their own union pointer and `schemaPython = "${env}/bin/python"` from the built program environment. Packaging imports that pointer and calls `export_schema`, failing the build if it cannot import. `schema.json` and the shared export sit beside the manifest, along with a `python` link to the schema interpreter used by `adb-runner verify`; `schema.path` is generated, not author-supplied.
+
+The catalog packages the experiment directory's images under
+`assets/<experiment-name>/`, preserving subdirectories such as `figures/`. Relative
+image paths in `readme` refer to these assets, copied to
+`index/catalog/assets/<name>/` in the published site. Images are separate
+catalog assets, not embedded in the manifest JSON.
 
 ## Parameter declarations
 
@@ -44,22 +51,22 @@ LLM-typed parameters receive shared model suggestions during manifest generation
 
 ## Result declarations
 
-`results` is a list whose order controls the summary facts grid and definitions table. Each declaration contains a unique name, a type descriptor and optional presentation fields:
+`results` is an ordered list of declarations. Each declaration contains a unique name, a type descriptor and optional presentation fields:
 
 | Field | Meaning |
 | --- | --- |
 | `name` | Required string matching the `name` on a result event. Duplicate names fail Nix evaluation. |
 | `type` | Required type descriptor, using the types listed below. It does not enforce the emitted result's type. |
 | `label` | Optional string used as the readable result name. The metric key remains its identifier. |
-| `description` | Optional short string explaining the result in plain language, visible with its value. |
-| `details` | Optional longer string explaining the calculation, aggregation or interpretation caveats, shown on expansion. |
+| `description` | Optional short string explaining the result in plain language. |
+| `details` | Optional longer string explaining the calculation, aggregation or interpretation caveats. |
 | `unit` | Optional string displayed alongside the value; it does not convert or rescale the value. |
 
 In Nix, use `results = [ { name = "count"; type = adb.types.int; label = "Recorded count"; description = "Count supplied to the program."; } ];`. The manifest preserves the list and its presentation fields in that order. Map declarations and bare-type shorthand are not supported.
 
-Results are possible outputs, not required outputs. A declared metric that was never emitted is absent from the summary; absence does not mean zero. Undeclared results remain in the stream but warn and stay out of the summary. Boolean results display as neutral Yes/No values without inferring success or failure.
+Results are possible outputs, not required outputs. A declared metric that was never emitted is absent from the summary; absence does not mean zero. Undeclared results remain in the stream but warn and stay out of the summary. Boolean results do not inherently indicate success or failure; their meaning comes from the declaration.
 
-The run page uses one Results list with labels, values, units and short descriptions; expand a row for its calculation details. Before launch, expand **Results this experiment records** on the experiment page to read the declared outputs. The runner snapshots the ordered declaration list as `result_definitions` in both `run.json` and `run.start`. These saved definitions preserve the run's interpretation when the installed experiment changes. Result events have no unit field; units come from the declaration. Events do not override result labels, descriptions or details.
+The runner snapshots the ordered declaration list in `run.json` under `definitions.results` and in `run.start` as `result_definitions`. These saved definitions preserve the run's interpretation when the installed experiment changes. Result events have no unit field; units come from the declaration. Events do not override result labels, descriptions or details.
 
 ## Type descriptors
 
@@ -75,7 +82,7 @@ The run page uses one Results list with labels, values, units and short descript
 | `adb.types.struct fields` | `{ "kind": "struct", "fields": {...} }` | Object with exactly the declared keys and matching field types |
 | `adb.types.object` | `{ "kind": "object" }` | JSON object with arbitrary keys and values |
 
-Use `listOf (struct {...})` for the row-and-column editor, with scalar fields. A structure field can be a bare type descriptor or a wrapper containing `type`, `description` and `suggestions`. `param type attrs` attaches parameter metadata in Nix.
+Use `listOf (struct {...})` for a list of structured values. A structure field can be a bare type descriptor or a wrapper containing `type`, `description` and `suggestions`. `param type attrs` attaches parameter metadata in Nix.
 
 For example:
 

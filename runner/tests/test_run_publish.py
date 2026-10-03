@@ -25,7 +25,6 @@ def launch(saved, tmp_path, monkeypatch):
     monkeypatch.setenv("ADB_MANIFEST", str(manifest))
     monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(program))
     monkeypatch.setenv("ADB_FETCH_REF", "github:owner/repo/" + "a" * 40)
-    monkeypatch.setattr(cli, "resolve_viewer", lambda _: ("http://localhost", None))
     def invoke(*extra, profile="throwaway"):
         monkeypatch.setattr(sys, "argv", ["adb-runner", "--data-dir", str(home),
             "--set", "x=1", "--publish", "s3://throwaway/completion",

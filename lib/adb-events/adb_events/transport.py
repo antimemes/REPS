@@ -19,7 +19,7 @@ def send_event(payload: str) -> None:
     path = os.environ.get("ADB_EVENT_SOCKET")
     if not path:
         raise EventTransportError(
-            "ADB_EVENT_SOCKET is unset; launch the named experiment app or use adb-local"
+            "ADB_EVENT_SOCKET is unset; launch the named experiment app"
         )
     data = payload.encode("utf-8") + b"\n"
     if len(data) > MAX_EVENT_BYTES:

@@ -1,58 +1,18 @@
-# Local tools and run storage
+# Local execution and run storage
 
-Use `adb-local` when you want to launch experiments in the browser. Use `adb-web` when you only want to browse experiments, construct commands, and inspect saved runs. For a first browser run, follow [Run your first local experiment](../running/getting-started.md).
-
-## Start the tool you need
-
-The commands on this page follow your [Nix command settings](#adb-cmd-settings), including flakes, classic Nix, registry use, and local or downloaded source. The default needs neither flakes nor a checkout.
-
-```bash
-nix run .#adb-local
-```
-
-For the read-only viewer:
-
-```bash
-nix run .#adb-web
-```
-
-For example, start local ADB on another port without opening a browser:
-
-```bash
-nix run .#adb-local -- --no-open --port 8350
-```
-
-`adb-local` starts the web application and one local executor that builds and runs submitted experiments. Ctrl-C stops both and interrupts active execution; saved and partial run files remain. `adb-web` starts no executor and cannot submit browser jobs.
-
-Downloaded source normally comes from `main`, which changes over time. To select a particular revision, replace `main` in the archive URL with a commit hash, or use `github:antimemetics-institute/agentdatabank/COMMIT#adb-local` in a flake command. See [Working with Nix](../running/nix.md) for the supported command forms.
-
-## Run from a checkout
-
-In an ADB checkout, start with this command. It always uses the checkout, while following your chosen Nix command format:
-
-```bash,repo-local
-nix run .#adb-local
-```
-
-`adb-local` chooses experiment source in this order:
-
-- An explicit `--repo DIR`.
-- The enclosing Git checkout, if it contains ADB's runner, build support, and experiments directory.
-- The source bundled with the launcher, when neither of the above applies.
-
-Thus a remote launcher started inside an ADB checkout also uses that checkout's experiments. Check **Local source** on the run tab, or the terminal's `executing from` line, to confirm the selected directory. `--repo` selects experiment source, not where results are saved. It does not rebuild the launcher's web application or runner. Restart `adb-local` after editing experiment declarations so the browser reloads their definitions. `adb-web` rejects `--repo`.
+Use the generated experiment launcher for terminal runs.
 
 ## Choose where results are saved
 
-The browser server and its executor share one data directory. A terminal experiment must write to that same directory for its runs to appear in the browser.
+Experiment launchers, publishing and verification use the same data-directory convention.
 
 | Setting | Effect |
 | --- | --- |
-| `--data-dir DIR` | Selects storage for terminal experiments, `adb-local`, `adb-web`, and verifier run-ID lookup; overrides the environment. |
-| `ADB_DATA_DIR` | Shared default for the browser tools and terminal experiments. |
+| `--data-dir DIR` | Selects storage for terminal experiments, publishing and verifier run-ID lookup; overrides the environment. |
+| `ADB_DATA_DIR` | Default for terminal experiments and run-management commands. |
 | No explicit directory | Uses `$XDG_DATA_HOME/adb` when `XDG_DATA_HOME` is set; otherwise `~/.local/share/adb`. |
 
-For example, set this in every terminal used for the session before launching either tool or an experiment:
+For example, set this in every terminal used for the session before launching an experiment or inspecting its runs:
 
 ```sh
 export ADB_DATA_DIR="$HOME/adb-first-run"
@@ -69,7 +29,7 @@ Readers derive conditions by grouping cards on `condition`.
 
 ## Run the hello test in a terminal
 
-If you used the default data directory in the browser guide, run this command as written. If you chose another directory, set `ADB_DATA_DIR` to that directory first or append `--data-dir DIR`. Commands copied from the browser include its selected data directory.
+Run this command as written for the default data directory, or set `ADB_DATA_DIR` first or append `--data-dir DIR` to choose another directory.
 
 ```bash
 nix run .#inspect-hello -- \
@@ -77,21 +37,34 @@ nix run .#inspect-hello -- \
   --set limit=0 --set epochs=1 --set 'generate_args={}'
 ```
 
-To run your checkout's version of `inspect-hello`, select **local checkout** in the command settings and run from that directory. The named experiment app handles terminal execution; neither browser tool needs to be running. Every declared parameter must be supplied in a terminal command; the browser fills its fields for you. This is a credential-free check using fixed mock replies, rather than the real model in the browser guide. It executes one run with both samples (`limit=0`), one pass (`epochs=1`), and no generation overrides. Expect two completed samples, zero errors, and score `1.0`. It needs no credentials or network access after the Nix build.
+To run your checkout's version of `inspect-hello`, select **local checkout** in the command settings and run from that directory. The named experiment app handles terminal execution. Every declared parameter must be supplied. This is a credential-free check using fixed mock replies. It executes one run with both samples (`limit=0`), one pass (`epochs=1`), and no generation overrides. Expect two completed samples, zero errors, and score `1.0`. It needs no credentials or network access after the Nix build.
 
-The runner prints a run ID, a `watch` URL, and a `store` path. It looks for a viewer serving the same data directory on ports 8340–8343. If it finds one, open the `watch` URL. Otherwise, start a viewer and find the run under **Runs** using that viewer’s startup URL. A printed `watch` URL alone does not start a viewer.
+The runner prints a run ID and a `store` path. Read `run.json` and `events.jsonl` in that directory to inspect the run's metadata and events.
 
 Use `--set KEY=VALUE` repeatedly to change parameters, or `--json` to stream event envelopes to the launcher’s standard output while retaining saved run data. Add `--non-interactive` to disable prompts for unattended execution. `--seed N` sets the run seed unchanged, in `0..2147483647` (random when omitted). Each invocation executes one run. `--dry-run` prints the resolved configuration without executing, and `--describe` prints the experiment's parameter schema.
 
-## Browser launch options
+## How do I read the files without a browser?
 
-Both tools accept these options:
+Start with the **store** path printed by the runner. To locate an older run, look under `runs/CONDITION_ID-EXPERIMENT/RUN_ID/` in your [data directory](layout.md#where-are-runs-saved). Its `run.json` identifies the experiment, condition, source reference and state. The card also contains `inputs.params` and `provenance.source`, copied from `run.start`. Readers derive conditions by grouping cards on `condition`; shared fields come from any member.
 
-| Option | Behavior |
-| --- | --- |
-| `--host ADDR` | Defaults to `127.0.0.1`. `adb-local` accepts loopback names/addresses or wildcard addresses. |
-| `--port N` | Defaults to `8340`; if occupied, tries successive ports, up to 20 additional ports. Use the URL printed at startup. |
-| `--no-open` | Suppresses automatic browser opening. |
-| `--help` | Prints launch options and exits. |
+With Python 3, this example prints the metadata and reads result and completion events. Replace `/path/to/run` with that run's directory:
 
-`--host 0.0.0.0` exposes the viewer to the network, but browser execution and credential operations remain restricted to local callers. Use SSH forwarding when you need to execute from a browser on another machine.
+```sh
+python3 - /path/to/run <<'PYTHON'
+import json
+import sys
+from pathlib import Path
+
+run_dir = Path(sys.argv[1])
+print(json.dumps(json.loads((run_dir / "run.json").read_text()), indent=2))
+for line in (run_dir / "events.jsonl").read_text().splitlines():
+    envelope = json.loads(line)
+    event = envelope["event"]
+    if event.get("type") in {"result", "run.end"}:
+        print(json.dumps(envelope))
+PYTHON
+```
+
+Use this example on a finished run; a live file can end with a line still being written. For live processing, use the runner's [`--json` stream](../running/experiments.md#how-do-i-inspect-the-result). Preserve the envelope's run ID and sequence number when combining records. Other event types contain model calls, progress, logs and experiment-specific observations.
+
+The [file reference](layout.md) and [event reference](events.md) define the fields. Check completion, errors and the evidence behind summary metrics before using a result in an analysis; matching condition IDs alone do not establish scientific comparability.

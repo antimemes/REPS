@@ -4,9 +4,7 @@ ADB stores model credentials and endpoints in named profiles on your machine. A 
 
 ## How do I configure a provider?
 
-In `adb-local`, choose a model in the experiment form and open the **run** tab. Use the credential controls to enter the endpoint and key, save a profile, and select it for the job.
-
-From the terminal, use the standalone credential-management command below.
+Use the standalone credential-management command below.
 Direct `adb-runner` invocation here configures profiles; experiment execution
 uses the [named experiment app](experiments.md#how-do-i-use-the-command-line).
 

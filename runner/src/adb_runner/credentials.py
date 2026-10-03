@@ -526,7 +526,7 @@ def _cmd_list() -> int:
             print(f"{name}.{profile}: {shown}")
     return 0
 
-# -- machine faces (the web GUI's wire; secrets stay one-way) --------------------------
+# -- machine-readable commands (secrets stay one-way) ---------------------------------
 
 def masked_store(
     store: dict[str, dict[str, dict[str, str]]],
@@ -547,10 +547,7 @@ def masked_store(
 
 def inventory() -> dict[str, Json]:
     """One self-describing document: what exists (masked), what's remembered, and the
-    prompt templates — so a GUI renders the same picker and forms the CLI prompts,
-    without duplicating the provider registry. This is also what a queue worker
-    ADVERTISES at registration: profile names travel, values never — the inventory
-    is a property of the execution target, secrets stay where execution happens.
+    prompt templates for tools, without duplicating the provider registry.
     A leaky store file is reported as `problem` (with the chmod fix) instead of an
     exception: the consumer's job is to SHOW the problem."""
     out: dict[str, Json] = {
@@ -581,7 +578,7 @@ def _set_json(arg: str) -> int:
     """`credentials set <name>[.<profile>] --json`: one JSON object (env var -> value)
     on stdin, applied with the SAME semantics as the prompts — start from the current
     profile, non-empty values overwrite, empty/absent keep, explicit null deletes.
-    That merge is what lets a GUI edit a base URL without ever having held the key
+    That merge lets a tool edit a base URL without ever having held the key
     (list --json masks secrets, so it can't send them back). Output is one JSON line;
     validation (profile name rules, URL shape) matches the interactive face."""
     name, dot, profile = arg.partition(".")
@@ -631,8 +628,8 @@ def _set_json(arg: str) -> int:
 
 def _cmd_remember(argv: list[str]) -> int:
     """`credentials remember <experiment> <set> <profile>` — the picker's `always
-    use …?` answer as a command, so a GUI's remember button and the CLI write the
-    SAME preference file the same way. Names only, never values; the profile must
+    use …?` answer as a command, using the SAME preference file as the interactive
+    prompt. Names only, never values; the profile must
     exist (a remembered typo would silently re-ask forever)."""
     if len(argv) != 3:
         print("usage: adb-runner credentials remember <experiment> <set> <profile>",

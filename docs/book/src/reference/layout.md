@@ -4,7 +4,7 @@ The local store keeps run metadata, the event stream and working files as ordina
 
 ## Where are runs saved?
 
-Terminal experiments, browser tools, and verifier run-ID lookup use `--data-dir DIR`, then `ADB_DATA_DIR`, then `$XDG_DATA_HOME/adb`, with `XDG_DATA_HOME` defaulting to `~/.local/share`.
+Terminal experiments, publishing, and verifier run-ID lookup use `--data-dir DIR`, then `ADB_DATA_DIR`, then `$XDG_DATA_HOME/adb`, with `XDG_DATA_HOME` defaulting to `~/.local/share`.
 
 ```text
 DATA_DIR/
@@ -31,11 +31,8 @@ hyphens.
 
 Readers accept exactly `events.jsonl`. Records are addressed by `(run, seq)`. The runner flushes each event line, so another process can inspect a live run. Files from failed and interrupted runs remain in the store.
 
-The viewer reads schema exports once per run from the current build's manifests,
-matching the envelope's experiment and schema version. It uses the current shared
-export alone if that experiment version is unavailable. Schema files are not
-written to run directories; updated hints also apply to older runs.
-Render-review output goes to a caller-selected directory outside recorded runs.
+Schema exports come from the built manifests, identified by experiment and schema
+version. Schema files are not written to run directories.
 
 ## How is a condition ID calculated?
 
@@ -47,7 +44,7 @@ JCS is RFC 8785 JSON canonicalization. The interface usually displays the first 
 
 `source` has the form `content:sha256:HASH`. Packaging computes it from the experiment's declared `src` paths plus shared package sources (`adb_events` and `adb_experiment` by default; Inspect programs add `adb_inspect`), imported into the Nix store after filtering development artifacts. The filtered names are `.venv`, `__pycache__`, `node_modules`, `dist`, `.direnv`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `result` and names beginning `result-`.
 
-The identity excludes the runner, web, docs, and other undeclared paths. It also excludes the packaging `tree_hash`, fetch reference, platform, seed, credentials and endpoints. See [repeat and compare runs](../running/model.md) for the consequences.
+The identity excludes the runner, docs, and other undeclared paths. It also excludes the packaging `tree_hash`, fetch reference, platform, seed, credentials and endpoints. See [repeat and compare runs](../running/model.md) for the consequences.
 
 Condition IDs are the first 40 lowercase hexadecimal characters of the SHA-256
 hash (160 bits, matching the Nix store's hash width). The same ID is recorded in
@@ -90,8 +87,8 @@ no `fetch_ref`. `tree_hash` is included only where the launcher can compute it;
 absence carries no meaning. These copies do not include source code or build outputs.
 
 `derived.served_models` is the sorted set of non-empty `llm.call.output.model`
-values returned by the endpoints. The runs list shows these beside the requested
-model when they differ; they do not change the condition identity.
+values returned by the endpoints. These may differ from the requested model;
+they do not change the condition identity.
 
 `derived.results` is a map of the last result value per declared name. Undeclared
 results stay in the stream but do not enter the map. `derived.usage` contains
@@ -101,8 +98,6 @@ contribute zero. `derived.counts` holds `llm_calls`, `failed_calls`, and the `by
 `llm_calls_by_agent` maps. The latter counts only `llm.call` records, keyed by
 their recorded `agent`; calls without an agent still count toward `llm_calls`
 but have no map entry. The runner reads only stream records to derive the card.
-The viewer computes per-actor activity from loaded records and render hints on
-the client, including custom events; that activity is not stored in the card.
 `last_status` copies
 the most recent status phrase when present; `last_seq` and `last_event_at` identify
 the last included record. These are observed totals, not a provider bill.
@@ -146,34 +141,26 @@ format. Each `experiments/<experiment>/index.jsonl` contains rows of
 Card values are compactly re-serialized; the objects under `runs/` remain
 byte-authoritative. Index objects are replaceable and never authoritative.
 
-A user-written `stores.json` in the site repository supplies each S3 prefix,
-its AWS profile, the public HTTPS URL for the same prefix, and optional
-experiment, condition and run filters.
-The repository also contains `site.json` with exactly `{"v":0}`; unknown keys
-are rejected. CI builds `adb-web-dist`, copies the bundle and `site.json` into
-`site/`, runs `adb-runner index --stores stores.json --catalog DIR --to site/index`, and deploys
-`site/`. The command deletes and rewrites `site/index` in full, writing
-`index.json` last. AWS profiles are used only to read source stores.
+Supply `stores.yaml` (or JSON) with each S3 prefix, AWS profile, public HTTPS URL,
+filters and exclusions. Build the index with
+`adb-runner index --stores stores.yaml --catalog DIR --to site/index`.
+The command deletes and rewrites `site/index` in full, writing `index.json` last.
+AWS profiles are used only to read source stores.
 
-The static bundle selects published mode when `site.json` is present. It reads
-`index/index.json` and `index/experiments/<experiment>/index.jsonl` relative to
-the app directory, including under a path prefix. The browser opens original
-run objects from each row's `store`, following redirects with credentials
-omitted, and uses manifests and versioned render hints from `index/catalog.json`.
+Read original run objects from each row's `store`. Manifests and versioned render
+hints are written to `index/catalog.json`.
 The catalog contains only indexed experiments; their README assets live under
-`index/catalog/assets/<name>/`. The web build contains no experiment catalog. It caches run
-objects for the session and revalidates indexes each minute. The Node server
-only serves local data and launches runs.
+`index/catalog/assets/<name>/`.
 
 See [Build and serve an index](../running/publishing.md#build-and-serve-an-index)
-for the site repository files and CI deployment.
+for store configuration and index commands.
 
 In an `llm.call`, model API evidence is stored in `call.request` and
 `call.response`; generation settings are read from the request. Inspect also saves every native
 transcript event as `inspect.event` with its JSON-mode dump as custom data. Each
 model event is immediately followed by the derived `llm.call`, even for cache
 hits. Sample identity and cache notes use producer-prefixed metadata keys;
-shared readers and web views treat those keys as opaque. Harness bookkeeping,
+shared readers treat those keys as opaque. Harness bookkeeping,
 including generation config, remains available in the raw native record.
 
 `run.start` omits the `experiment` field duplicated by its envelope and has no `dirty` flag. `run.json.identity` retains `experiment` because it is a standalone metadata file.
@@ -190,4 +177,4 @@ including generation config, remains available in the raw native record.
 
 Terminal outcomes belong to `run.end`; `run.json.lifecycle.state` can contain any of the states above. Live stream state comes from the absence of `run.end` and the metadata heartbeat.
 
-While active, the runner refreshes `run.json` approximately every ten seconds, including its derived block. The viewer uses the file's modification time as a heartbeat; no heartbeat timestamp is stored in the card. Its **interrupted?** label for stale active runs is display state; it is not written back as a terminal state. A hard crash can leave partial files and no `run.end`.
+While active, the runner refreshes `run.json` approximately every ten seconds, including its derived block. Readers can use the file's modification time as a heartbeat; no heartbeat timestamp is stored in the card. A hard crash can leave partial files, a stale active state and no `run.end`.

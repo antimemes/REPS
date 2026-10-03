@@ -3,12 +3,10 @@
 // Every runnable command is authored in the canonical local form `nix run .#<name> …`.
 // This rewrites those occurrences to match the reader's setup, controlled from a gear
 // menu in the toolbar and persisted in localStorage. In-page links to
-// #adb-cmd-settings (getting-started has one) open the same menu.
+// #adb-cmd-settings open the same menu.
 //
 // NOTE: the rewriting functions (ref/flakelessHead/rewriteLine/rewrite) are kept
-// pure and DOM-free on purpose — the webui carries a line-for-line TS port in
-// web/src/lib/cmd-rewrite.ts (same localStorage key via web/src/lib/cmd-prefs.ts,
-// menu in web/src/components/cmd-settings.tsx). Change one, change both.
+// pure and DOM-free on purpose.
 (function () {
   "use strict";
 

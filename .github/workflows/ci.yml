@@ -1,5 +1,5 @@
 # CI runs exactly what `task ci` runs locally, through the same flake-pinned dev
-# shell — one toolchain (uv, python, pnpm, node, ty, mdbook all from flake.lock),
+# shell — one toolchain (uv, python, pyright, mdbook all from flake.lock),
 # no action-installed versions to keep in sync, and a green `task ci` on a dev
 # machine predicts a green run here. Keyless throughout — mockllm/mock only, no
 # provider credentials, no docker experiments.
@@ -51,18 +51,12 @@ jobs:
           restore-prefixes-first-match: nix-1-${{ runner.os }}-
           gc-max-store-size-linux: 5G
       # the nix store cache covers the built environments; these cover what the
-      # devshell's own uv/pnpm download at `uv run` / `pnpm install` time
+      # devshell's own uv downloads at `uv run` time
       - uses: actions/cache@v4
         with:
           path: ~/.cache/uv
           key: uv-${{ runner.os }}-${{ hashFiles('**/uv.lock') }}
           restore-keys: uv-${{ runner.os }}-
-      - uses: actions/cache@v4
-        with:
-          path: ~/.local/share/pnpm/store
-          key: pnpm-${{ runner.os }}-${{ hashFiles('web/pnpm-lock.yaml') }}
-          restore-keys: pnpm-${{ runner.os }}-
-
       - name: task ci — the full check surface, same command as local
         run: nix-shell --run 'task ci'
 

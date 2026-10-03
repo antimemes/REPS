@@ -6,10 +6,6 @@
 - [Run your first local experiment](running/getting-started.md)
 - [Roadmap](start/roadmap.md)
 
-# Browse results
-
-- [Find and read a run](browsing/runs.md)
-
 # Run experiments
 
 - [Choose inputs and run](running/experiments.md)
@@ -25,7 +21,7 @@
 # Reference
 
 - [Commands and settings](reference/cli.md)
-- [Local tools and run storage](reference/local.md)
+- [Local execution and run storage](reference/local.md)
 - [Experiment manifest](reference/manifest.md)
 - [Run files and identity](reference/layout.md)
 - [Experiment process protocol](reference/protocol.md)

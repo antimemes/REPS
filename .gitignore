@@ -1,16 +1,12 @@
 # build outputs
 docs/book/book/
-web/test/diagram-renders/
 result
 result-*
-web/dist/
 
 # tool state
 .direnv/
-node_modules/
 .venv/
 __pycache__/
 *.pyc
 
 .envrc
-scripts/docs-gif/node_modules/

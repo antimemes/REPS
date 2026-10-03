@@ -20,7 +20,7 @@
     {
       # Namespace policy (nixpkgs-flat, like `nixpkgs#dig`): experiments get bare names —
       # they are the product and the headline oneliner (`nix run adb#inspect-hello`).
-      # ADB's own tools carry the `adb-` prefix (`adb-web`, `adb-runner`), so the bare
+      # ADB's own tools carry the `adb-` prefix (`adb-runner`), so the bare
       # namespace belongs to the registry and name collisions are a curation duty, as
       # in nixpkgs.
       apps = forAllSystems (pkgs:
@@ -41,17 +41,6 @@
             type = "app";
             program = "${adbPkgs.adb-runner}/bin/adb-runner";
           };
-        }
-        // nixpkgs.lib.optionalAttrs (adbPkgs ? adb-web) {
-          adb-web = {
-            type = "app";
-            program = "${adbPkgs.adb-web}/bin/adb-web";
-          };
-          # the whole local ADB: adb-web + one worker, torn down together
-          adb-local = {
-            type = "app";
-            program = "${adbPkgs.adb-local}/bin/adb-local";
-          };
         });
 
 
@@ -62,11 +51,6 @@
         {
           inherit (adbPkgs) adb-runner;
           manifests = adbPkgs.manifests;
-        }
-        // nixpkgs.lib.optionalAttrs (adbPkgs ? adb-web) {
-          inherit (adbPkgs) adb-web adb-local;
-          # the bare dist (frontend + server.cjs) — used by scripts/docs-screenshots.sh
-          inherit (adbPkgs) adb-web-dist;
         }
         // nixpkgs.lib.mapAttrs' (name: exp: nixpkgs.lib.nameValuePair "experiment-${name}" exp.app)
           adbPkgs.experiments);

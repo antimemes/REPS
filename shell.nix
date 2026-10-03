@@ -12,11 +12,6 @@ pkgs.mkShell {
     pkgs.uv
     pkgs.python313
 
-    # web (TS): pnpm installs the toolchain from pnpm-lock.yaml (vite, esbuild, …);
-    # node runs the built server and dev.sh's watchers
-    pkgs.pnpm
-    pkgs.nodejs
-
     # dev drivers & utilities
     pkgs.go-task
     pkgs.jq

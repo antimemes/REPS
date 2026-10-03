@@ -90,7 +90,7 @@ in builtins.mapAttrs (_: exp: exp.source) {
     probe("lib/adb-events/adb_events/emit.py", set(before))
     probe("lib/adb-inspect/adb_inspect/translate.py", {"inspect-hello", "impossiblebench-swebench"})
     probe("lib/adb-events/tests/test_emit.py", set())
-    probe("experiments/govsim/README.mdx", set())
+    probe("experiments/govsim/README.md", set())
     # Cover both explicit lock paths and locks inside a declared directory.
     for family, experiment in (("govsim", "govsim"), ("impossiblebench", "impossiblebench-swebench")):
         relative = f"experiments/{family}/uv.lock"

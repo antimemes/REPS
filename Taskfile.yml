@@ -1,5 +1,5 @@
-# Dev targets — run inside the devshell (`nix develop`), which provides task, pnpm,
-# node, python, jq, mdbook. Data lands in the tools' default $ADB_DATA_DIR
+# Dev targets — run inside the devshell (`nix develop`), which provides task,
+# python, jq, mdbook. Data lands in the tools' default $ADB_DATA_DIR
 # (~/.local/share/adb); override with ADB_DATA_DIR=... — but never point it inside this
 # repo (a dirty-tree flake hashes its whole directory, so an in-repo data dir mints a
 # new condition every run).
@@ -22,10 +22,9 @@ tasks:
       - nix run .#impossiblebench-livecodebench -- --describe | jq .
 
   test:
-    desc: run Python unit tests via uv, then the web suite
+    desc: run Python tests and the Nix experiment checks
     cmds:
       - task: test:python
-      - task: web:test
 
   test:python:
     desc: run Python unit tests, checking the runner against the Nix-built experiment manifests
@@ -54,34 +53,6 @@ tasks:
       - cd lib/adb-inspect && uv run -q pyright
       - cd runner && uv run -q pyright
 
-  web:test:
-    desc: web unit tests + render guard, with the nix-built manifests so the oneliner sweep runs against every real experiment
-    cmds:
-      - ADB_TEST_MANIFESTS="$(nix build .#manifests --no-link --print-out-paths)" pnpm --dir web test
-
-  web:typecheck:
-    desc: typescript check of the web app (tsc --noEmit)
-    cmds:
-      - pnpm --dir web typecheck
-
-  web:build:
-    desc: build the web dist (vite frontend + server bundle) into web/dist
-    cmds:
-      - bash web/build.sh
-
-  web:
-    desc: build once, then serve the local GUI (auto-picks a free port from 8340)
-    deps: [web:build]
-    cmds:
-      - |
-          runner_package=$(nix build .#adb-runner --no-link --print-out-paths)
-          node web/dist/server.cjs --execution-source "$PWD" --static-dir web/dist --runner "$runner_package/bin/adb-runner" --executor-python "$runner_package/bin/python" --no-open
-
-  web:dev:
-    desc: vite dev server (HMR, /api proxied) + auto-restarting API server — same as `pnpm dev` in web/
-    cmds:
-      - bash web/dev.sh
-
   docs:
     desc: serve the mdbook user guide on 0.0.0.0:3000 (binds IPv4 so a code-server/reverse proxy on 127.0.0.1 can reach it; mdbook's default localhost binds IPv6 ::1 only)
     dir: docs/book
@@ -93,22 +64,6 @@ tasks:
     dir: docs/book
     cmds:
       - mdbook build
-
-  docs:media:
-    desc: regenerate ALL media the docs embed — screenshots and video clips (light + dark)
-    cmds:
-      - task: docs:screenshots
-      - task: docs:clips
-
-  docs:screenshots:
-    desc: regenerate the GUI screenshots the docs embed (light + dark), into docs/book/src/images
-    cmds:
-      - bash scripts/docs-screenshots.sh
-
-  docs:clips:
-    desc: re-record light/dark GUI clips; pass -- --replay-run PATH to select a saved run
-    cmds:
-      - bash scripts/docs-clips.sh {{.CLI_ARGS}}
 
   docker:up:
     desc: sudo-start the docker daemon on the default socket (inspect's docker sandbox needs one; a dev shell can't provide a system service, so the devshell ships the engine and this starts it)
@@ -184,12 +139,8 @@ tasks:
       - python scripts/check-python-sources.py
       - python scripts/check-experiment-identity.py
       - task: test:python
-      - pnpm --dir web install --frozen-lockfile
-      - task: web:typecheck
-      - task: web:test
-      - task: web:build
       # docs deliberately excluded — they ride their own fast lane (docs.yml)
-      # registry eval through the classic door (web:test forced the flake door)
+      # registry eval through the classic door (test:python forced the flake door)
       - nix-build --no-out-link -A manifests
       # The packaged CLI includes publishing, even though fixture consumers do not.
       - nix run .#adb-runner -- publish --help

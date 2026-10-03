@@ -20,8 +20,8 @@ preferred-dark-theme = "ayu"
 git-repository-url = "https://github.com/antimemetics-institute/agentdatabank"
 edit-url-template = "https://github.com/antimemetics-institute/agentdatabank/edit/main/docs/book/{path}"
 no-section-label = false
-additional-css = ["theme/adb-commands.css", "theme/adb-theme-images.css", "theme/adb-tabs.css"]
-additional-js = ["theme/adb-commands.js", "theme/adb-media.js"]
+additional-css = ["theme/adb-commands.css", "theme/adb-tabs.css"]
+additional-js = ["theme/adb-commands.js"]
 
 [output.html.fold]
 enable = true

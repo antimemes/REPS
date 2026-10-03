@@ -57,18 +57,18 @@ in
 }
 ```
 
-`params` supplies both validation and the local form. `initial` prefills the form and suggested command; users must still bind the parameter explicitly when running from the CLI. `results` declares possible summary metrics and explains their meaning. See [manifest reference](../reference/manifest.md#result-declarations) for the result fields. Declaration list order sets the summary and definitions order.
+`params` supplies validation and command suggestions. `initial` supplies a suggested value; users must still bind the parameter explicitly when running from the CLI. `results` declares possible summary metrics and explains their meaning. See [manifest reference](../reference/manifest.md#result-declarations) for the result fields. Declaration list order sets the definitions order.
 
-Give each result a readable `label` and a short, plain-language `description` explaining what the value means. Use optional `details` for the calculation, aggregation and interpretation caveats. Add `unit` when useful. Explain what a boolean means in the experiment; the viewer shows neutral Yes/No values, not automatic success or failure. Distinguish observed progress from configured limits, and explain special cases such as an equality score of 1 when every agent gained zero.
+Give each result a readable `label` and a short, plain-language `description` explaining what the value means. Use optional `details` for the calculation, aggregation and interpretation caveats. Add `unit` when useful. Explain what a boolean means in the experiment, including whether it represents success or failure. Distinguish observed progress from configured limits, and explain special cases such as an equality score of 1 when every agent gained zero.
 
-These definitions appear in the collapsible **Results this experiment records** section before launch. On a run, each Results row shows its value and short description; expand the row to read its details. They describe possible outputs, not required outputs: an absent metric is missing, not zero. Undeclared results remain in the stream, warn, and are excluded from the summary; repeated declared results warn and use the last value. The runner saves the definitions in `run.json` and `run.start` as `result_definitions`, so readers retain the explanation used when the run began.
+These definitions describe possible outputs, not required outputs: an absent metric is missing, not zero. Undeclared results remain in the stream, warn, and are excluded from the summary; repeated declared results warn and use the last value. The runner saves the definitions in `run.json` under `definitions.results` and in `run.start` as `result_definitions`, so readers retain the explanation used when the run began.
 
 `src` declares the experiment's identity sources. Include code, configuration and dependency locks that determine this experiment's behavior. A path is usual; use a list when the experiment depends on several source trees. Changes anywhere in those declared inputs can change the condition identity, including a README inside a declared directory. Development artifacts such as `.venv` are filtered out. The [identity reference](../reference/layout.md#how-is-a-condition-id-calculated) gives the exact rule.
 
 ## What must the program do?
 
 `adb.mkExperiment` generates the named experiment launcher. Authors supply the
-underlying `program`; users invoke the named app or launch it from `adb-local`.
+underlying `program`; users invoke the named app.
 The generated launcher provides the manifest, source identity, and program path
 to the runner. Do not invoke `adb-runner`, build its execution environment by
 hand, or start the underlying program directly to create a run.
@@ -90,8 +90,8 @@ files, checkpoints and auxiliary data. GovSim's [ingestion module](../../../../e
 captures the environment log and each persona's memory nodes, including checkpoints
 left by a failed simulation.
 
-Keep foreign rows as open JSON dictionaries; never narrow them to the fields the
-viewer currently uses. GovSim's [native row models](../../../../experiments/govsim/govsim_adapter/models.py)
+Keep foreign rows as open JSON dictionaries; never narrow them to the fields a
+current analysis uses. GovSim's [native row models](../../../../experiments/govsim/govsim_adapter/models.py)
 retain unknown keys, nested values and explicit nulls while identifying known actions
 with typed custom kinds.
 
@@ -118,7 +118,7 @@ queries, preserving phase and query context as producer metadata.
 Declare results and their meanings in the manifest, then calculate and emit them
 in the adapter. GovSim's [result declarations](../../../../experiments/govsim/package.nix)
 set their display order and definitions; its adapter computes the scientific
-quantities. The viewer displays declared results without deriving experiment-specific
+quantities. Readers can use the emitted results without deriving experiment-specific
 metrics from native rows.
 
 Run the reusable [secrets scan](../../../../lib/adb-events/adb_events/secrets.py)
@@ -184,7 +184,7 @@ also fine for checks the two ADB testers do not cover.
 `smoke` takes the complete condition in `params`, runs the built launcher, and
 verifies its completed store. The oneliner IS the condition spec for a smoke run
 too: no defaults are hidden in the tester. Adding a parameter means adding it to
-the smoke check, just as to every oneliner and sweep script. Composer initials
+the smoke check, just as to every oneliner and sweep script. Manifest initials
 are independent of the smoke condition. The tester does not seed credentials;
 testing whether an adapter copies environment secrets is an adapter unit-test
 concern. Use `overrideAttrs` check hooks for offline fixtures,
@@ -239,13 +239,7 @@ Then execute the keyless example through its generated named app:
 nix run .#example-count -- --set count=3
 ```
 
-Start the local UI from the checkout if it is not already running:
-
-```sh,repo-local
-nix run .#adb-local
-```
-
-Open the completed run under **Runs** and verify that the input and result are both `3` and the feed contains the metric. If the UI was running when you launched the experiment, its printed **watch** link opens the run directly. Also open the experiment page to check the generated form.
+Inspect `run.json` and `events.jsonl` in the printed run directory and verify that the input and result are both `3`. The [terminal reading example](../reference/local.md#how-do-i-read-the-files-without-a-browser) shows how.
 
 For a real experiment, test parameter rejection, event shapes, summary selection and failure reporting with mocks or small local fixtures. Run the affected package's tests; after changing dependency declarations, update its lock and check dependent locks. `task lock:check` checks lock freshness, and `task ci` runs the repository's broader checks. Build documentation separately with `task docs:build` when changing it.
 
@@ -307,7 +301,7 @@ For example, suppose an adapter currently calls its model with a hardcoded `temp
    ```
 
 3. Add the field to the adapter's parameter schema, including any backend constraints, and replace the hardcoded argument with the supplied value. For a Python adapter with a validated `params` object, the call becomes `temperature=params.temperature`.
-4. Update the README commands and fixtures to supply `--set temperature=0.5` alongside every existing parameter. `initial` prefills the form and suggested command; it does not make this new CLI argument optional. Existing commands must be updated.
+4. Update the README commands and fixtures to supply `--set temperature=0.5` alongside every existing parameter. `initial` supplies a suggested value; it does not make this new CLI argument optional. Existing commands must be updated.
 5. Run the before/after fixture with `0.5` and check that the model request and relevant results match. Then use a different value, such as `0.2`, and assert that it reaches the backend. A mock that ignores temperature can check wiring but cannot establish how a real model responds. Check invalid inputs and inspect a small run's parameters, events and summary.
 
 Preserving behavior does not preserve fingerprints: changes to declared source content or the parameter set can change the condition ID. An explicit `--seed` stays unchanged across these edits. Use a fixed seed when testing behavior; see [seeds](../running/model.md#how-do-seeds-work).
@@ -316,48 +310,6 @@ If the change makes the experiment incompatible with its earlier meaning or beha
 
 ## What belongs in the pull request?
 
-Add exactly one readme in the experiment directory: `README.md` for ordinary Markdown or `README.mdx` for a page with charts. Never keep both; the Nix registry rejects that split. Explain the research question, upstream source, required services, input meanings, result interpretation and a small runnable example. Keep experiment-specific usage there rather than adding a catalog page to this book.
+Add a `README.md` in the experiment directory. Only Markdown is supported. Explain the research question, upstream source, required services, input meanings, result interpretation and a small runnable example. Keep experiment-specific usage there rather than adding a catalog page to this book.
 
 Describe what the new experiment or change does, the evidence it records, and the checks you ran. Include updated locks and fixtures needed to reproduce those checks. Submit the code and documentation through an ordinary repository pull request.
-
-### How do I give an experiment a thumbnail?
-
-Add `thumbnail.svg`, `thumbnail.png`, `thumbnail.jpg` or `thumbnail.webp` beside
-`package.nix`. The website bundles it during its build and shows it on the
-experiment's card, fitted inside a 2:1 frame without cropping. It is optional and
-stays outside the experiment's identity. GovSim reuses the thumbnail file as the
-first figure in its readme. Restart `task web:dev` after adding one.
-
-### How can I weave charts into an experiment page?
-
-Charts require `README.mdx` beside `package.nix`. Each experiment has exactly one
-readme, `README.md` or `README.mdx`, never both. When converting a Markdown page,
-move all its documentation into MDX before deleting the Markdown file.
-The website compiles MDX and its imported assets during its build; neither its
-text nor duplicate assets are included in the manifest catalog. Ordinary Markdown
-remains supported through the manifest's `readme` field and catalog assets.
-MDX can import local images, chart specifications and components. Treat it as
-trusted application code when reviewing changes.
-
-For a Vega-Lite chart, import a specification and pass it to `VegaChart`:
-
-```mdx
-import harvest from "./views/harvest.vl.json";
-
-## Was the harvest shared equally?
-
-Read equality alongside the amount collected.
-
-<VegaChart spec={harvest} />
-```
-
-Use `"data": {"name": "runs"}` in the specification. ADB supplies one row per run,
-with `run`, `condition`, `state` and `seed`, plus `param_<name>` and
-`result_<name>` scalar columns. Results come from each run’s recorded summary. Define filters,
-selections and chart layout using Vega-Lite itself. The chart can include failed
-or unfinished runs unless its specification filters them out. Missing values are
-null. GovSim's `README.mdx` and `views/` show linked selections and narrative.
-
-Readers can download each specification with its data. The charts run in the
-browser; they do not execute Python. Changes to existing MDX files and their
-imports reload in `task web:dev`. Restart development after adding a new MDX page.

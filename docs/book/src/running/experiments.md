@@ -1,31 +1,14 @@
 # Choose inputs and run
 
-Choose inputs in the local interface, or [run directly from a terminal](#how-do-i-use-the-command-line). Neither path requires a repository checkout. Use [getting started](getting-started.md) for a first browser run; [command settings](nix.md) selects downloaded source or your checkout.
-
-## How do I choose inputs in the local interface?
-
-1. Start the local application and open an experiment.
-
-   ```sh
-   nix run .#adb-local
-   ```
-
-2. Choose the experiment or task, the model, and the amount of work (such as a dataset limit or number of rounds). Use the experiment summary and linked material to understand those choices. The form includes type information and descriptions. Suggestions help you enter values; a suggested model is not a guarantee that the experiment or your account supports it.
-3. Enter the model ID, usually `provider/model`. You can type a value that is absent from the suggestions. For a list of structured entries, edit the rows or use **raw** to enter the complete JSON array. Object inputs accept JSON or the field controls provided by that experiment.
-4. Open the **run** tab, configure the required credential sets and select profiles. [Configure model credentials](secrets.md) explains how those selections work.
-5. Press **run** to execute the experiment once. Follow the job's run link to inspect its events.
-
-The form keeps edits in this browser across navigation. Review the values when returning to an experiment; they may be your earlier edits rather than its initial suggestions.
-
-**Jobs** shows queued and active work. Open a job for its details. **Stop** cancels queued work or stops active execution; partial run files are retained. See [local server reference](../reference/local.md) for lifecycle and configuration details.
+Inspect an experiment’s manifest and bind its parameters in the terminal. Neither this nor the [first-run example](getting-started.md) requires a checkout.
 
 ## How do I use the command line?
 
-The **oneliner** tab generates a command with every experiment parameter bound. Copy it into a terminal to run the same inputs. It invokes the generated experiment launcher, which supplies the runner’s execution context; do not substitute a direct `adb-runner` command or the underlying program. The command's Nix form and source follow the [command settings](nix.md); check those settings before executing. A command using moving `main` runs that source's current experiment, even if you copied it while examining older data. To repeat a historical configuration, [select its recorded source revision](model.md#how-do-i-keep-the-source-version) and inputs.
+Use the generated experiment launcher, which supplies the runner’s execution context. The command’s Nix form and source follow the [command settings](nix.md). A command using moving `main` runs that source’s current experiment; to repeat a historical configuration, [select its recorded source revision](model.md#how-do-i-keep-the-source-version) and inputs.
 
 For a model that needs credentials, [configure a saved profile](secrets.md) and select it with `--credential SET=NAME` when needed. An interactive terminal can prompt for missing built-in credentials; noninteractive runs require setup beforehand.
 
-Without the interface, ask the experiment for its manifest:
+Ask the experiment for its manifest:
 
 ```sh
 nix run .#inspect-hello -- --describe
@@ -49,20 +32,14 @@ Values can be JSON, a bare string or `@path` to read a file. Quote a whole `KEY=
 
 Add `--dry-run` to a complete command. It checks parameter names and types and prints the condition and inputs without starting the experiment or resolving credentials. List-length bounds are checked only when executing. It does not test account access, model availability or an experiment's external dependencies.
 
-Remove `--dry-run` when ready. The runner prints a run ID, data path and viewer link. Each invocation executes one run.
+Remove `--dry-run` when ready. The runner prints a run ID and a `store` path. Each invocation executes one run.
 
 ## How do I inspect the result?
 
-For browser inspection, start the viewer:
-
-```sh
-nix run .#adb-web
-```
-
-Open the run under **Runs** using its printed run ID. If a viewer was already serving the same data directory, the runner's **watch** link opens the run directly. A printed link alone does not start a viewer. If you used `--data-dir DIR`, pass the same option when starting the viewer. See [find and read a run](../browsing/runs.md) for inspecting results and evidence.
+Read `run.json` and `events.jsonl` in the printed run directory to inspect the saved metadata and events.
 
 For terminal processing, add `--json` to the experiment command to stream event envelopes as JSON lines on the launcher’s stdout; its diagnostics go to stderr. This is distinct from the child experiment program’s stdout, which is captured as text events. Saved run files are still written. For unattended execution, also pass `--non-interactive` to disable prompts; required credentials and profile selections must be resolvable without input. Each envelope identifies its run.
 
-Check `event.state` in each `run.end` envelope, or `state` in the saved `run.json`. The runner returns `0` when the run completes, `1` if it fails or times out, and `130` on interruption. A completed process can also report errors in individual evaluation items, so inspect the summary and relevant events. Missing `run.end` may mean execution is still active or stopped before recording its outcome. [Read the saved files directly](../browsing/runs.md#how-do-i-read-the-files-without-a-browser) to inspect the record without starting a viewer.
+Check `event.state` in each `run.end` envelope, or `lifecycle.state` in the saved `run.json`. The runner returns `0` when the run completes, `1` if it fails or times out, and `130` on interruption. A completed process can also report errors in individual evaluation items, so inspect the summary and relevant events. Missing `run.end` may mean execution is still active or stopped before recording its outcome. The [terminal reading example](../reference/local.md#how-do-i-read-the-files-without-a-browser) shows how to inspect the saved record.
 
-To interrupt a terminal run, press Ctrl-C. Inspect the retained record to see how far it progressed. To run the same configuration again, use the original command or the local job's rerun action; [repeat and compare runs](model.md) explains seeds and source versions.
+To interrupt a terminal run, press Ctrl-C. Inspect the retained record to see how far it progressed. To run the same configuration again, use the original command; [repeat and compare runs](model.md) explains seeds and source versions.

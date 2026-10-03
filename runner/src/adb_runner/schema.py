@@ -17,9 +17,8 @@ from typing import Any, NotRequired, TypedDict
 from adb_events import Json
 
 # ---------------------------------------------------------------------------------
-# The manifest vocabulary, in ONE place — python's counterpart of web/src/shared/
-# types.ts (keep the two in step; the conformance sweeps in both test suites check
-# each side against every real nix-built manifest, so drift fails tests).
+# The manifest vocabulary, in ONE place — the conformance sweep checks these
+# types against every real nix-built manifest, so drift fails tests.
 # TypedDicts, not loose dicts: the manifest is a GENERATED document (mkExperiment),
 # so the win worth buying is key-correctness — a typo'd key is a type error, not a
 # silent None. Param VALUES stay `Json` (the recursive union from adb_events):
@@ -68,7 +67,6 @@ class ParamDecl(TypedDict):
     maxLen: NotRequired[int]
     # fixed typed sub-form (inspect's generate_args), or a variant sub-form keyed
     # by another param's value — currently produced by no in-tree manifest
-    # (dormant; the GUI renders both)
     fields: NotRequired[dict[str, "ParamDecl"]]
     depends_on: NotRequired[str]
     variants: NotRequired[dict[str, dict[str, "ParamDecl"]]]
@@ -143,8 +141,8 @@ class MissingParamsError(SchemaError):
 
 def bind_params(manifest: Manifest, overrides: Params) -> Params:
     """Every param must be bound by the invocation — there are NO experiment-level
-    defaults. A manifest's `initial` values are presentation only (the composer's
-    prefill, and the suggested oneliner the CLI prints on this error): they never
+    defaults. A manifest's `initial` values are suggestions only (including the
+    suggested oneliner the CLI prints on this error): they never
     silently enter a run, so an author changing one can never change what an
     existing oneliner means."""
     params_schema = manifest["params"]

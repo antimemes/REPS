@@ -96,10 +96,9 @@ Profile names start with a lowercase letter or digit and continue with lowercase
 
 ## Data and configuration settings
 
-Experiment launchers, `adb-local`, `adb-web`, `adb-runner publish`, and `adb-runner verify` select run
+Experiment launchers, `adb-runner publish`, and `adb-runner verify` select run
 storage in this order: `--data-dir DIR`, `ADB_DATA_DIR`, then `$XDG_DATA_HOME/adb`
-(or `~/.local/share/adb` when `XDG_DATA_HOME` is unset). Commands copied from the
-web include its selected directory explicitly.
+(or `~/.local/share/adb` when `XDG_DATA_HOME` is unset).
 
 To audit a saved run by ID, use `nix run .#adb-runner -- verify RUN_ID --data-dir DIR`.
 `verify` also accepts a run-directory path directly; see [run auditing](../running/model.md#how-do-i-audit-the-first-real-run).
@@ -113,15 +112,17 @@ To audit a saved run by ID, use `nix run .#adb-runner -- verify RUN_ID --data-di
 | `NO_COLOR` | Disable runner terminal color. Nonterminal stderr and `TERM=dumb` also disable it. |
 | `DOCKER_HOST` | Forwarded to the experiment for Docker-backed tasks. The required daemon must be available separately. |
 
-Provider keys and endpoints come from the credential store. The runner does not forward arbitrary environment variables. [Process protocol](protocol.md) lists the variables passed to an experiment; [local server reference](local.md) covers server flags and operation.
+Provider keys and endpoints come from the credential store. The runner does not forward arbitrary environment variables. [Process protocol](protocol.md) lists the variables passed to an experiment; [local execution and storage](local.md) covers terminal operation.
 
 ## Package attributes
 
 | Entry point | Generated experiment launcher | Management tool |
 | --- | --- | --- |
-| Flake app | `NAME` | `adb-local`, `adb-web`, `adb-runner` |
+| Flake app | `NAME` | `adb-runner` |
 | Flake package | `experiment-NAME` | The same tool names |
 | Classic package | `experiment-NAME` | The same tool names |
-| Classic executable output | `exec.NAME` | `exec.adb-local`, `exec.adb-web`, `exec.adb-runner` |
+| Classic executable output | `exec.NAME` | `exec.adb-runner` |
 
 `manifests` builds a directory containing one manifest JSON file per registered experiment. [Working with Nix](../running/nix.md) explains fetching, registry aliases and revision pinning.
+
+The public package outputs are `manifests`, `adb-runner` and `experiment-<name>`, with `exec.<name>` executable outputs in the classic entry.

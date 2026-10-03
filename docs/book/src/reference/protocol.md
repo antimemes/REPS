@@ -2,7 +2,7 @@
 
 This page describes the underlying experiment program passed as `program` to
 `adb.mkExperiment`. It receives one parameter object and emits event payloads.
-To start a run, use the generated named experiment app or `adb-local`;
+To start a run, use the generated named experiment app;
 [launch commands](../running/experiments.md#how-do-i-use-the-command-line) describe
 the user-facing entry points. The program itself does not launch `adb-runner`. The runner supplies execution IDs, stores records and determines the process outcome.
 
@@ -186,5 +186,5 @@ delivery, or rejection. `adb-emit` reports the error on stderr and exits with co
 2; it writes nothing to stdout on successful emission. There is no automatic
 retry: a lost acknowledgement can leave receipt uncertain, and retrying could
 duplicate an event. The generated experiment launcher supplies the execution
-context; use the named experiment app or `adb-local` to start a run.
+context; use the named experiment app to start a run.
 Schema commands work without a running experiment.

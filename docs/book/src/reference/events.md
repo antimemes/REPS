@@ -18,7 +18,7 @@ adb-emit status --detail "Starting evaluation"
 
 Both APIs validate events, deliver them to the runner, and report delivery
 errors. To execute an experiment, use its named app (for example,
-`nix run .#inspect-hello -- ...`) or launch it from `adb-local`. The generated
+`nix run .#inspect-hello -- ...`). The generated
 experiment launcher starts the runner and configures event delivery. Do not
 invoke `adb-runner` or the underlying experiment program directly to start a run,
 and do not implement a socket client in experiment code.
@@ -151,21 +151,10 @@ field within each entry.
 event records. Literal-dependent hints use JSON Schema `if`/`then` clauses,
 for example log severity and the stdout/stderr channel.
 
-The viewer resolves hints from the exported schemas. Unhinted kinds show their
-kind and collapsed JSON. The stream renders every row in sequence order; use
-facet filters to narrow bursts of activity.
-Facets group schema kinds by their first dotted namespace, with individual kinds
-in a second row when the selected namespace has multiple kinds. Undotted tags
-have their own chips. A separate actor facet row filters by actors found across
-all hinted events in the run, using their display names and showing IDs on hover.
-`actor` identifies an actor; `actor_label` supplies its display name. The viewer
-seeds labels from registry events across the entire run, then applies per-row
-labels in transcript order. A row's own label takes precedence over the map;
-actors without a label fall back to their IDs. Actor
-cells show the ID on hover, including model calls whose label arrives in a later
-config or replay record.
-Every visible row retains a microsecond timestamp, dimming its unchanged prefix;
-hover shows the complete UTC timestamp and the offset from run start.
+Readers can resolve hints from the exported schemas. `actor` identifies an actor;
+`actor_label` supplies its display name, and registry events can provide labels
+for actors referenced elsewhere in the run. The original event payloads remain
+available regardless of presentation hints.
 
 Round or step boundaries can be custom events in source order. Mark post-run
 replay segments explicitly to distinguish them from earlier live calls.
@@ -285,28 +274,3 @@ In the experiment program, invoke `adb-emit result --name score --value 1` to re
 `llm-call` emits the `llm.call` wire type. JSON-valued flags take JSON text; `--value` accepts JSON or a bare string. `llm-call` also accepts a payload body object on stdin, with flags overriding fields from stdin. Invalid standard payloads return status `2` and print an error to stderr.
 
 Python producers construct Pydantic event models and call `emit(event)`; see [process protocol](protocol.md#how-can-python-experiments-emit-validated-events). Public producer classes and typed CustomEvent subclasses are accepted by `emit`. Unknown constructor fields raise; explicit metadata objects preserve provider and experiment fields. Use `CustomEvent` for generic experiment data.
-
-## Viewer event endpoints
-
-The viewer keeps the envelope intact: capture time and identity come from `ts`,
-`run`, `experiment`, `schema`, and `seq`; payload fields stay under `event`. A
-payload field named `ts` never changes the capture timestamp.
-
-`GET /api/runs/<condition>/<run>/events?after=<seq>` returns parsed envelopes.
-As a transport optimization it may replace large **payload** fields with typed
-`{ "__elided": { "bytes": <number> } }` markers. Envelope fields are never elided.
-Markers are transport state, not event data: views fetch the full record before
-using an omitted field. Display fields are loaded automatically; model input
-and raw provider calls are loaded when opened.
-
-`GET /api/runs/<condition>/<run>/event/<seq>` returns `text/plain; charset=utf-8`:
-the verbatim UTF-8 JSONL line from disk, including its original line terminator
-if present. The raw panel defaults to highlighted JSON with two-space indentation,
-inserting whitespace between tokens without changing key order, number spelling,
-or escapes. Its **disk line** toggle shows the original string verbatim, including
-spacing and the line terminator. Neither view stringifies a parsed object.
-
-Invalid JSON or invalid envelope shapes return HTTP 422 with the file and line
-number and appear as unreadable in the viewer. Bare payloads and historical
-request/response shapes are not adapted. A temporarily incomplete live line can
-be read on a subsequent poll once the writer finishes it.

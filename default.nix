@@ -34,7 +34,6 @@ let
 
   runnables =
     { inherit (adbPkgs) adb-runner; }
-    // lib.optionalAttrs (adbPkgs ? adb-web) { inherit (adbPkgs) adb-web adb-local; }
     // lib.mapAttrs' (name: exp: lib.nameValuePair "experiment-${name}" exp.app)
       adbPkgs.experiments;
 in
@@ -42,7 +41,6 @@ runnables
 // {
   inherit pkgs;
   manifests = adbPkgs.manifests;
-  adb-web-dist = adbPkgs.adb-web-dist;
 
 
   # `exec.<name>`: the classic mirror of the flake's APP namespace — bare names for
@@ -53,6 +51,5 @@ runnables
   exec = lib.mapAttrs
     (name: drv: pkgs.runCommand "exec-${name}" { } "ln -s ${lib.getExe drv} $out")
     ({ inherit (adbPkgs) adb-runner; }
-      // lib.optionalAttrs (adbPkgs ? adb-web) { inherit (adbPkgs) adb-web adb-local; }
       // lib.mapAttrs (_: exp: exp.app) adbPkgs.experiments);
 }

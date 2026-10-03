@@ -15,7 +15,6 @@ import os
 import random
 import shlex
 import sys
-import urllib.request
 from pathlib import Path
 
 from typing import Any, TypedDict
@@ -40,16 +39,6 @@ from .store import RunStore, resolve_data_dir
 from .run_id import new_run_id
 
 
-# the local viewer (adb-web): it binds VIEWER_PORT, walking up when that's taken, so
-# the link a run prints is only right if we look. resolve_viewer() probes the ports it
-# would have walked and keeps the one serving THIS run store; the default URL is the
-# fallback. Run links use the bare-id route the web app resolves itself.
-VIEWER_HOST = "127.0.0.1"
-VIEWER_PORT = 8340
-VIEWER_PROBE_PORTS = 4
-VIEWER_URL = f"http://{VIEWER_HOST}:{VIEWER_PORT}"
-
-
 def _log(msg: str) -> None:
     print(f"adb: {msg}", file=sys.stderr)
 
@@ -59,47 +48,6 @@ def _sgr(text: str, *codes: str) -> str:
     if not sys.stderr.isatty() or os.environ.get("NO_COLOR") or os.environ.get("TERM") == "dumb":
         return text
     return f"\033[{';'.join(codes)}m{text}\033[0m"
-
-
-def _viewer_ping(port: int, timeout: float = 0.3) -> dict[str, Json] | None:
-    """adb-web's identity endpoint: {"adb": "web", "home": <store it serves>}. Whatever
-    else might hold the port answers wrong, or not at all, and is skipped. Proxies are
-    bypassed explicitly — an http_proxy in the environment must not swallow a probe of
-    the machine's own loopback."""
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    try:
-        with opener.open(f"http://{VIEWER_HOST}:{port}/api/ping", timeout=timeout) as r:
-            body: Json = json.loads(r.read(4096))
-    except (OSError, ValueError):
-        return None
-    return body if isinstance(body, dict) and body.get("adb") == "web" else None
-
-
-def resolve_viewer(home: Path) -> tuple[str, str | None]:
-    """(base_url, hint) — where to watch these runs, plus a one-line fix when clicking
-    that link won't work yet. A viewer serving a *different* store would never show
-    these runs, so it counts as no viewer; we point at it and say how to re-home it."""
-    mismatched: tuple[str, str] | None = None
-    for port in range(VIEWER_PORT, VIEWER_PORT + VIEWER_PROBE_PORTS):
-        ping = _viewer_ping(port)
-        if ping is None:
-            continue
-        base = f"http://{VIEWER_HOST}:{port}"
-        served = str(ping.get("home") or "")
-        try:
-            same = bool(served) and Path(served).resolve() == home.resolve()
-        except OSError:
-            same = False
-        if same:
-            return base, None
-        if mismatched is None:
-            mismatched = (base, served or "somewhere else")
-    if mismatched is not None:
-        base, served = mismatched
-        return base, (f"the viewer at {base} is serving {served}, not {home} — restart it "
-                      f"with: nix run .#adb-web -- --data-dir {shlex.quote(str(home))}")
-    return VIEWER_URL, ("no viewer running — start one with: "
-                        f"nix run .#adb-web -- --data-dir {shlex.quote(str(home))}")
 
 
 def _parse_kv(raw: str, flag: str) -> tuple[str, str]:
@@ -147,9 +95,8 @@ def build_parser() -> argparse.ArgumentParser:
 def suggested_oneliner(manifest: Manifest) -> str:
     """The fully-explicit invocation, every param bound to a real declared value:
     its `initial`, else its first suggestion, else an enum's first member — so the
-    printed command runs as-is. This is what the composer would hand you; printing
-    it keeps the CLI usable without the GUI while every param stays on the command
-    line — the oneliner IS the condition spec, nothing hidden in defaults. Only a
+    printed command runs as-is. Every param stays on the command line — the
+    oneliner IS the condition spec, nothing hidden in defaults. Only a
     param the manifest names no value for anywhere gets a `<name>` placeholder."""
     sets: list[str] = []
     # presentation order: params may carry an `order` hint (task-level params first —
@@ -288,13 +235,6 @@ def main() -> int:
         _log(f"provisioning failed: {exc}")
         return 2
 
-    # Where to watch, resolved once the gate is behind us: the credential dialogue is
-    # the last thing between "I typed a command" and "it's running", so the link lands
-    # here — at the bottom of the scroll, where a click actually follows.
-    viewer, viewer_hint = resolve_viewer(home)
-    if viewer_hint:
-        _log(viewer_hint)
-
     try:
         try:
             validate_realized(realized, manifest)
@@ -304,11 +244,7 @@ def main() -> int:
         run_id = new_run_id()
         store = RunStore(home, cond["cid"], run_id, experiment=manifest["name"])
         label = f"[{abbrev(cond['cid'])}]"
-        # two aligned fields, the clickable one first: the URL is the thing a reader
-        # wants at the moment a run starts, and it's underlined/cyan so it reads as a
-        # link (terminals cmd-click it; it survives a plain copy either way).
         _log(f"{label} run {run_id} started")
-        _log(f"  {_sgr('▸ watch', '2')}  {_sgr(f'{viewer}/#/runs/{run_id}', '1;4;36')}")
         _log(f"  {_sgr('▸ store', '2')}  {_sgr(str(store.dir), '2')}")
 
         def on_event(envelope: dict[str, Any]) -> None:
@@ -334,8 +270,7 @@ def main() -> int:
             on_event=on_event,
             credential_env=credential_env,
         )
-        _log(f"{label} {result.run_id} {result.state} ({result.duration_s:.1f}s) "
-             f"— {viewer}/#/runs/{result.run_id}")
+        _log(f"{label} {result.run_id} {result.state} ({result.duration_s:.1f}s)")
     except KeyboardInterrupt:
         _log("interrupted — partial runs kept (garbage is data)")
         return 130

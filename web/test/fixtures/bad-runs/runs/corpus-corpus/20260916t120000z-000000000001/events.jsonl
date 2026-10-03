@@ -1,3 +1,0 @@
-{"v": 0, "ts": "2026-09-16T12:00:00.000000Z", "run": "20260916t120000z-000000000001", "experiment": "corpus", "schema": 0, "seq": 0, "event": {"type": "run.start", "condition": "corpus", "source": "test-source", "params": {}, "seed": 1, "runtime": {}, "result_definitions": [{"name": "score", "type": {"kind": "int"}, "label": "Score"}]}}
-{"v": 0, "ts": "2026-09-16T12:00:00.000000Z", "run": "20260916t120000z-000000000001", "experiment": "corpus", "schema": 0, "seq": 1, "event": {"type": "result", "name": "score", "value": 42}}
-{"v": 0, "ts": "2026-09-16T12:00:00.000000Z", "run": "20260916t120000z-000000000001", "experiment": "corpus", "schema": 0, "seq": 2, "event": {"type": "run.end", "state": "completed", "duration_s": 1, "exit_code": 0}}

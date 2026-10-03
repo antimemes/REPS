@@ -1,5 +1,5 @@
 """Manifest conformance sweep — every real nix-built manifest against the schema
-vocabulary in adb_runner.schema (the python twin of web/src/shared/types.ts).
+vocabulary in adb_runner.schema.
 
 Full structural validation, driven by the TypedDicts themselves (annotations are
 introspected, so there is no second schema to drift): at every level, keys must
@@ -9,7 +9,7 @@ with the file and path in the message. The walker checks the generated manifest
 directly against the declared TypedDict vocabulary.
 
 Gated on ADB_TEST_MANIFESTS (task test:python wires it to the nix-built manifests
-dir, same as the web suite's sweep); skips without it.
+dir); skips without it.
 """
 
 import json
@@ -25,8 +25,7 @@ import pytest
 from adb_events import Json
 from adb_runner.schema import Manifest
 
-# kinds the nix `types` constructors can produce (plus the reserved run/harness
-# vocabulary types.ts already names for the GUI)
+# kinds the nix `types` constructors can produce (plus reserved run/harness kinds)
 KINDS = {"llm", "str", "int", "float", "bool", "enum", "list", "struct", "object",
          "run", "harness"}
 
@@ -157,10 +156,10 @@ def test_shipped_readmes_follow_presentation_format():
         "rounds", "collapsed", "survival_months", "total_harvest", "gain_per_agent",
         "final_resource", "equality", "over_usage",
     ]
-    assert (root / "experiments/govsim/README.mdx").is_file()
-    assert not (root / "experiments/govsim/README.md").exists()
-    assert "readme" not in govsim
-    assert not (catalog / "assets/govsim").exists()
+    assert not (root / "experiments/govsim/README.mdx").exists()
+    assert govsim["readme"] == (root / "experiments/govsim/README.md").read_text()
+    assert "](figures/" not in govsim["readme"]
+    assert not any(path.is_file() for path in (catalog / "assets/govsim").rglob("*"))
     assert govsim["schema"]["version"] == 0
     assert govsim["schema"]["models"] == "govsim_adapter.models:Payload"
     # Resolve through the built experiment's interpreter, never by importing its
@@ -213,16 +212,12 @@ def test_registry_readme_formats(tmp_path, formats):
         "nix-build", "--no-out-link", str(expression), "--argstr", "repo", str(root),
         "--argstr", "fixture", str(fixture),
     ], capture_output=True, text=True, timeout=180)
-    if len(formats) == 2:
+    if "mdx" in formats:
         assert result.returncode != 0
-        assert "experiment readme-fixture has both README.md and README.mdx; keep exactly one" in result.stderr
+        assert "experiment readme-fixture: README.mdx is no longer supported; write README.md" in result.stderr
         return
     assert result.returncode == 0, result.stderr
     catalog = Path(result.stdout.strip())
     manifest = json.loads((catalog / "readme-fixture.json").read_text())
-    if formats == ("md",):
-        assert manifest["readme"] == text
-        assert (catalog / "assets/readme-fixture/overview.svg").read_text() == "<svg/>"
-    else:
-        assert "readme" not in manifest
-        assert not (catalog / "assets/readme-fixture").exists()
+    assert manifest["readme"] == text
+    assert (catalog / "assets/readme-fixture/overview.svg").read_text() == "<svg/>"

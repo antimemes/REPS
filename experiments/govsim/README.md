@@ -1,20 +1,9 @@
-import survival from "./views/survival.vl.json";
-import figureOne from "./thumbnail.png";
-import figureTwo from "./figures/figure-2.png";
-
 # GovSim
 
 Can AI agents share a resource without exhausting it?
 
 Five agents benefit from taking a shared resource, but overuse threatens
 everyone’s future. GovSim tests whether they can agree on limits and follow them.
-
-<figure className="paper-figure">
-  <a className="paper-figure-image" href={figureOne} target="_blank" rel="noreferrer" aria-label="Open Figure 1 at full size">
-    <img src={figureOne} width="1500" height="438" alt="Figure 1: a community of AI agents shares resources in pasture, fishery, and pollution scenarios, leading to cooperation or resource collapse." />
-  </a>
-  <figcaption><strong>Figure 1.</strong> GovSim’s three resource-sharing scenarios. From <a href="https://arxiv.org/html/2404.16698v4">Piatti et al. (2024)</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. <a href={figureOne} target="_blank" rel="noreferrer">Open full-size figure</a>.</figcaption>
-</figure>
 
 Based on [Cooperate or Collapse](https://arxiv.org/abs/2404.16698)
 (Piatti et al., NeurIPS 2024). [Original code](https://github.com/giorgiopiatti/GovSim).
@@ -25,26 +14,15 @@ Each round represents a month: agents harvest, observe each other’s actions,
 discuss limits, and reflect. The resource can recover between rounds if enough
 remains. Memories of earlier actions and conversations inform later decisions.
 
-<figure className="paper-figure">
-  <a className="paper-figure-image" href={figureTwo} target="_blank" rel="noreferrer" aria-label="Open Figure 2 at full size">
-    <img src={figureTwo} width="1499" height="777" loading="lazy" alt="Figure 2: the fishing agent’s monthly cycle of harvesting, discussion, and reflection. Example prompts combine simulation rules and memories to choose a catch, speak in a group, and record insights for future decisions." />
-  </a>
-  <figcaption><strong>Figure 2.</strong> The baseline fishing agent’s cycle and example prompts. From <a href="https://arxiv.org/html/2404.16698v4">Piatti et al. (2024)</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. <a href={figureTwo} target="_blank" rel="noreferrer">Open full-size figure</a>.</figcaption>
-</figure>
-
 ## Scenarios and conditions
 
 The **scenario** changes the agents’ roles, decisions, and shared resource:
-
-<div className="outcome-guide condition-guide" role="region" aria-label="How the scenarios differ" tabIndex={0}>
 
 | Scenario | What each agent decides each month | Shared resource |
 | --- | --- | --- |
 | Fishing (fishery) | A fisher chooses how many tons of fish to catch. | A lake holding up to 100 tons of fish; each ton caught removes one ton. |
 | Sheep herding (pasture) | A shepherd chooses how many sheep to graze. | Up to 100 hectares of grass; each sheep consumes one hectare. |
 | Pollution | A factory owner chooses how many pallets of widgets to produce. | A river with up to 100% clean water; each pallet pollutes one percentage point. |
-
-</div>
 
 All three use the **same resource dynamics**: after each month, the remaining
 fish, grass, or clean water doubles, up to its starting capacity. At full capacity,
@@ -55,8 +33,6 @@ different behavior when framed as extraction, grazing, or pollution
 
 The **treatment** changes the agents’ instructions, information, or group membership:
 
-<div className="outcome-guide condition-guide" role="region" aria-label="How the treatments differ" tabIndex={0}>
-
 | Treatment | What changes from baseline | What it tests |
 | --- | --- | --- |
 | Baseline | Five agents choose their own harvests, see others’ harvests, and discuss limits. | Can cooperation emerge? |
@@ -64,13 +40,9 @@ The **treatment** changes the agents’ instructions, information, or group memb
 | No discussion | Removes group conversation and observations of others’ harvests. | Can cooperation persist with less social information? |
 | Outsider | Starts with four community-minded agents; a selfish newcomer joins after three months. | Can the group withstand a newcomer who disregards its norms? |
 
-</div>
+Each **recorded condition** also fixes the model and run settings.
 
-Each **recorded condition** also fixes the model and run settings. Repeated runs
-of that condition provide the observations shown in the charts.
-
-<details>
-<summary>Additional variants in the upstream code</summary>
+### Additional variants in the upstream code
 
 **Paraphrase 1 and 2** change the wording of the fishing baseline’s instructions,
 while retaining its rules. They are optional upstream variants, not listed in
@@ -79,33 +51,6 @@ Their configurations select the
 [alternative fishing prompts](https://github.com/giorgiopiatti/GovSim/blob/1d11adf047b24fa2ba0d44a1d4931015ea2e5210/simulation/scenarios/fishing/agents/persona_v3/cognition/utils.py).
 The code also supports combining an outsider with universalization.
 
-</details>
-
-## Compare outcomes
-
-Select a scenario and treatment below. Compare runs of the same length and
-check sample sizes before drawing conclusions. These results describe the
-available runs; they are not a controlled model ranking.
-
-<GovSimFigure spec={survival} />
-
-The **Outcome** selector switches between these four measures:
-
-<div className="outcome-guide" role="region" aria-label="What each outcome measures" tabIndex={0}>
-
-| Outcome | What it measures |
-| --- | --- |
-| Resource survival | Months observed before collapse or the run’s time limit. |
-| Remaining resource | Stock after the final harvest, before recovery. |
-| Harvest per agent | Mean total collected over the run. |
-| Harvest equality | 1 means equal harvests—even if everyone collected nothing. |
-
-</div>
-
-**Resource collapse is an outcome, not an execution failure.** A short run
-without collapse does not demonstrate lasting cooperation. Resource units differ
-across scenarios; cumulative harvest also depends on run length.
-
 ## Run settings
 
 - **Quick demonstration:** one round with `mock/model` and the `hash` embedder.
@@ -113,8 +58,11 @@ across scenarios; cumulative harvest also depends on run length.
 - **Model behavior:** use a real model and `mxbai` for memory retrieval.
 - **Full scenario:** set `max_rounds = 0`; normally 12 months, or 15 with outsiders.
 
-<details>
-<summary>Reproducibility and recorded data</summary>
+**Resource collapse is an outcome, not an execution failure.** A short run
+without collapse does not demonstrate lasting cooperation. Resource units differ
+across scenarios; cumulative harvest also depends on run length.
+
+### Reproducibility and recorded data
 
 These runs are not automatically reproductions of the paper. Inspect each
 recorded condition for its model, generation settings, embedder, and seeds.
@@ -141,5 +89,3 @@ SHA-256 hash, and ingested record count. Memory nodes become `govsim.memory`;
 embeddings are not imported. Original fields and interaction HTML are retained
 on disk; the viewer displays plain text. Available checkpoints are retained on
 failure, with unreadable or missing logs reported as `govsim.unparsed_log`.
-
-</details>

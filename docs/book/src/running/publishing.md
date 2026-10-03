@@ -19,8 +19,6 @@ and credentials in the provider's supported credential source.
 ADB creates a boto3 session and its S3 client without overriding endpoint, region
 or client configuration. Ambient AWS settings are not passed into the experiment
 process; credential sets explicitly selected for the experiment still are.
-The web Publish panel reads profile names from `~/.aws/config` and never writes
-AWS files.
 
 ## Publish when a run finishes
 
@@ -31,9 +29,6 @@ complete mock-model example executes one run and publishes it:
 nix run .#inspect-hello -- --set model=mockllm/model --set limit=0 --set epochs=1 --set 'generate_args={}' --publish s3://my-bucket/adb-v1 --profile research
 ```
 
-The same options are available in the browser's **Publish** panel: enter the
-S3 target, choose a profile or default AWS resolution, and enable **Publish on
-completion**. The copied command and the browser Run button use those settings.
 The run's data directory still follows `--data-dir`, `ADB_DATA_DIR`, then the
 [XDG default](../reference/local.md#choose-where-results-are-saved).
 
@@ -89,9 +84,8 @@ Workspaces are never uploaded. See the [published layout](../reference/layout.md
 ## Build and serve an index
 
 Experiment buckets contain only `runs/`. A separate, replaceable index lets a
-static browser discover those runs. Keep `stores.yaml` and `site.json` in the
-site repository. Write the store list yourself; ADB does not infer a public URL
-from an S3 address. Store lists accept YAML (`.yaml` or `.yml`) or JSON.
+static site discover those runs. Write `stores.yaml` yourself; ADB does not infer
+a public URL from an S3 address. Store lists accept YAML (`.yaml` or `.yml`) or JSON.
 `data.example.org` below is an example store hostname.
 
 ```yaml
@@ -133,33 +127,21 @@ time. Use `--cache-dir DIR` to choose another cache directory or `--no-cache` to
 cache reads and writes. `--dry-run` can read existing entries but never writes them.
 Store summaries report cached and fetched cards before filters and exclusions.
 
-The complete `site.json` is:
-
-```json
-{"v": 0}
-```
-
-Unknown keys are rejected. CI builds the dist, copies it and `site.json` into
-`site/`, generates `site/index`, and deploys `site/`. With the ADB Nix packages
-and `adb-runner` available in CI:
+Build the index with this repository's public outputs:
 
 ```bash
-web_dist="$(nix build .#adb-web-dist --no-link --print-out-paths)"
 catalog="$(nix build .#manifests --no-link --print-out-paths)"
-mkdir -p site
-cp -R "$web_dist"/. site/
-chmod -R u+w site
-cp site.json site/site.json
-adb-runner index --stores stores.yaml --catalog "$catalog" --to site/index
+nix run .#adb-runner -- index --stores stores.yaml --catalog "$catalog" --to site/index
 ```
 
-Deploy the resulting `site/` directory. Only CI uses AWS profiles; the browser
-reads the generated index and public run objects.
+Deploy the generated `site/index` directory alongside your site. The index command
+reads the stores with AWS profiles; clients read public run objects without those
+credentials.
 
 `--catalog DIR` is required and points to the built manifest directory:
 `<name>.json` files and optional `assets/<name>/` trees, as with `verify --catalog`.
 The site's catalog is derived from the index, so an experiment with no published
-runs never appears. The web build itself contains no experiment catalog.
+runs never appears.
 
 `--dry-run` prints each store's filtered run count and the files and sizes it
 would write, without creating or deleting anything. Every invocation rebuilds
@@ -174,28 +156,11 @@ The root `index.json` lists experiment names, their run counts, the total count,
 and `built_at`. Each `experiments/<experiment>/index.jsonl` contains one row
 `{"store":"<public HTTPS base>","card":<run.json as a JSON value>}` per run.
 The card is compactly re-serialized with Unicode retained and key order
-preserved. This derived cache is never authoritative. Opening a run fetches the
-original card and compressed stream from the row's store; raw display uses those
-original bytes and decompressed lines.
+preserved. This derived cache is never authoritative. Read the original card and
+compressed stream from the row's store for the recorded bytes and decompressed lines.
 
 The index includes `catalog.json` with current manifests, shared render hints and
 versioned experiment hints for indexed experiments only. README assets are copied
 to `catalog/assets/<name>/`, dereferencing the manifest directory's symlinks.
-A missing manifest warns and leaves the experiment visible through its runs,
-without a manifest or experiment assets. Unknown schema versions
-fall back to shared hints. Published mode hides launch, publish and jobs controls;
-it requires no Node process. Without `site.json`, the app uses its local server.
-
-The browser reads `index/catalog.json`, `index/catalog/assets/<name>/`, `index/index.json` and
-`index/experiments/<experiment>/index.jsonl` relative to the app's own directory.
-An app served at `/adb/` reads `/adb/index/index.json`; the same layout works
-at the site root. It revalidates the index once a minute and caches `runs/`
-objects for the session. Run objects are fetched from each row's `store`,
-following redirects, including signed CDN URLs, with credentials omitted on
-every hop. Damaged rows and missing shards appear as diagnostic entries without
-hiding healthy runs.
-Unreadable run objects and identity mismatches also become diagnostic entries
-with reasons. A pure-JavaScript zstd decoder preserves the stream's decompressed
-lines for raw display. Large params are thinned for listings and expand from the
-original card; the index's re-serialized card never supplies raw card bytes.
-The local Node server does not read buckets in published mode.
+A missing manifest warns and leaves the experiment in the index through its runs,
+without a manifest or experiment assets.

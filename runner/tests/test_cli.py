@@ -47,7 +47,6 @@ def test_launch_forwards_optional_revision_and_tree_hash(tmp_path, monkeypatch, 
     monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(experiment))
     monkeypatch.setenv("ADB_FETCH_REF", ref)
     monkeypatch.setenv("ADB_TREE_HASH", "sha256-launcher-tree")
-    monkeypatch.setattr(cli, "resolve_viewer", lambda _: ("http://localhost", None))
     home = tmp_path / "data"
     monkeypatch.setattr(sys, "argv", ["adb-runner", "--data-dir", str(home)])
     assert cli.main() == 0
@@ -87,7 +86,6 @@ def run_cli(tmp_path, monkeypatch):
     monkeypatch.setenv("ADB_MANIFEST", str(manifest))
     monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(experiment))
     monkeypatch.delenv("ADB_FETCH_REF", raising=False)
-    monkeypatch.setattr(cli, "resolve_viewer", lambda _: ("http://localhost", None))
 
     def invoke(*args):
         monkeypatch.setattr(sys, "argv", ["adb-runner", "--json", "--data-dir", str(home), *args])
@@ -195,7 +193,6 @@ def test_output_and_interaction_are_independent(
     monkeypatch.setenv("ADB_MANIFEST", str(manifest))
     monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(experiment))
     monkeypatch.setattr(sys.stdin, "isatty", lambda: terminal)
-    monkeypatch.setattr(cli, "resolve_viewer", lambda _: ("http://localhost", None))
     interactions = []
 
     def resolve_credentials(*args, interactive, **kwargs):
@@ -223,7 +220,6 @@ def test_output_and_interaction_are_independent(
 @pytest.mark.parametrize("data_directory", ["flag", "env", "xdg", "default"], indirect=True)
 def test_run_uses_selected_data_directory(data_directory, tmp_path, monkeypatch, capsys):
     import json
-    import shlex
     import sys
     from adb_runner import cli
 
@@ -236,13 +232,12 @@ def test_run_uses_selected_data_directory(data_directory, tmp_path, monkeypatch,
     monkeypatch.setenv("ADB_MANIFEST", str(manifest))
     monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(experiment))
     monkeypatch.delenv("ADB_FETCH_REF", raising=False)
-    monkeypatch.setattr(cli, "_viewer_ping", lambda _: None)
     monkeypatch.setattr(sys, "argv", ["adb-runner", *flags])
 
     assert cli.main() == 0
     [card] = home.glob("runs/*/*/run.json")
     assert json.loads(card.read_text())["lifecycle"]["state"] == "completed"
-    assert f"--data-dir {shlex.quote(str(home))}" in capsys.readouterr().err
+    assert str(card.parent) in capsys.readouterr().err
     assert list(tmp_path.rglob("run.json")) == [card]
 
 

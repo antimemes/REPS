@@ -1,60 +1,45 @@
 # Run your first local experiment
 
-Use `adb-local` to open Agent Databank (ADB), run a one-round GovSim fishing simulation, and read the resulting conversation and metrics. You need [Nix installed](https://nixos.org/download/), a browser, and an internet connection for the initial downloads and builds. For a live model, you also need access to that model and any credentials its provider requires. GovSim’s paper embedder downloads about 1.3 GB on first use.
+Use the terminal to run `inspect-hello`, a small evaluation with fixed mock replies. You need [Nix installed](https://nixos.org/download/) on Linux or macOS and an internet connection for the initial build. This example needs no model credentials.
 
-## Start ADB
+## Inspect the inputs
 
-The command below follows your [Nix command settings](#adb-cmd-settings). The default downloads ADB without a checkout or requiring flakes; choose **local checkout** if you want to use code on your machine.
+Ask the experiment for its manifest:
 
-```bash
-nix run .#adb-local
+```sh
+nix run .#inspect-hello -- --describe
 ```
 
-Leave the terminal running. The first build can take time; once ready, ADB opens your browser. If it does not, open the URL printed in the terminal, normally `http://127.0.0.1:8340`. You should see the experiment catalog.
+The commands on this page follow your [Nix command settings](nix.md), including downloaded source or a local checkout. The default uses classic Nix and requires no checkout.
 
-<img class="only-light" src="../images/overview-light.png" alt="ADB's experiment catalog, with a search field above the experiment cards">
-<img class="only-dark" src="../images/overview-dark.png" alt="ADB's experiment catalog, with a search field above the experiment cards">
+The manifest describes every parameter and result. Each parameter must be supplied explicitly; an `initial` value is a suggestion, not a command-line default. For this example, choose `mockllm/model`, both samples (`limit=0`), one pass (`epochs=1`) and no generation overrides (`generate_args={}`).
 
-## Choose an experiment
+## Check the command
 
-Search for `govsim`, open **govsim**, and expand **configure a run**. Choose **fish_baseline_concurrent** and set **max_rounds** to `1`.
+```sh
+nix run .#inspect-hello -- \
+  --set model=mockllm/model --set limit=0 --set epochs=1 \
+  --set 'generate_args={}' --dry-run
+```
 
-<video class="only-light" autoplay loop muted playsinline src="../images/choose-light.webm" aria-label="Find and open the GovSim experiment"></video>
-<video class="only-dark" autoplay loop muted playsinline src="../images/choose-dark.webm" aria-label="Find and open the GovSim experiment"></video>
+This validates the parameter names and types and prints the resolved inputs, condition ID and seed without executing the experiment. For a real model, [configure credentials](secrets.md) before running.
 
-## Pick a model and save credentials
+## Execute one run
 
-Choose a **model** you have access to, using the provider prefix shown in the suggestions. If your provider supports a model that is absent from the suggestions, you can type its model ID. Set **embedder** to `mxbai` and leave **max_tokens** at `8000`. The recorded run uses `openai/gpt-6-astra`, **reasoning_effort** `low`, and empty (null) **temperature** and **top_p** fields. For another model, use generation settings that its provider supports.
+Remove `--dry-run`:
 
-Select the **run** tab and enter the credentials ADB asks for. The fields and defaults depend on the selected provider; these may include an API key and endpoint. Choose a profile name, such as **default**, and press **save**. The form changes to a profile selector. Press **remember** to reuse that profile for this experiment. If you already have a saved profile, select it instead. See [credentials](secrets.md) for storage and provider details.
+```sh
+nix run .#inspect-hello -- \
+  --set model=mockllm/model --set limit=0 --set epochs=1 \
+  --set 'generate_args={}'
+```
 
-For a credential-free local test, use `mock/model` with the `hash` embedder. This produces synthetic behavior without calling a provider or downloading embedding weights.
+The generated launcher builds the pinned program and starts the runner with its manifest and source identity. Expect two completed samples, zero errors and score `1.0`. Each invocation creates one run. Ctrl-C interrupts execution while retaining the partial record.
 
-<video class="only-light" autoplay loop muted playsinline src="../images/model-credentials-light.webm" aria-label="Select a model and save its credential profile"></video>
-<video class="only-dark" autoplay loop muted playsinline src="../images/model-credentials-dark.webm" aria-label="Select a model and save its credential profile"></video>
+The terminal prints the run ID and **store** path. The default data directory is `~/.local/share/adb`, or `$XDG_DATA_HOME/adb` when set. `ADB_DATA_DIR` or `--data-dir DIR` selects another directory; see [run storage](../reference/local.md#choose-where-results-are-saved).
 
-The animations show an illustrative, accelerated replay of a historical GovSim run, with its original model calls and messages. The saved key is an example; use your own credentials for a live run.
+## Inspect the result
 
-## Launch the experiment
+Open `run.json` in the printed run directory for inputs, provenance, state and derived results. `events.jsonl` contains the event envelopes, including each result and the final `run.end`. Follow the [terminal reading example](../reference/local.md#how-do-i-read-the-files-without-a-browser), or add `--json` to the experiment command to stream the events to standard output while they are saved.
 
-Press **▶ run** to execute the experiment once; this run simulates one fishing round. The job panel shows build and execution progress, then a link to the run. The first experiment build may take longer than the test itself.
-
-<video class="only-light" autoplay loop muted playsinline src="../images/launch-light.webm" aria-label="Launch the configured experiment and follow its progress"></video>
-<video class="only-dark" autoplay loop muted playsinline src="../images/launch-dark.webm" aria-label="Launch the configured experiment and follow its progress"></video>
-
-If the **run** tab is missing, check that you started `adb-local` and opened its local URL. If the button is disabled, read the explanation beside it; the local executor may still be starting.
-
-## Inspect the run
-
-Follow the run link in the job panel. The **results** card at the top shows simulation metrics such as rounds, total harvest, and remaining resources. The recorded run completed one round with a total harvest of `50` and final resource of `50`; live-model behavior can vary. Model calls appear as the simulation runs, while GovSim’s conversation messages arrive at the end. Use **messages** to read the prompts and replies, **llm calls** to inspect model calls, and **all** to show all recorded events. Scroll upward to see earlier events.
-
-<video class="only-light" autoplay loop muted playsinline src="../images/run-view-light.webm" aria-label="Inspect the conversation and results of a run"></video>
-<video class="only-dark" autoplay loop muted playsinline src="../images/run-view-dark.webm" aria-label="Inspect the conversation and results of a run"></video>
-
-Before launching more live runs, [verify the first run's directory](model.md#how-do-i-audit-the-first-real-run)
-with `adb-runner verify RUN_DIR`. This checks credentials, the experiment's typed
-stream and the card's agreement with the stream.
-
-You can find the run again under **Runs**. Press Ctrl-C in the launch terminal when finished; the saved run remains available next time you start ADB with the same data directory. Stopping ADB also stops its executor and any active execution.
-
-When you want to edit an experiment, use an ADB checkout and start `adb-local` from it, or pass `--repo /path/to/agentdatabank`. Restart after changing experiment declarations. See the [local tools reference](../reference/local.md) for checkout commands, storage locations, the read-only viewer, and terminal execution.
+A completed process does not establish that every evaluation item succeeded; check the recorded results and errors too. Before collecting real-model results, [audit the first run](model.md#how-do-i-audit-the-first-real-run) with `adb-runner verify`.

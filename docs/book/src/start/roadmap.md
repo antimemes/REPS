@@ -4,8 +4,6 @@
 
 - [x] Local CLI execution through Nix.
 - [x] Saved credential profiles.
-- [x] Local forms, Run/Stop and a job queue through `adb-local`.
-- [x] A read-only local run viewer through `adb-web`.
 - [x] Experiment contributions through ordinary in-repository pull requests.
 
 ## What comes next?
@@ -16,7 +14,7 @@
 
 Possible later additions:
 
-- [ ] Parameter presets and reuse of run configuration beyond the current local job rerun action.
+- [ ] Parameter presets and reuse of run configuration.
 - [ ] Analysis and annotations about which runs can meaningfully be compared, possibly in another tool.
 - [ ] External data deposits with attribution and review.
 - [ ] An agent authoring skill and sandbox tests of its instructions.

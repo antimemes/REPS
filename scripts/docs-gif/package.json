@@ -1,9 +1,0 @@
-{
-  "name": "adb-docs-gif",
-  "private": true,
-  "description": "Records the docs GIFs (scripts/docs-gifs.sh) — playwright-core drives the nixpkgs chromium, so no browser download",
-  "type": "module",
-  "dependencies": {
-    "playwright-core": "1.59.1"
-  }
-}

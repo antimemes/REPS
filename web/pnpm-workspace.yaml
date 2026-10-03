@@ -1,9 +1,0 @@
-# Single package — this file exists only as pnpm's config file (pnpm 11 reads
-# build-script allowances from it). No `packages:` key on purpose: web/ is not a
-# multi-package workspace; the server is dependency-free and lives in src/server.ts.
-#
-# esbuild's postinstall swaps its portable JS shim for the raw platform binary, which
-# breaks `node_modules/.bin/esbuild` under node-on-nix; blocked, the shim spawns the
-# @esbuild/linux-* binary itself and works everywhere. `false` = decided, not pending.
-allowBuilds:
-  esbuild: false
