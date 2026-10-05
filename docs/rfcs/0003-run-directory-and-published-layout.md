@@ -30,9 +30,7 @@ The final layout for local and published stores is `runs/<condition>-<experiment
 
 ## 5. Published layout
 
-An experiment bucket contains only `runs/` under a caller-selected S3 prefix.
-Publication preserves the final `runs/<condition>-<experiment>/<run>/` structure.
-Conditions remain groupings of cards; no separate condition object is published.
+An experiment bucket contains only `runs/` under a caller-selected S3 prefix. Publication preserves the final `runs/<condition>-<experiment>/<run>/` structure. Conditions remain groupings of cards; no separate condition object is published.
 
 ```text
 <prefix>/
@@ -43,22 +41,11 @@ Conditions remain groupings of cards; no separate condition object is published.
         events.jsonl.zst
 ```
 
-Each `events.jsonl.zst` is one level-19 zstd frame, preserving the original JSONL
-bytes when decompressed, with `Content-Type: application/zstd`. `run.json` is the
-full local card, copied byte-for-byte with `Content-Type: application/json`.
-Workspaces are never published. Indexes are derived, live outside experiment
-buckets, and follow [§7](#7-indexes).
+Each `events.jsonl.zst` is one level-19 zstd frame, preserving the original JSONL bytes when decompressed, with `Content-Type: application/zstd`. `run.json` is the full local card, copied byte-for-byte with `Content-Type: application/json`. Workspaces are never published. Indexes are derived, live outside experiment buckets, and follow [§7](#7-indexes).
 
-Publication requires a terminal state, a pinned clean `fetch_ref`, and a passing
-`verify` audit, including model identity checks. Failures are reported per run
-without aborting other publications. An upload is refused if either destination
-run key exists. The stream is uploaded first, then the card; partial uploads are
-never overwritten. Publication errors do not change run state or exit code.
+Publication requires a terminal state, a pinned clean `fetch_ref`, and a passing `verify` audit, including model identity checks. Failures are reported per run without aborting other publications. An upload is refused if either destination run key exists. The stream is uploaded first, then the card; partial uploads are never overwritten. Publication errors do not change run state or exit code.
 
-Storage uses the caller's boto3 configuration: no endpoint, region or client
-configuration overrides, host presets, remote registry or target environment
-variable belong in ADB. Ambient AWS variables do not enter the experiment
-environment; explicitly supplied experiment credential sets are preserved.
+Storage uses the caller's boto3 configuration: no endpoint, region or client configuration overrides, host presets, remote registry or target environment variable belong in ADB. Ambient AWS variables do not enter the experiment environment; explicitly supplied experiment credential sets are preserved.
 
 ## 6. Deferred
 
@@ -66,9 +53,7 @@ Chunked objects for live runs are deferred because record identity is independen
 
 ## 7. Indexes
 
-Indexes are derived from complete card/stream pairs, rebuilt in full, never
-authoritative, and live outside experiment buckets. Original objects retain their bytes.
-A user-written YAML or JSON store list selects sources; ADB never infers public URLs from S3:
+Indexes are derived from complete card/stream pairs, rebuilt in full, never authoritative, and live outside experiment buckets. Original objects retain their bytes. A user-written YAML or JSON store list selects sources; ADB never infers public URLs from S3:
 
 ```yaml
 v: 0
@@ -89,11 +74,7 @@ stores:
         reason: Provider outage invalidated these results.
 ```
 
-`s3` and optional `profile` select access; `url` is the public HTTPS base for the
-same prefix. Optional filters match exact recorded values and intersect;
-omission includes everything, an empty list nothing. An omitted profile uses
-boto3's normal resolution. Exclusions are site curation, recorded with reasons in
-the site's store list, and never touch bucket objects. The destination contains:
+`s3` and optional `profile` select access; `url` is the public HTTPS base for the same prefix. Optional filters match exact recorded values and intersect; omission includes everything, an empty list nothing. An omitted profile uses boto3's normal resolution. Exclusions are site curation, recorded with reasons in the site's store list, and never touch bucket objects. The destination contains:
 
 ```text
 index.json
@@ -102,13 +83,6 @@ catalog.json
 catalog/assets/<experiment>/
 ```
 
-`index.json` has shape `{"v":0,"experiments":[{"name":"govsim","runs":1}],"runs":1,"built_at":"<UTC timestamp>"}`.
-Counts count rows; `built_at` uses the stream's six-fractional-digit UTC format.
-Each shard row has shape `{"store":"<public HTTPS base>","card":<run.json as a JSON value>}`.
-The index adds no fields to the card; its re-serialized value never substitutes
-for the original card bytes in raw display. Only indexed experiments contribute
-manifests, shared and versioned hints, and README assets. Missing manifests warn
-and leave run-only experiments visible. An experiment without indexed runs is absent.
+`index.json` has shape `{"v":0,"experiments":[{"name":"govsim","runs":1}],"runs":1,"built_at":"<UTC timestamp>"}`. Counts count rows; `built_at` uses the stream's six-fractional-digit UTC format. Each shard row has shape `{"store":"<public HTTPS base>","card":<run.json as a JSON value>}`. The index adds no fields to the card; its re-serialized value never substitutes for the original card bytes in raw display. Only indexed experiments contribute manifests, shared and versioned hints, and README assets. Missing manifests warn and leave run-only experiments visible. An experiment without indexed runs is absent.
 
-The [publishing guide](../book/src/running/publishing.md) covers commands,
-deployment and browser behavior.
+The [publishing guide](../book/src/running/publishing.md) covers commands, deployment and browser behavior.
