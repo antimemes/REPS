@@ -5,7 +5,7 @@ Copy [9999-template.md](9999-template.md) to `NNNN-short-name.md` to start a pro
 Current documents:
 
 - [RFC 0001: Event basics and model API instrumentation](0001-event-basics.md) — draft.
-- [RFC 0002: Schema versioning](0002-schema-versioning.md) — draft.
+- [RFC 0002: Schema versioning](0002-schema-versioning.md) — provisional.
 - [RFC 0003: Run directory and published layout](0003-run-directory-and-published-layout.md) — draft.
 - [RFC 0004: Identity, provenance and pooling](0004-identity-provenance-and-pooling.md) — draft.
 
@@ -26,7 +26,7 @@ Scale the structure to the proposal. A small RFC can combine these sections. Use
 
 Long worked examples, research motivation, and prior-art discussion can live in a linked `NNNN-name-motivation.md` addendum marked **Informative**. It explains the proposal and introduces no extra requirements. Write it for a new reader, not as a transcript of conversations or reviewer history. State rejected alternatives only where their tradeoffs explain the current design.
 
-Use four-digit numbered filenames. Initial proposals are Draft; record their status explicitly when a project decision is made. Acceptance and implementation are separate facts. These conventions do not establish a committee or approval process.
+Use four-digit numbered filenames. `status` is one of `draft`, `provisional`, `accepted` or `superseded`. Initial proposals are draft. Provisional means the design is settled enough to implement against but may still change in response to implementation; accepted means it has survived implementation. Record a status change when a project decision is made. Acceptance and implementation are separate facts. These conventions do not establish a committee or approval process.
 
 ## Frontmatter
 

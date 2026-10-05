@@ -1,7 +1,7 @@
 ---
 rfc: 2
 title: Schema versioning
-status: draft
+status: provisional
 ---
 
 # RFC 0002: Schema versioning
@@ -9,24 +9,54 @@ status: draft
 ## 0. Envelope
 
 Every record carries:
-- `v: int` (envelope shape, 0);
-- `ts` (aware UTC capture datetime);
-- `run: str` (execution identifier);
-- `experiment: str` (payload schema family);
-- `schema: NonNegativeInt` (that experiment's payload union version);
+- `v: NonNegativeInt` (envelope shape and common events version);
+- `ts` (aware UTC capture datetime with six fractional digits and a trailing Z);
+- `run: str` (unique execution identifier);
+- `experiment: str` (schema family);
+- `schema: NonNegativeInt` (a specific experiment's custom event union version);
 - `seq: NonNegativeInt` (runner-assigned capture order); and
 - `event` (the validated payload).
 
-`(run, seq)` identifies a record; sequence alone does not prove causal order across processes. `ts` always has six fractional digits and a trailing Z; naive input is rejected. `LLMCall.completed` uses the same UTC type and serializer. Python spells the schema attribute `schema_`; JSON uses `schema`.
+`(run, seq)` globally identifies a **record**.
 
 ## 1. Envelope and payload versions
 
-`v` versions only the envelope shape. An experiment's integer `schema` identifies its full payload union, including shared vocabulary and its custom events. The manifest declares `schema = { version, models }`, where `models` is a `module:attribute` pointer; GovSim uses version 0 and `govsim_adapter.models:Payload`. The runner stamps experiment and version on every record. The manifest file's own `schema_version` is a third, independent version, 1 for ordered, named result declarations. Readers select the appropriate union without rewriting saved records.
+`v` versions the shared vocabulary: the envelope and the common event types defined in `adb_events`.
+
+`schema` identifies an experiment's custom events. The manifest declares `schema = { version, models }`, where `models` is a `module:attribute` pointer.
+
+The manifest file's own `schema_version` is a third, independent version, 1 for ordered, named result declarations.
 
 ## 2. Compatibility and bumps
 
-A schema version bumps only when records already written would fail to deserialize under the new module. Adding optional fields, union members, or literal values never bumps the version. Additive changes go in the current schema module; readers use its latest compatible library. The same compatibility rule applies to `v` for envelope changes. Incompatible changes require a new schema module and an experiment schema-version bump, retaining the old module for old records. Adding a raw harness record event alone therefore neither creates GovSim schema 1 nor changes existing GovSim run bytes.
+`v` and `schema` are bumped whenever old records would fail to validate under the models, or when deserializing old records into new models would lead to a misinterpretation.
 
-## 3. Frozen-module guard
+A version bump is not required when:
+- adding new union members; or
+- adding new optional fields, so long as their default value corresponds to the behavior in deserialization of records prior to their introduction.
 
-Frozen schema modules are never edited. The guard in [test_frozen.py](../../lib/adb-events/tests/test_frozen.py) compares SHA256 hashes of `inspect_chat.py` and `models/llm.py` with [frozen.json](../../lib/adb-events/tests/frozen.json), including comments and provenance. Do not refresh those hashes to admit edits to published snapshots. The current schema module is the extensible entry point: compatible declarations and union additions there compose around unchanged frozen models. This permits additive evolution without changing snapshots or bumping the schema version.
+The `retries` fallback on `llm.call`, which reads `adb_experiment`'s legacy metadata markers, is a lossless parsing of old records into new models. It is grandfathered in as the `v: 0` reading; such migrations should be handled with a `v` version bump in the future.
+
+## 3. Changelog
+
+A changelog is kept for the history of `v` versions, and for each experiment's `schema` versions. Each version bump should add an entry in the corresponding changelog along with the same commit.
+
+For `v`, the changelog is in Appendix A below, and the `v` constant in `adb_events` links here.
+
+For `schema`, each experiment keeps its changelog in the README.md in its `experiments` subfolder, at `<repository-root>/experiments/<experiment-name>/README.md`.
+
+Changelogs are prepend-only, sorted in descending order.
+
+The changelog should follow the format:
+
+```markdown
+### N
+
+**Change:** What a field or event now means, stated as the rule new readers apply.
+
+**Reading records at N-1:** How a reader applies the old meaning to records of the previous version.
+```
+
+## Appendix A. `v` changelog
+
+None.
