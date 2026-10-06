@@ -98,6 +98,7 @@ class EventSchema(TypedDict):
 class Manifest(TypedDict):
     name: str
     params: dict[str, ParamDecl]
+    v: NotRequired[int]  # older manifests omit this and declare vocabulary 0
     schema_version: NotRequired[int]
     schema: NotRequired[EventSchema]
     summary: NotRequired[str]
@@ -118,6 +119,9 @@ class SchemaError(ValueError):
 
 def load_manifest(path: str | Path) -> Manifest:
     manifest = json.loads(Path(path).read_text())
+    version = manifest.get("v", 0)
+    if type(version) is not int or version < 0:
+        raise SchemaError("v requires a non-negative integer vocabulary version")
     for field in ("name", "params"):
         if field not in manifest:
             raise SchemaError(f"manifest missing {field!r}")

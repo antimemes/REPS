@@ -12,12 +12,13 @@ import sys
 from typing import Any
 from urllib.parse import urlsplit
 
-from adb_events import Envelope, Json, read_events
+from adb_events import VOCABULARY_VERSION, Envelope, Json, content_filtered_without_model, read_events
 from adb_events.identity import RUN_ID_PATTERN
+from adb_events.migrate import MigrationError
 from adb_providers import PROVIDERS, served_model_matches
 
 from . import credentials
-from .card import derive_card
+from .card import CardProjection, derive_card
 from .schema import Manifest, load_manifest
 from adb_events.secrets import assert_run_has_no_secrets
 from .store import find_run, resolve_data_dir
@@ -36,24 +37,34 @@ class Verification:
     content_filter_stops: int
     empty_responses: int
     producer_warnings: tuple[str, ...]
+    filtered_identity_unavailable: bool
 
 
-# Invoke only the current build's interpreter and declared union, never code paths
+# Invoke only the manifest build's interpreter and declared union, never code paths
 # supplied by run.json or event payloads. Capture diagnostics: Pydantic's normal
 # error output includes input values and must not echo a leaked credential.
+# Validate raw lines with the build's own adb_events: retained v0 builds use
+# their v0 Envelope, independently of the current reader's migrations.
 _VALIDATE_UNION = '''
-import importlib, sys
-from adb_events import read_events
+import importlib, json, sys
+from pathlib import Path
+from typing import Any
+from pydantic import TypeAdapter
+from adb_events import Envelope
 try:
     module, attr = sys.argv[1].split(":")
     payload = getattr(importlib.import_module(module), attr)
+    adapter = TypeAdapter(payload)
 except Exception:
     print("cannot import experiment payload union")
     raise SystemExit(1)
 count = 0
 try:
-    for record in read_events(sys.argv[2], payload=payload):
-        count += 1
+    with (Path(sys.argv[2]) / "events.jsonl").open() as stream:
+        for line in stream:
+            record = Envelope[Any].model_validate_json(line, strict=True)
+            adapter.validate_json(json.dumps(record.event), strict=True)
+            count += 1
 except Exception:
     print(f"experiment payload validation failed at events.jsonl:{count + 1}")
     raise SystemExit(1)
@@ -107,12 +118,14 @@ def _manifest_path(experiment: str, *, manifest: Path | None, catalog: Path | No
 
 
 def _records(run_dir: Path) -> list[Envelope[Any]]:
+    """Validate migrated records and their structure, order, and identity."""
     records: list[Envelope[Any]] = []
     try:
         for record in read_events(run_dir):
             records.append(record)
-    except (OSError, ValueError):
-        raise VerificationError(f"envelope validation failed at events.jsonl:{len(records) + 1}") from None
+    except (OSError, ValueError) as exc:
+        operation = "vocabulary migration" if isinstance(exc.__cause__, MigrationError) else "envelope validation"
+        raise VerificationError(f"{operation} failed at events.jsonl:{len(records) + 1}") from None
     if not records or records[0].event.type != "run.start" or records[-1].event.type != "run.end":
         raise VerificationError("run must start with run.start and finish with run.end")
     first = records[0]
@@ -208,8 +221,8 @@ def verify_run(run_dir: Path, *, manifest: Path | None = None, catalog: Path | N
     """Audit saved files, typed records, identity/order, the card, and declared results.
 
     Terminal failed/interrupted runs can also be audited, but missing declared
-    results are a finding. This checks evidence, not scientific outcomes or
-    successful model responses. Never repairs records or the card. Checks all
+    results and failed model observations are findings. This checks evidence,
+    not scientific outcomes. Never repairs records or the card. Checks all
     local profiles matching the recorded endpoints.
     """
     records = _records(run_dir)
@@ -224,11 +237,27 @@ def verify_run(run_dir: Path, *, manifest: Path | None = None, catalog: Path | N
     except (OSError, ValueError, TypeError, KeyError):
         raise VerificationError("cannot load experiment manifest") from None
     _validate_union(run_dir, declaration, records)
+    failed = [record.event for record in records
+              if record.event.type == "llm.call" and record.event.error is not None]
+    if failed:
+        raise VerificationError(f"failed model calls: {len(failed)}; first error: {failed[0].error}")
     try:
         card: Json = json.loads((run_dir / "run.json").read_text())
     except (OSError, ValueError):
         raise VerificationError("run.json is missing or unreadable") from None
     expected = derive_card(records)
+    # A saved v0 cache may predate the new reading. Accept it only if it exactly
+    # matches the original stream projection; never ignore arbitrary card drift.
+    if card != expected:
+        original_projection = CardProjection()
+        legacy = False
+        with (run_dir / "events.jsonl").open(encoding="utf-8") as stream:
+            for line in stream:
+                written = json.loads(line)
+                legacy |= written["v"] < VOCABULARY_VERSION
+                original_projection.observe(written)
+        if legacy and json.dumps(card, sort_keys=True) == json.dumps(original_projection.snapshot(), sort_keys=True):
+            card = expected
     if not isinstance(card, dict) or set(card) != set(expected):
         raise VerificationError("run.json sections differ from the stream projection")
     for section in expected:
@@ -249,14 +278,16 @@ def verify_run(run_dir: Path, *, manifest: Path | None = None, catalog: Path | N
             if type(seed) is not int or seed != records[0].event.seed:
                 raise VerificationError(f"call.request.seed differs from run.start.seed at events.jsonl:{record.seq + 1}")
     calls = [record.event for record in records if record.event.type == "llm.call"]
-    mismatches = {(call.model, call.output.model) for call in calls
-                  if (call.output.model or call.output.choices)
-                  and not served_model_matches(call.model, call.output.model)}
+    mismatches = {(record.event.model, record.event.output.model) for record in records
+                  if record.event.type == "llm.call"
+                  and not content_filtered_without_model(record.event.output)
+                  and not served_model_matches(record.event.model, record.event.output.model)}
     stops = sum(any(choice.stop_reason == "max_tokens" for choice in call.output.choices) for call in calls)
     filtered = sum(any(choice.stop_reason == "content_filter" for choice in call.output.choices) for call in calls)
     empty = sum(not call.output.choices and not call.error for call in calls)
     return Verification(len(records), len({value for value in values.values() if value}),
-                        tuple(sorted(mismatches)), stops, filtered, empty, producer_warnings)
+                        tuple(sorted(mismatches)), stops, filtered, empty, producer_warnings,
+                        any(content_filtered_without_model(call.output) for call in calls))
 
 
 def verify_cli(argv: list[str]) -> int:
@@ -289,6 +320,8 @@ def verify_cli(argv: list[str]) -> int:
         print(f"verify: WARN: served model mismatch: requested {requested!r}, served {served!r}", file=sys.stderr)
     for warning in result.producer_warnings:
         print(f"verify: WARN: {warning}", file=sys.stderr)
+    if result.filtered_identity_unavailable:
+        print("verify: WARN: model identity could not be checked on content-filtered calls", file=sys.stderr)
     print(f"verify: max_tokens stops: {result.max_tokens_stops}; "
           f"content_filter stops: {result.content_filter_stops}; "
           f"empty_responses: {result.empty_responses} (llm.call records)")

@@ -35,14 +35,22 @@ from .inspect_chat import (
 )
 from .emit import emit, emit_producer
 from .transport import EventTransportError
-from .read import EventReadError, parse_event, read_events
+from .read import EventReadError, parse_event, parse_record, read_events
 from .render import ActorRegistry, RenderHint, export_schema
+from .chat import chat_completion_output, content_filtered_without_model
+from .migrate import migrate_record
+from .version import VOCABULARY_VERSION
 
 __all__ = [
+    "VOCABULARY_VERSION",
+    "chat_completion_output",
+    "content_filtered_without_model",
+    "migrate_record",
     "emit",
     "emit_producer",
     "ProducerPython",
     "parse_event",
+    "parse_record",
     "read_events",
     "EventReadError",
     "EventTransportError",

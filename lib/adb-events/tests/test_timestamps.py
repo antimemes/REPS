@@ -7,12 +7,12 @@ import duckdb
 import pytest
 from pydantic import ValidationError
 
-from adb_events import Envelope, LLMCall, ModelOutput, read_events
+from adb_events import VOCABULARY_VERSION, Envelope, LLMCall, ModelOutput, read_events
 
 
 def record(value):
     return Envelope(
-        ts=value, run="20260916t120000z-012345abcdef", experiment="test", schema=0, seq=0,
+        v=VOCABULARY_VERSION, ts=value, run="20260916t120000z-012345abcdef", experiment="test", schema=0, seq=0,
         event=LLMCall(model="m", input=[], output=ModelOutput(), completed=value),
     )
 
@@ -39,14 +39,14 @@ def test_timestamps_round_trip_in_shared_fixed_width_format(value, expected):
 @pytest.mark.parametrize("value", [datetime(2026, 9, 14), "2026-09-14T12:00:00"])
 def test_naive_timestamps_are_rejected(value):
     with pytest.raises(ValidationError, match="timezone"):
-        Envelope(ts=value, run="20260916t120000z-012345abcdef", experiment="test", schema=0, seq=0,
+        Envelope(v=VOCABULARY_VERSION, ts=value, run="20260916t120000z-012345abcdef", experiment="test", schema=0, seq=0,
                  event=LLMCall(model="m", input=[], output=ModelOutput()))
     with pytest.raises(ValidationError, match="timezone"):
         LLMCall(model="m", input=[], output=ModelOutput(), completed=value)
     if isinstance(value, str):
         with pytest.raises(ValidationError, match="timezone"):
             Envelope.model_validate_json(json.dumps({
-                "ts": value, "run": "20260916t120000z-012345abcdef", "experiment": "test", "schema": 0, "seq": 0,
+                "v": VOCABULARY_VERSION, "ts": value, "run": "20260916t120000z-012345abcdef", "experiment": "test", "schema": 0, "seq": 0,
                 "event": {"type": "llm.call", "model": "m", "input": [], "output": {}},
             }))
 

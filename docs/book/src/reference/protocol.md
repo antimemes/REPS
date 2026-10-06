@@ -156,9 +156,16 @@ Invalid records raise `EventReadError` with the file and line number, including
 unknown types and truncated JSON. Valid partial runs can be read without a
 `run.end` record. Files are never modified.
 
-For a standalone payload JSON string, use `parse_event(json_text)`.
-`EVENT_ADAPTER` exposes Pydantic's `TypeAdapter[Payload]` for bulk tooling;
-`Envelope.model_validate_json(line, strict=True)` decodes a single saved record.
+Use `parse_event(json_text)` for one event payload, `parse_record(line)` for one
+saved envelope, and `read_events(path)` for a file or run directory. `parse_record`
+decodes JSON, applies `migrate_record(record)` to the dict, then validates
+the current shape with `Envelope`; `read_events` does this for each line. Migrations
+read the written `v`, set it to `VOCABULARY_VERSION`, refuse missing, invalid or
+newer versions and leave saved files untouched.
+Both readers accept the optional `payload` union or adapter, validated after migration.
+`Envelope` accepts only the current `v` and defaults to it when constructed;
+use the readers for older saved records.
+`EVENT_ADAPTER` exposes Pydantic's `TypeAdapter[Payload]` for bulk tooling.
 `adb-emit schema --union` exports the payload union's JSON Schema;
 `adb-emit schema --envelope` exports the complete record schema.
 

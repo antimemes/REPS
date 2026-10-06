@@ -2,11 +2,12 @@
 
 from collections.abc import Mapping
 import json
-from typing import Annotated, Any, Literal, get_args
+from typing import Annotated, Any, get_args
 
 from pydantic import ConfigDict, Field, TypeAdapter
 from ..render import RenderHint
 from ..identity import RunId
+from ..version import VOCABULARY_VERSION, VocabularyVersion
 
 from .base import Event, Model, NonNegativeInt, UtcDatetime
 from .base import Json as Json, Scalar as Scalar
@@ -28,7 +29,7 @@ from .run import (
 )
 
 
-# Presentation lives outside the frozen LLM wire-model snapshot.
+# Presentation lives outside the LLM wire models.
 LLMCall.render = RenderHint(icon="sparkles", actor="agent")
 
 # These unions are the authority. The registry used for per-type schema export
@@ -72,11 +73,11 @@ PRODUCER_MODELS = _event_models(ProducerPayload)
 
 
 class Envelope[EventPayload = Payload](Model):
-    """A saved record with a conformant payload."""
+    """A current-vocabulary record with a conformant payload."""
 
     model_config = ConfigDict(serialize_by_alias=True)
 
-    v: Literal[0] = 0
+    v: VocabularyVersion = VOCABULARY_VERSION
     ts: UtcDatetime
     run: RunId
     experiment: str

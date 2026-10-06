@@ -10,11 +10,13 @@ import sys
 
 import pytest
 
+from adb_events import VOCABULARY_VERSION
 from adb_runner.protocol import execute_run
 from adb_runner.store import RunStore
 
 MANIFEST = {
     "name": "t",
+    "v": VOCABULARY_VERSION,
     "params": {"x": {"type": {"kind": "int"}, "default": 1}},
     "results": [
         {
@@ -92,7 +94,7 @@ def test_protocol_end_to_end(tmp_path):
     assert result.state == "completed"
     # transport envelope: runner owns v/ts/run/seq; the payload rides under `event`
     assert [e["seq"] for e in envelopes] == list(range(len(envelopes)))
-    assert all(e["v"] == 0 and e["run"] == "20260916t120000z-012345abcdef" and "event" in e for e in envelopes)
+    assert all(e["v"] == VOCABULARY_VERSION and e["run"] == "20260916t120000z-012345abcdef" and "event" in e for e in envelopes)
     assert all(len(e["ts"]) == 27 and e["ts"].endswith("Z") for e in envelopes)
     assert all(e["experiment"] == "t" and e["schema"] == 0 for e in envelopes)
     payloads = [e["event"] for e in envelopes]
@@ -170,7 +172,7 @@ def test_run_start_records_the_parameters_passed_to_the_child(tmp_path):
 
 @pytest.mark.parametrize("results", [None, []])
 def test_no_declarations_preserves_results_and_warns(tmp_path, results):
-    manifest = {"name": "t", "params": MANIFEST["params"]}
+    manifest = {"v": VOCABULARY_VERSION, "name": "t", "params": MANIFEST["params"]}
     if results is not None:
         manifest["results"] = results
     result, envelopes, store = run_fixture(tmp_path, manifest=manifest)
@@ -302,7 +304,7 @@ def test_tree_hash_is_independent_of_a_clean_fetch_reference(tmp_path, fetch_ref
 def test_runtime_records_only_endpoint_origins(tmp_path, monkeypatch, url, origin, provider, model, variable):
     from adb_runner import protocol
 
-    manifest = {"name": "t", "params": {"model": {"type": {"kind": "llm"}}}}
+    manifest = {"v": VOCABULARY_VERSION, "name": "t", "params": {"model": {"type": {"kind": "llm"}}}}
     # Observe the real spawn: sanitizing capture must not change the child's URL.
     spawn = protocol.subprocess.Popen
 

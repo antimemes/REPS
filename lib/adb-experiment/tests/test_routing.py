@@ -8,7 +8,7 @@ import httpx
 import openai
 import pytest
 
-from adb_experiment.llm import ChatClient, ServedModelMismatch
+from adb_experiment.llm import ChatClient, EmptyResponse, ServedModelMismatch
 from adb_experiment.providers import resolve
 from adb_providers import served_model_matches
 from test_llm import client_and_reply
@@ -132,8 +132,71 @@ def test_exhausted_retries_retained_and_do_not_consume_first_success_check(event
     failure, success, log = event_capture.read()
     assert failure["retries"] == 9
     assert failure["metadata"] is None
-    assert failure["error"] and failure["call"]["error"]
+    assert failure["error"] and failure["call"]["error"] is None
     assert failure["output"]["model"] == ""
     assert success["retries"] == 0
     assert success["metadata"] is None
     assert log["level"] == "error"
+
+
+@pytest.mark.parametrize("status,body", [
+    (400, {"error": {"message": "no output", "type": "bad_request"}, "request_id": "retained"}),
+    (400, {"id": "empty", "model": "alias", "choices": []}),
+    (400, {"id": "empty", "object": "chat.completion", "created": 123, "model": "alias", "choices": [],
+           "usage": {"prompt_tokens": 3, "completion_tokens": 0, "total_tokens": 3}}),
+    (200, {"id": "empty", "model": "alias", "choices": []}),
+    (200, {"id": "missing", "model": "alias"}),
+])
+def test_transport_without_choices_retries_only_success_status_and_retains_body(event_capture, monkeypatch, status, body):
+    attempts = []
+    delays = []
+
+    def handler(request):
+        attempts.append(request)
+        return httpx.Response(status, json=body)
+
+    client = sdk_client(monkeypatch, handler)
+    monkeypatch.setattr("adb_experiment.llm.time.sleep", delays.append)
+    with pytest.raises(openai.BadRequestError if status == 400 else EmptyResponse) as caught:
+        client.chat.completions.create(model="alias", messages=[])
+    assert len(attempts) == (1 if status == 400 else 8)
+    assert delays == ([] if status == 400 else [1, 2, 4, 8, 16, 32, 60])
+    [event] = event_capture.read()
+    assert event["error"] == str(caught.value)
+    assert event["call"]["error"] is None
+    assert not event["output"]["choices"]
+    assert event["retries"] == (0 if status == 400 else 8)
+    assert all(event["call"]["response"][key] == value for key, value in body.items())
+    if status == 400:
+        assert event["call"]["response"] == body
+    assert not client._model_checked
+    if "usage" in body:
+        assert event["output"]["model"] == body["model"]
+        assert event["output"]["usage"]["input_tokens"] == 3
+
+
+@pytest.mark.parametrize("final_status", [200, 400])
+def test_empty_success_responses_retry_into_content_filter_observation(event_capture, monkeypatch, final_status):
+    _, reply = client_and_reply()
+    reply.choices[0].finish_reason = "content_filter"
+    reply.choices[0].message.content = ""
+    body = reply.model_dump(mode="json")
+    attempts = []
+
+    def handler(request):
+        attempts.append(request)
+        if len(attempts) < 3:
+            return httpx.Response(200, json={"model": "alias", "choices": []})
+        return httpx.Response(final_status, json=body)
+
+    client = sdk_client(monkeypatch, handler)
+    monkeypatch.setattr("adb_experiment.llm.time.sleep", lambda delay: None)
+    result = client.chat.completions.create(model="alias", messages=[])
+    assert result.choices[0].finish_reason == "content_filter"
+    assert len(attempts) == 3
+    [event] = event_capture.read()
+    assert event["error"] is None
+    assert event["call"]["error"] is None
+    assert event["call"]["response"] == body
+    assert event["output"]["choices"][0]["stop_reason"] == "content_filter"
+    assert event["retries"] == 2

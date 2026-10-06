@@ -61,6 +61,26 @@ def objects(s3):
             for row in s3.list_objects_v2(Bucket="throwaway").get("Contents", [])}
 
 
+def test_publish_refuses_failed_model_observations_before_upload(publication, bucket, capsys):
+    directory, invoke = publication
+
+    def insert(rows):
+        rows.insert(-1, {**rows[0], "event": {
+            "type": "llm.call", "model": "mock/model", "input": [], "output": {},
+            "error": "Request timed out.",
+        }})
+        for seq, row in enumerate(rows):
+            row["seq"] = seq
+
+    rewrite_stream(directory, insert)
+    (directory / "run.json").write_text(json.dumps(derive_card(read_events(directory))))
+    before = digest_files(directory)
+    assert invoke("--profile", "throwaway") == 1
+    assert "failed model calls: 1; first error: Request timed out." in capsys.readouterr().err
+    assert objects(bucket) == {}
+    assert digest_files(directory) == before
+
+
 def clone(directory, number, *, experiment="t", state="completed"):
     target = directory.parents[1] / f"cid-{experiment}" / f"20260916t120000z-{number:012x}"
     shutil.copytree(directory, target)

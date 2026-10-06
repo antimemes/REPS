@@ -35,25 +35,25 @@ from copy import deepcopy
 from contextvars import ContextVar
 from datetime import datetime, timezone
 import hashlib
-import json
-import re
 import threading
 import time
 import types
 from collections.abc import Callable
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 from pydantic import JsonValue
 
-from adb_events import LLMCall, Log, emit
+from adb_events import LLMCall, Log, chat_completion_output, content_filtered_without_model, emit
+from adb_events.chat import assistant_message, chat_message
 from adb_providers import model_family, served_model_matches
 from adb_events.inspect_chat import (
-    ChatMessage, ChatMessageAssistant, ChatMessageSystem, ChatMessageTool,
-    ChatMessageUser, Content, ContentAudio, ContentData, ContentDocument,
-    ContentImage, ContentReasoning, ContentText, ToolCall, ChatCompletionChoice,
-    Logprobs, ModelCall, ModelOutput, ModelUsage, StopReason, ToolChoice, ToolFunction, ToolInfo,
+    ChatCompletionChoice, ModelCall, ModelOutput, ToolChoice, ToolFunction, ToolInfo,
 )
 
 from .providers import resolve
+
+if TYPE_CHECKING:
+    import openai
+    from openai.types.chat import ChatCompletion
 
 # neutral deterministic lines for the default mock responder — enough variety that
 # loops which detect repetition still make progress
@@ -75,94 +75,6 @@ def deterministic_pick(seed: int, text: str, n: int) -> int:
     return int.from_bytes(digest[:8], "big") % n
 
 
-def _content(value: Any) -> str | list[Content]:
-    """OpenAI content parts -> the shared Inspect content vocabulary."""
-    if value is None:
-        return ""
-    if isinstance(value, str):
-        return value
-    parts: list[Content] = []
-    for part in value:
-        match part["type"]:
-            case "text":
-                parts.append(ContentText(text=part["text"]))
-            case "refusal":
-                parts.append(ContentText(text=part["refusal"], refusal=True))
-            case "image_url":
-                image = part["image_url"]
-                parts.append(ContentImage(image=image["url"], detail=image.get("detail", "auto")))
-            case "input_audio":
-                audio = part["input_audio"]
-                parts.append(ContentAudio(audio=audio["data"], format=audio["format"]))
-            case "file":
-                file = part["file"]
-                if file.get("file_data"):
-                    parts.append(ContentDocument(document=file["file_data"], filename=file.get("filename", "")))
-                else:
-                    parts.append(ContentData(data=part))
-            case _:
-                parts.append(ContentData(data=part))
-    return parts
-
-
-def _tool_call(call: dict[str, Any]) -> ToolCall:
-    custom = call.get("type") == "custom"
-    function = call["custom" if custom else "function"]
-    if custom:
-        return ToolCall(id=call["id"], function=function["name"],
-                        arguments={"input": function["input"]}, type="custom")
-    try:
-        arguments: dict[str, Any] = json.loads(function["arguments"])
-        if not isinstance(arguments, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
-            raise ValueError("tool arguments must be a JSON object")
-    except (ValueError, TypeError) as exc:
-        # The exact arguments remain in raw; malformed calls are still evidence.
-        return ToolCall(id=call["id"], function=function["name"],
-                        arguments={}, parse_error=str(exc))
-    return ToolCall(id=call["id"], function=function["name"], arguments=arguments)
-
-
-def _assistant_message(message: dict[str, Any]) -> ChatMessageAssistant:
-    content: str | list[Content] = _content(message.get("content"))
-    reasoning = message.get("reasoning_content") or message.get("reasoning")
-    refusal = message.get("refusal")
-    if isinstance(content, str):
-        # Inspect 0.3.263's first-block grammar, preserving text whitespace.
-        if block := re.search(r"<think([^>]*)>(.*?)</think>", content, re.DOTALL):
-            content = [ContentReasoning(reasoning=block.group(2)),
-                       ContentText(text=content[:block.start()] + content[block.end():])]
-    if reasoning or refusal:
-        parts: list[Content] = []
-        if isinstance(reasoning, str):
-            parts.append(ContentReasoning(reasoning=reasoning))
-        parts.extend([ContentText(text=content)] if isinstance(content, str) and content else
-                     content if isinstance(content, list) else [])
-        if refusal:
-            parts.append(ContentText(text=refusal, refusal=True))
-        content = parts
-    return ChatMessageAssistant(
-        content=content,
-        tool_calls=([_tool_call(call) for call in message["tool_calls"]]
-                    if message.get("tool_calls") is not None else None),
-    )
-
-
-def _chat_message(message: dict[str, Any]) -> ChatMessage:
-    match message["role"]:
-        case "system" | "developer":
-            return ChatMessageSystem(content=_content(message.get("content")))
-        case "user":
-            return ChatMessageUser(content=_content(message.get("content")))
-        case "assistant":
-            return _assistant_message(message)
-        case "tool" | "function":
-            return ChatMessageTool(content=_content(message.get("content")),
-                                   tool_call_id=message.get("tool_call_id"),
-                                   function=message.get("name"))
-        case _:
-            raise ValueError(f"unsupported OpenAI message role: {message['role']!r}")
-
-
 def _tool_info(tool: dict[str, Any]) -> ToolInfo:
     function = tool.get("function") or tool.get("custom") or tool
     return ToolInfo(name=function["name"], description=function.get("description", ""),
@@ -181,15 +93,6 @@ def _tool_choice(value: Any) -> ToolChoice:
     return ToolFunction(name=(value.get("function") or value["custom"])["name"])
 
 
-def _stop_reason(value: str | None) -> StopReason:
-    match value:
-        case "stop" | "eos": return "stop"
-        case "length": return "max_tokens"
-        case "tool_calls" | "function_call": return "tool_calls"
-        case "content_filter" | "model_length" | "max_tokens": return value
-        case _: return "unknown"
-
-
 class ServedModelMismatch(SystemExit):
     """Fatal routing error, deliberately outside harnesses' Exception fallbacks.
 
@@ -200,6 +103,47 @@ class ServedModelMismatch(SystemExit):
 
 class EmptyResponse(RuntimeError):
     """The provider returned no choices on every attempt."""
+
+
+def _status_error_response(event: LLMCall, error: openai.APIStatusError) -> ChatCompletion | None:
+    """Retain the full error body and construct choices as the SDK does for 200s."""
+    from openai._models import construct_type_unchecked
+    from openai.types.chat import ChatCompletion
+
+    body: Any
+    try:
+        body = error.response.json()
+    except ValueError:
+        body = error.body if error.body is not None else error.response.text
+    if event.call is not None:
+        event.call.response = body if isinstance(body, dict) else {"body": body}
+    if isinstance(body, dict):
+        completion_body = cast(dict[str, Any], body)
+        if isinstance(completion_body.get("choices"), list):
+            return construct_type_unchecked(type_=ChatCompletion, value=completion_body)
+    return None
+
+
+def _record_response(event: LLMCall, response: ChatCompletion | None,
+                     status_error: openai.APIStatusError | None) -> bool:
+    """Snapshot output before caller-facing text changes; retain rejected bodies."""
+    if response is None:
+        return False
+    body = response.model_dump(mode="json")
+    if event.call is not None and status_error is None:
+        event.call.response = body
+    try:
+        if body.get("choices") is not None:
+            event.output = chat_completion_output(body)
+    except (ValueError, TypeError, KeyError, AttributeError):
+        if status_error is None:
+            raise
+        return False
+    if not event.output.choices:
+        return False
+    if event.call is not None:
+        event.call.response = body
+    return True
 
 
 class ChatClient:
@@ -257,21 +201,9 @@ class ChatClient:
             # closed over, so _create never handles an Optional client; a def (not a
             # lambda) so the Any return is declared rather than inferred-unknown
             def request(kw: dict[str, Any]) -> Any:
-                for attempt in range(1, _MAX_RETRIES + 1):
-                    # cast, not an ignore: the SDK's stream/non-stream overloads can't
-                    # resolve through a dynamic **kw, so the result is declared Any at
-                    # this boundary (the one place the raw SDK response enters)
-                    response = cast(Any, sdk.chat.completions.create(**kw))
-                    if response.choices:
-                        return response
-                    # Like the HTTP hook, count the final failed attempt too.
-                    self._retry_count.set(self._retry_count.get() + 1)
-                    if attempt == _MAX_RETRIES:
-                        raise EmptyResponse(
-                            f"Empty choices for model {self.model_id!r} after {attempt} attempts "
-                            f"(last response id: {response.id!r})"
-                        )
-                    time.sleep(min(2 ** (attempt - 1), 60))
+                # The SDK overloads cannot resolve a dynamic **kw; declare Any
+                # only where the SDK response enters the instrumentation.
+                return cast(Any, sdk.chat.completions.create(**kw))
 
             self._request = request
         # the one surface frameworks use; duck-typed so no SDK subclassing is needed
@@ -301,53 +233,52 @@ class ChatClient:
             return self._mock_create(kw)
         event = self._event(kw)
         started = time.monotonic()
+        import openai
+
+        response: Any = None
+        token = self._retry_count.set(0)
         try:
-            token = self._retry_count.set(0)
-            try:
-                response = self._request(kw)
-            finally:
-                retries = self._retry_count.get()
-                self._retry_count.reset(token)
-                event.retries = retries
+            for attempt in range(1, _MAX_RETRIES + 1):
+                event.output = ModelOutput()
+                if event.call is not None:
+                    event.call.response = None
+                error: openai.APIStatusError | None = None
+                try:
+                    response = self._request(kw)
+                except openai.APIStatusError as exc:
+                    error = exc
+                    response = _status_error_response(event, exc)
+                if _record_response(event, response, error):
+                    break
+                if error is not None:
+                    raise error
+                # Like the HTTP retry hook, count the final empty attempt too.
+                self._retry_count.set(self._retry_count.get() + 1)
+                if attempt == _MAX_RETRIES:
+                    raise EmptyResponse(
+                        f"Empty choices for model {self.model_id!r} after {attempt} attempts "
+                        f"(last response id: {getattr(response, 'id', None)!r})"
+                    )
+                time.sleep(min(2 ** (attempt - 1), 60))
         except Exception as exc:
             event.error = str(exc)
-            event.working_time = time.monotonic() - started
-            if event.call is not None:
+            if event.call is not None and event.call.response is None:
                 event.call.error = True
-            self._emit(event)
             raise
-        event.working_time = time.monotonic() - started
-        # Snapshot every choice before changing the text returned to the caller.
-        choices = [ChatCompletionChoice(
-            message=_assistant_message(choice.message.model_dump(mode="json")),
-            stop_reason=_stop_reason(choice.finish_reason),
-            logprobs=(Logprobs.model_validate({"content": [
-                token.model_dump(mode="json") for token in choice.logprobs.content
-            ]}) if choice.logprobs and choice.logprobs.content is not None else None),
-        ) for choice in response.choices]
-        usage = response.usage
-        cached = (getattr(usage.prompt_tokens_details, "cached_tokens", None)
-                  if usage and usage.prompt_tokens_details else None)
-        event.output = ModelOutput(
-            model=response.model, choices=choices,
-            completion=choices[0].message.text if choices else "",
-            usage=None if usage is None else ModelUsage(
-                input_tokens=usage.prompt_tokens - (cached or 0),
-                output_tokens=usage.completion_tokens, total_tokens=usage.total_tokens,
-                input_tokens_cache_read=cached,
-                reasoning_tokens=(getattr(usage.completion_tokens_details, "reasoning_tokens", None)
-                                  if usage.completion_tokens_details else None),
-            ),
-        )
-        if event.call is not None:
-            event.call.response = response.model_dump(mode="json")
+        finally:
+            event.retries = self._retry_count.get()
+            self._retry_count.reset(token)
+            event.working_time = time.monotonic() - started
+            if event.error is not None:
+                self._emit(event)
+        assert response is not None
         # Check the first successful response for each client/model in the run.
         # The verifier checks every recorded call, including later alias drift.
         # Serialize capture with the check so overlapping responses cannot race
         # to mark the model checked between another call's emission and check.
         with self._model_lock:
             self._emit(event)
-            if not self._model_checked:
+            if not self._model_checked and not content_filtered_without_model(event.output):
                 if not served_model_matches(self.model_id, event.output.model):
                     message = f"Served model mismatch: requested {self.model_id!r}, served {event.output.model!r}"
                     emit(Log(level="error", message=message))
@@ -368,7 +299,7 @@ class ChatClient:
         text = self._mock_responder(kw.get("messages") or [])
         event = self._event(kw)
         event.retries = 0
-        message = _assistant_message({"content": text})
+        message = assistant_message({"content": text})
         event.output = ModelOutput(
             model=self.served_model, completion=message.text,
             choices=[ChatCompletionChoice(message=message, stop_reason="stop")],
@@ -390,7 +321,7 @@ class ChatClient:
         snapshot = deepcopy(kw)
         return LLMCall(
             model=self.model_id, agent=self.agent,
-            input=[_chat_message(m) for m in snapshot.get("messages", [])],
+            input=[chat_message(m) for m in snapshot.get("messages", [])],
             tools=[_tool_info(t) for t in snapshot.get("tools", [])],
             tool_choice=_tool_choice(snapshot.get("tool_choice", "auto")),
             # A failed request has no served model; do not substitute the request

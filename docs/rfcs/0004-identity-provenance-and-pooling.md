@@ -30,6 +30,8 @@ Sweeps refuse to launch from a dirty tree. Publishing refuses a card with no `fe
 
 ## 3. Execution snapshot
 
+The runner's closure never determines a record's versions: the experiment manifest declares `v` and `schema`, and the runner stamps those declarations after checking vocabulary compatibility.
+
 `run.start` carries launch facts and `run.end` carries terminal process facts; neither contains aggregates of other records. The stream is the truth, the card is a cache of it, and nothing reads the card as an input. Each launcher invocation executes one run. Runs record the `--seed` argument unchanged, or a random non-negative 31-bit seed when omitted. The sections of the runner's index card, local storage and published layout are defined in [RFC 0003](0003-run-directory-and-published-layout.md). Runtime closure paths can differ between the flake and classic doors on a checkout with untracked files while `source` does not: `source` is identity, and closure paths are covariates.
 
 The runner pins both `LANG` and `LC_ALL` to `C.UTF-8` in the child environment, rather than inheriting the launching shell's locale. It records the CPU model and core count in `run.start.runtime`, which the card copies into its provenance section. These are execution covariates, never identity. The producer's own toolchain is recorded in `producer.python`.

@@ -4,8 +4,11 @@ from copy import deepcopy
 import json
 from types import SimpleNamespace
 from unittest.mock import Mock, call
+from datetime import datetime, timezone
 
 import pytest
+import httpx
+import openai
 from openai.types.chat import ChatCompletion
 
 from adb_events.inspect_chat import ChatMessageAssistant, ContentReasoning, ContentText
@@ -39,6 +42,100 @@ def client_and_reply():
         }
     )
     return client, reply
+
+
+@pytest.mark.parametrize("filtered", [True, False])
+def test_http_error_completion_records_exactly_like_success(event_capture, monkeypatch, filtered):
+    success, reply = client_and_reply()
+    failure, _ = client_and_reply()
+    body = reply.model_dump(mode="json")
+    if filtered:
+        body["choices"][0].update(finish_reason="content_filter")
+        body["choices"][0]["message"]["content"] = ""
+    request = httpx.Request("POST", "https://example.invalid/chat/completions")
+    response = httpx.Response(400, request=request, json=body)
+    error = openai.BadRequestError("filtered", response=response, body=body)
+    success._request = lambda kw: ChatCompletion.model_validate(body)
+    failure._request = Mock(side_effect=error)
+    monkeypatch.setattr("adb_experiment.llm.time.monotonic", lambda: 42.0)
+    monkeypatch.setattr("adb_experiment.llm.datetime", SimpleNamespace(
+        now=lambda tz: datetime(2026, 10, 5, tzinfo=timezone.utc)))
+    good = success.chat.completions.create(model="alias", messages=[])
+    recovered = failure.chat.completions.create(model="alias", messages=[])
+    first, second = event_capture.read()
+    assert first == second
+    assert first.get("error") is None
+    assert first["call"]["error"] is None
+    assert first["call"]["response"] == ChatCompletion.model_validate(body).model_dump(mode="json")
+    assert recovered == good
+    assert recovered.choices[0].message.content == ("" if filtered else "answer")
+
+
+@pytest.mark.parametrize("body", [
+    {"error": {"message": "bad request"}}, {"choices": "invalid"}, "not JSON",
+    {"model": "alias", "choices": []}, {"model": "alias", "choices": None},
+])
+def test_http_error_without_valid_choices_keeps_body_and_raises(event_capture, monkeypatch, body):
+    sleep = Mock()
+    monkeypatch.setattr("adb_experiment.llm.time.sleep", sleep)
+    client, _ = client_and_reply()
+    response = httpx.Response(400, request=httpx.Request("POST", "https://example.invalid/chat/completions"))
+    error = openai.BadRequestError("bad request", response=response, body=body)
+    client._request = Mock(side_effect=error)
+    with pytest.raises(openai.BadRequestError) as caught:
+        client.chat.completions.create(model="alias", messages=[])
+    assert caught.value is error
+    assert client._request.call_count == 1
+    sleep.assert_not_called()
+    [event] = event_capture.read()
+    assert event["error"] == str(error)
+    assert event["call"]["error"] is None
+    assert event["call"]["response"] == (body if isinstance(body, dict) else {"body": body})
+    assert event["output"]["choices"] == []
+    assert event["retries"] == 0
+
+
+def test_sparse_filtered_http_error_matches_sdk_success(event_capture, monkeypatch):
+    body = {"id": "filter", "object": "chat.completion", "created": 1, "model": "",
+            "choices": [{"index": 0, "finish_reason": "content_filter",
+                         "message": {"role": "assistant", "content": ""}}],
+            "usage": {"prompt_tokens": 1132, "total_tokens": 1132}}
+    monkeypatch.setattr("adb_experiment.llm.time.monotonic", lambda: 42.0)
+    monkeypatch.setattr("adb_experiment.llm.datetime", SimpleNamespace(
+        now=lambda tz: datetime(2026, 10, 5, tzinfo=timezone.utc)))
+    for status in (200, 400):
+        sdk = openai.OpenAI(api_key="test", http_client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(status, json=body))))
+        client, _ = client_and_reply()
+        client._request = lambda kw: sdk.chat.completions.create(**kw)
+        result = client.chat.completions.create(model="alias", messages=[])
+        assert result.usage.completion_tokens is None
+        assert not client._model_checked
+        sdk.close()
+    first, second = event_capture.read()
+    assert first == second
+    assert first["output"].get("usage") is None
+    assert first["call"]["response"]["usage"]["prompt_tokens"] == 1132
+    assert first["call"]["response"]["usage"]["completion_tokens"] is None
+
+
+@pytest.mark.parametrize("next_model", ["alias", "wrong-model"])
+def test_unnamed_filtered_response_leaves_next_identity_check_pending(event_capture, next_model):
+    client, reply = client_and_reply()
+    reply.model = ""
+    reply.choices[0].finish_reason = "content_filter"
+    client._request = lambda kw: reply
+    client.chat.completions.create(model="alias", messages=[])
+    assert not client._model_checked
+    reply.model = next_model
+    reply.choices[0].finish_reason = "stop"
+    if next_model == "alias":
+        client.chat.completions.create(model="alias", messages=[])
+        assert client._model_checked
+    else:
+        with pytest.raises(ServedModelMismatch):
+            client.chat.completions.create(model="alias", messages=[])
+    assert event_capture.read()[0]["output"]["model"] == ""
 
 
 def test_capture_matches_effective_sdk_request_and_original_response(event_capture):
@@ -80,20 +177,26 @@ def test_capture_matches_effective_sdk_request_and_original_response(event_captu
 
 
 
-def test_failure_retains_effective_request(event_capture):
+@pytest.mark.parametrize("error", [
+    RuntimeError("connection failed"),
+    openai.APIConnectionError(request=httpx.Request("POST", "https://example.invalid")),
+    openai.APITimeoutError(request=httpx.Request("POST", "https://example.invalid")),
+])
+def test_failure_retains_effective_request(event_capture, error):
     client, _ = client_and_reply()
     client.metadata = {"test.phase": "harvest"}
 
     def fail(kw):
-        raise RuntimeError("connection failed")
+        raise error
 
     client._request = fail
-    with pytest.raises(RuntimeError, match="connection failed"):
+    with pytest.raises(type(error)) as caught:
         client.chat.completions.create(model="sent", messages=[], top_p=0.8)
+    assert caught.value is error
     event = event_capture.read()[0]
     assert event["call"]["request"]["temperature"] == 0.2
     assert event["call"]["request"]["top_p"] == 0.8
-    assert event["error"] == "connection failed"
+    assert event["error"] == str(error)
     assert event["call"]["error"] is True
     assert event["output"]["choices"] == []
     assert event["call"]["response"] is None
@@ -128,7 +231,7 @@ def test_empty_responses_retry_until_a_choice_is_returned(event_capture, sdk_req
     [event] = event_capture.read()
     assert event["retries"] == 2
     assert event["error"] is None
-    assert not event["call"]["error"]
+    assert event["call"]["error"] is None
     assert event["call"]["response"] == original
     assert all(attempt.kwargs == event["call"]["request"] for attempt in request.call_args_list)
 
@@ -149,12 +252,13 @@ def test_exhausted_empty_responses_record_failure_and_last_id(event_capture, sdk
     [event] = event_capture.read()
     assert event["retries"] == 8
     assert event["error"] == str(failure.value)
-    assert event["call"]["error"] is True
-    assert event["call"]["response"] is None
+    assert event["call"]["error"] is None
+    assert event["call"]["response"] == replies[-1].model_dump(mode="json")
     assert event["call"]["request"]["seed"] == 17
     assert event["output"]["choices"] == []
     assert event["output"]["model"] == ""
-    assert event["output"]["usage"] is None
+    assert event["output"]["usage"]["input_tokens"] == 3
+    assert event["output"]["usage"]["output_tokens"] == 5
     assert event["working_time"] >= 0
     assert event["completed"] is not None
 

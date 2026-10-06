@@ -23,7 +23,7 @@ from adb_events import Json
 
 from . import credentials
 from .canonical import abbrev, condition_id
-from .protocol import execute_run, validate_fetch_ref
+from .protocol import check_vocabulary_version, execute_run, validate_fetch_ref
 from .schema import (
     Manifest,
     MissingParamsError,
@@ -210,6 +210,12 @@ def main() -> int:
         print(f"condition {abbrev(cond['cid'])}  ({cond['cid']})")
         print(json.dumps(cond["params"], indent=2, sort_keys=True))
         return 0
+
+    try:
+        check_vocabulary_version(manifest)
+    except ValueError as exc:
+        _log(str(exc))
+        return 2
 
     home = resolve_data_dir(args.data_dir)
     home.mkdir(parents=True, exist_ok=True)

@@ -11,8 +11,8 @@ import pytest
 
 from adb_runner import cli, credentials
 from adb_runner.verify import VerificationError, verify_run
-from adb_events import LLMCall, ModelOutput, ChatCompletionChoice, ChatMessageAssistant, read_events
-from adb_runner.card import derive_card
+from adb_events import LLMCall, ModelCall, ModelOutput, ChatCompletionChoice, ChatMessageAssistant, read_events
+from adb_runner.card import CardProjection, derive_card
 from test_protocol import MANIFEST, run_fixture
 
 
@@ -137,6 +137,26 @@ def saved(saved_template, tmp_path, monkeypatch):
 def digest_files(directory):
     return {str(p.relative_to(directory)): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in directory.rglob("*") if p.is_file()}
+
+
+def use_legacy_build(manifest):
+    """Give the union subprocess a test build with the original v0 envelope."""
+    interpreter = manifest.parent / "legacy-bin" / "python"
+    interpreter.parent.mkdir()
+    interpreter.write_text(f'''#!{sys.executable}
+import sys
+import adb_events
+from adb_events.models.base import NonNegativeInt
+class LegacyEnvelope[T](adb_events.Envelope[T]):
+    v: NonNegativeInt
+adb_events.Envelope = LegacyEnvelope
+script, sys.argv = sys.argv[2], ["-c", *sys.argv[3:]]
+exec(script)
+''')
+    interpreter.chmod(0o755)
+    declaration = json.loads(manifest.read_text())
+    declaration["schema"]["path"] = str(interpreter.parent / "adb-emit")
+    manifest.write_text(json.dumps(declaration))
 
 
 def test_pre_hardware_stream_and_card_remain_verifiable(saved):
@@ -272,34 +292,173 @@ def test_all_served_models_checked_once_per_pair_and_truncated_calls_counted(sav
     assert output.err.count("WARN: served model mismatch") == (2 if mismatch else 0)
 
 
-def test_silent_empty_responses_are_reported_without_failing_or_changing_records(saved, monkeypatch, capsys):
+@pytest.mark.parametrize("served", ["", "gpt-5-nano"])
+@pytest.mark.parametrize("old_card", [True, False])
+def test_legacy_empty_responses_fail_without_changing_records(saved, monkeypatch, capsys, served, old_card):
     directory, manifest = saved
     calls = [
-        LLMCall(model="azure/gpt-5-nano", input=[], output=ModelOutput(model="", choices=[])),
+        LLMCall(model="azure/gpt-5-nano", input=[], output=ModelOutput(model=served)),
         LLMCall(model="azure/gpt-5-nano", input=[], output=ModelOutput(
             model="gpt-5-nano", choices=[ChatCompletionChoice(
                 message=ChatMessageAssistant(content=""), stop_reason="stop")])),
-        LLMCall(model="azure/gpt-5-nano", input=[], output=ModelOutput(model="", choices=[]),
-                error="HTTP 429: rate limit exceeded"),
     ]
 
     def insert(rows):
         rows[-1:-1] = [{**rows[0], "event": call.model_dump(mode="json", exclude_none=True)} for call in calls]
         for seq, row in enumerate(rows):
-            row["seq"] = seq
+            row.update(seq=seq, v=0)
 
     rewrite_stream(directory, insert)
-    (directory / "run.json").write_text(json.dumps(derive_card(read_events(directory))))
+    declaration = json.loads(manifest.read_text())
+    declaration.pop("v")
+    manifest.write_text(json.dumps(declaration))
+    use_legacy_build(manifest)
+    upgraded_card = derive_card(read_events(directory))
+    assert upgraded_card["derived"]["counts"]["failed_calls"] == 1
+    original = CardProjection()
+    for line in (directory / "events.jsonl").read_text().splitlines():
+        original.observe(json.loads(line))
+    assert original.snapshot()["derived"]["counts"]["failed_calls"] == 0
+    (directory / "run.json").write_text(json.dumps(original.snapshot() if old_card else upgraded_card))
     before = digest_files(directory)
-    result = verify_run(directory, manifest=manifest, environment={})
-    assert result.empty_responses == 1
-    assert result.model_mismatches == ()
+    with pytest.raises(VerificationError, match="failed model calls: 1; first error: Empty choices"):
+        verify_run(directory, manifest=manifest, environment={})
+    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    assert cli.main() == 1
+    assert "Empty choices for model 'azure/gpt-5-nano' (version 0 record, not retried)" in capsys.readouterr().err
+    assert digest_files(directory) == before
+
+
+@pytest.mark.parametrize("version,count,placeholder", [(0, 1, False), (1, 1, False), (1, 2, False), (1, 1, True)])
+def test_failed_model_observations_fail_with_count_and_first_message(saved, monkeypatch, capsys, version, count, placeholder):
+    directory, manifest = saved
+    choices = [ChatCompletionChoice(message=ChatMessageAssistant(content=""))] if placeholder else []
+    calls = [LLMCall(model="azure/model", input=[], output=ModelOutput(choices=choices),
+                     call=ModelCall(request={}, response={"error": "rate limit"} if i == 0 else None,
+                                    error=None if i == 0 else True),
+                     error="HTTP 429: rate limit exceeded" if i == 0 else "Request timed out.")
+             for i in range(count)]
+
+    def insert(rows):
+        rows[-1:-1] = [{**rows[0], "event": call.model_dump(mode="json", exclude_none=True)} for call in calls]
+        for seq, row in enumerate(rows):
+            row.update(seq=seq, v=version)
+
+    rewrite_stream(directory, insert)
+    declaration = json.loads(manifest.read_text())
+    declaration["v"] = version
+    manifest.write_text(json.dumps(declaration))
+    if version == 0:
+        use_legacy_build(manifest)
+    recorded_calls = [record.event for record in read_events(directory) if record.event.type == "llm.call"]
+    assert recorded_calls[0].call.error is None
+    assert bool(recorded_calls[0].output.choices) is placeholder
+    card = derive_card(read_events(directory))
+    assert card["derived"]["counts"]["failed_calls"] == count
+    (directory / "run.json").write_text(json.dumps(card))
+    before = digest_files(directory)
+    with pytest.raises(VerificationError, match=f"failed model calls: {count}; first error: HTTP 429"):
+        verify_run(directory, manifest=manifest, environment={})
+    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    assert cli.main() == 1
+    assert f"failed model calls: {count}; first error: HTTP 429" in capsys.readouterr().err
+    assert digest_files(directory) == before
+
+
+@pytest.mark.parametrize("no_model", [False, True])
+@pytest.mark.parametrize("old_card", [False, True])
+def test_legacy_content_filters_pass_without_rewriting_evidence(saved, monkeypatch, capsys, no_model, old_card):
+    directory, manifest = saved
+    filename = "azure-content-filter-no-model-v0.json" if no_model else "azure-content-filter-v0.json"
+    fixture = Path(__file__).resolve().parents[2] / "lib/adb-events/tests/fixtures" / filename
+    event = json.loads(fixture.read_text())
+    event["call"]["request"]["seed"] = 42
+
+    def insert(rows):
+        rows[-1:-1] = [{**rows[0], "event": event} for _ in range(2)]
+        for seq, row in enumerate(rows):
+            row.update(seq=seq, v=0)
+
+    rewrite_stream(directory, insert)
+    declaration = json.loads(manifest.read_text())
+    declaration.pop("v")  # older builds did not write a vocabulary version
+    manifest.write_text(json.dumps(declaration))
+    use_legacy_build(manifest)
+    upgraded_card = derive_card(read_events(directory))
+    assert upgraded_card["derived"]["counts"]["failed_calls"] == 0
+    # The historical union must validate the written error, not lifted output.
+    with (manifest.parent / "verify_models.py").open("a") as models:
+        models.write('''
+from adb_events import LLMCall
+class LegacyCall(LLMCall):
+    error: str
+Payload = Annotated[Union[tuple(model for tag, model in EVENT_MODELS.items()
+    if tag not in {"custom", "llm.call"}) + (Note, LegacyCall)], Field(discriminator="type")]
+''')
+    projection = CardProjection()
+    for line in (directory / "events.jsonl").read_text().splitlines():
+        projection.observe(json.loads(line))
+    assert projection.snapshot()["derived"]["counts"]["failed_calls"] == 2
+    (directory / "run.json").write_text(json.dumps(projection.snapshot() if old_card else upgraded_card))
+    before = digest_files(directory)
     monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
     assert cli.main() == 0
     output = capsys.readouterr()
-    assert "max_tokens stops: 0; content_filter stops: 0; empty_responses: 1 (llm.call records)" in output.out
-    assert "verify: PASS:" in output.out
+    assert "content_filter stops: 2" in output.out
+    assert output.err.count("model identity could not be checked on content-filtered calls") == int(no_model)
     assert digest_files(directory) == before
+    card = json.loads((directory / "run.json").read_text())
+    if old_card:
+        card["derived"]["counts"]["failed_calls"] = 2.0
+        (directory / "run.json").write_text(json.dumps(card))
+        with pytest.raises(VerificationError, match="differs from the stream projection"):
+            verify_run(directory, manifest=manifest, environment={})
+    card["derived"]["counts"]["failed_calls"] = 9
+    (directory / "run.json").write_text(json.dumps(card))
+    with pytest.raises(VerificationError, match="differs from the stream projection"):
+        verify_run(directory, manifest=manifest, environment={})
+
+
+@pytest.mark.parametrize("version", [0, None, 2])
+def test_verify_does_not_compare_written_v_with_manifest(saved, version):
+    directory, manifest = saved
+    declaration = json.loads(manifest.read_text())
+    if version is None:
+        declaration.pop("v")
+    else:
+        declaration["v"] = version
+    manifest.write_text(json.dumps(declaration))
+    before = digest_files(directory)
+    assert verify_run(directory, manifest=manifest, environment={}).records > 0
+    assert digest_files(directory) == before
+
+
+@pytest.mark.parametrize("version,stops,allowed,mismatch", [
+    (1, ["content_filter"], True, False), (1, ["content_filter", "content_filter"], True, False),
+    (1, ["content_filter", "stop"], False, True), (1, ["stop"], False, True),
+    (0, ["content_filter"], True, False),
+])
+def test_unnamed_model_exception_requires_only_filtered_choices(saved, version, stops, allowed, mismatch):
+    directory, manifest = saved
+    event = LLMCall(model="azure/model", input=[], output=ModelOutput(model="", choices=[
+        ChatCompletionChoice(message=ChatMessageAssistant(content=""), stop_reason=stop) for stop in stops
+    ]))
+
+    def insert(rows):
+        rows.insert(-1, {**rows[0], "event": event.model_dump(mode="json", exclude_none=True)})
+        for seq, row in enumerate(rows):
+            row.update(seq=seq, v=version)
+
+    rewrite_stream(directory, insert)
+    declaration = json.loads(manifest.read_text())
+    declaration["v"] = version
+    manifest.write_text(json.dumps(declaration))
+    if version == 0:
+        use_legacy_build(manifest)
+    (directory / "run.json").write_text(json.dumps(derive_card(read_events(directory))))
+    result = verify_run(directory, manifest=manifest, environment={})
+    assert result.filtered_identity_unavailable is allowed
+    assert result.model_mismatches == ((("azure/model", ""),) if mismatch else ())
 
 
 def test_custom_payload_is_checked_against_experiment_union(saved):
@@ -314,13 +473,16 @@ def test_custom_payload_is_checked_against_experiment_union(saved):
     (lambda rows: rows[1].update(seq=99), "non-contiguous"),
     (lambda rows: rows[1].update(experiment="another"), "identity differs"),
     (lambda rows: rows[1].update(schema=9), "identity differs"),
-    (lambda rows: rows[1].update(v=2), "envelope validation failed"),
+    (lambda rows: rows[1].update(v=2), "vocabulary migration failed at events.jsonl:2"),
+    (lambda rows: rows[1].pop("v"), "vocabulary migration failed at events.jsonl:2"),
+    (lambda rows: rows[1].update(v="do-not-echo-this-value"), "vocabulary migration failed at events.jsonl:2"),
 ])
 def test_incomplete_or_inconsistent_stream_fails(saved, change, reason):
     directory, manifest = saved
     rewrite_stream(directory, change)
-    with pytest.raises(VerificationError, match=reason):
+    with pytest.raises(VerificationError, match=reason) as caught:
         verify_run(directory, manifest=manifest, environment={})
+    assert "do-not-echo-this-value" not in str(caught.value)
 
 
 def test_truncated_line_failure_never_echoes_input(saved, monkeypatch, capsys):
@@ -332,6 +494,24 @@ def test_truncated_line_failure_never_echoes_input(saved, monkeypatch, capsys):
     output = capsys.readouterr()
     assert "envelope validation failed" in output.err
     assert "do-not-echo-this-value" not in output.err
+
+
+@pytest.mark.parametrize("body", [
+    "do-not-echo-this-value", "{'body': b'do-not-echo-this-value'}",
+    "{'choices': 'do-not-echo-this-value'}",
+])
+def test_applicable_migration_failure_is_named_without_echoing_body(saved, monkeypatch, capsys, body):
+    directory, manifest = saved
+    event = LLMCall(model="azure/model", input=[], output=ModelOutput(),
+                    error=f"Error code: 400 - {body}")
+    rewrite_stream(directory, lambda rows: rows[1].update(v=0, event=event.model_dump(mode="json")))
+    before = digest_files(directory)
+    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    assert cli.main() == 1
+    output = capsys.readouterr()
+    assert "vocabulary migration failed at events.jsonl:2" in output.err
+    assert "do-not-echo-this-value" not in output.err
+    assert digest_files(directory) == before
 
 
 @pytest.mark.parametrize("origin", ["environment", "stored-profile"])
@@ -408,7 +588,8 @@ def test_every_request_seed_matches_the_recorded_run_seed(saved, monkeypatch, ca
         requests = [{"seed": run_seed}, {} if seed == "absent" else {
             "seed": run_seed if seed == "matching" else seed}]
         rows[-1:-1] = [{**rows[0], "event": {
-            "type": "llm.call", "model": "mock/model", "input": [], "output": {},
+            "type": "llm.call", "model": "mock/model", "input": [], "output": {"model": "model", "choices": [
+                {"message": {"role": "assistant", "content": "ok"}, "stop_reason": "stop"}]},
             "call": {"request": request, "response": {}},
         }} for request in requests]
         for seq, row in enumerate(rows):

@@ -301,9 +301,11 @@ in
         from importlib.resources import files
         import json, os
         from pathlib import Path
+        from adb_events import VOCABULARY_VERSION
         out = Path(os.environ["out"])
         (out / "shared-schema.json").write_text(files("adb_events").joinpath("schema.json").read_text())
         manifest = json.loads(Path("${manifestInput}").read_text())
+        manifest["v"] = VOCABULARY_VERSION
         manifest["schema"]["path"] = str(out / "schema.json")
         (out / "manifest.json").write_text(json.dumps(manifest))
         PY

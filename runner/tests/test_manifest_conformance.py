@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from adb_events import Json
+from adb_events import VOCABULARY_VERSION, Json
 from adb_runner.schema import Manifest
 
 # kinds the nix `types` constructors can produce (plus reserved run/harness kinds)
@@ -106,6 +106,7 @@ def test_every_shipped_manifest_conforms():
         doc = json.loads(f.read_text())
         _check(doc, Manifest, f.name)
         assert doc["schema_version"] == 1
+        assert doc["v"] == VOCABULARY_VERSION
         assert doc["schema"]["version"] >= 0
         assert ":" in doc["schema"]["models"]
         schema_path = Path(doc["schema"]["path"])

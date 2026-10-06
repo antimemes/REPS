@@ -9,6 +9,7 @@ from pydantic import Field, TypeAdapter, ValidationError
 from adb_events.models.base import Model
 
 from adb_events import (
+    VOCABULARY_VERSION,
     EVENT_ADAPTER,
     EVENT_MODELS,
     Envelope,
@@ -19,6 +20,7 @@ from adb_events import (
     RunStart,
     RunEnd,
     parse_event,
+    parse_record,
     read_events,
 )
 
@@ -77,11 +79,14 @@ def test_reader_decodes_complete_run_from_one_stream(tmp_path):
         RunEnd,
     ]
     assert [row.seq for row in rows] == list(range(5))
+    assert all(row.v == VOCABULARY_VERSION for row in rows)
+    assert rows[1].event.error == "Empty choices for model 'mock/model' (version 0 record, not retried)"
     assert all(row.run == "20260916t120000z-012345abcdef" and row.ts == datetime(2026, 9, 8, tzinfo=timezone.utc)
                for row in rows)
     assert rows[2].event.data == {"resource": 42}
     for row in rows:
-        assert type(parse_event(row.event.model_dump_json())) is type(row.event)
+        assert parse_event(row.event.model_dump_json()) == row.event
+        assert parse_record(row.model_dump_json()) == row
 
 
 @pytest.mark.parametrize(
@@ -103,13 +108,68 @@ def test_reader_errors_include_location_and_preserve_file(tmp_path, payload):
     assert path.read_text() == text
 
 
-def test_truncated_record_and_unsupported_envelope_version(tmp_path):
+def test_truncated_record(tmp_path):
     path = tmp_path / "events.jsonl"
     path.write_text('{"v":')
     with pytest.raises(EventReadError, match=":1:"):
         list(read_events(path))
-    with pytest.raises(ValidationError):
-        Envelope.model_validate({**record(START, 0), "v": 1})
+
+
+@pytest.mark.parametrize("version", [-1, 0, 2])
+def test_envelope_accepts_only_current_version(version):
+    with pytest.raises(ValidationError, match="v"):
+        Envelope.model_validate({**record(START, 0), "v": version})
+    current = {**record(START, 0), "v": VOCABULARY_VERSION}
+    assert Envelope.model_validate(current).v == VOCABULARY_VERSION
+
+
+def test_envelope_defaults_to_current_version_but_saved_records_require_v():
+    current = record(START, 0)
+    del current["v"]
+    assert Envelope.model_validate(current).v == VOCABULARY_VERSION
+    with pytest.raises(ValueError, match="record v must be a non-negative integer"):
+        parse_record(json.dumps(current))
+
+
+@pytest.mark.parametrize("version", [-1, True, "0", 0.0, None])
+def test_readers_reject_invalid_written_version(tmp_path, version):
+    path = tmp_path / "events.jsonl"
+    path.write_text(json.dumps({**record(START, 0), "v": version}) + "\n")
+    with pytest.raises(EventReadError, match="events.jsonl:1: record v must be a non-negative integer"):
+        list(read_events(path))
+
+
+@pytest.mark.parametrize("value", [{}, [], None])
+def test_reader_rejects_missing_envelope_or_version(value):
+    with pytest.raises(ValueError):
+        parse_record(json.dumps(value))
+
+
+@pytest.mark.parametrize("version", [0, VOCABULARY_VERSION])
+def test_readers_return_current_vocabulary_preserving_identity(tmp_path, version):
+    path = tmp_path / "events.jsonl"
+    written = {**record(START, 0), "v": version, "schema": 7}
+    wire = json.dumps(written) + "\n"
+    path.write_text(wire)
+    parsed = parse_record(wire)
+    assert next(read_events(path)) == parsed
+    assert parsed.v == VOCABULARY_VERSION
+    assert parsed.schema_ == 7
+    assert (parsed.run, parsed.experiment, parsed.seq, parsed.ts) == (
+        written["run"], written["experiment"], written["seq"], datetime(2026, 9, 8, tzinfo=timezone.utc))
+    assert path.read_text() == wire
+
+
+@pytest.mark.parametrize("version", [2, 100])
+def test_reader_cannot_migrate_a_future_vocabulary(tmp_path, version):
+    path = tmp_path / "events.jsonl"
+    wire = json.dumps({**record(START, 0), "v": version}) + "\n"
+    path.write_text(wire)
+    with pytest.raises(EventReadError, match=f"events.jsonl:1: cannot migrate vocabulary v={version}"):
+        list(read_events(path))
+    with pytest.raises(ValueError, match=f"cannot migrate vocabulary v={version}"):
+        parse_record(wire)
+    assert path.read_text() == wire
 
 
 def test_partial_run_is_readable_without_end(tmp_path):
@@ -153,18 +213,18 @@ def test_start_rejects_removed_provenance_fields(field, value):
 @pytest.mark.parametrize("state", ["provisioning", "running", "completed", "failed", "interrupted"])
 def test_run_status_is_not_a_shared_event(state):
     with pytest.raises(ValidationError):
-        parse_event({"type": "run.status", "state": state})
+        parse_event(json.dumps({"type": "run.status", "state": state}))
 
 
 @pytest.mark.parametrize("change", [{"schema": -1}, {"schema": True}, {"experiment": 1}])
 def test_envelope_identity_is_strict(change):
     with pytest.raises(ValidationError):
-        Envelope.model_validate_json(json.dumps({**record(START, 0), **change}))
+        Envelope.model_validate_json(json.dumps({**record(START, 0), "v": VOCABULARY_VERSION, **change}))
 
 
 @pytest.mark.parametrize("field", ["experiment", "schema"])
 def test_envelope_identity_is_required(field):
-    value = record(START, 0)
+    value = {**record(START, 0), "v": VOCABULARY_VERSION}
     del value[field]
     with pytest.raises(ValidationError):
         Envelope.model_validate_json(json.dumps(value))
@@ -190,6 +250,8 @@ def test_reader_accepts_experiment_union_or_adapter(tmp_path, payload):
         "type": "custom", "kind": "test.observation", "data": {"resource": 42},
     }, 0)) + "\n")
     [row] = read_events(path, payload=payload)
+    assert parse_record(path.read_bytes(), payload=payload) == row
+    assert row.v == VOCABULARY_VERSION
     assert isinstance(row.event, Observation)
     assert row.event.data.resource == 42
     assert isinstance(next(read_events(path)).event, CustomEvent)

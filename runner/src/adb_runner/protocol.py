@@ -28,6 +28,7 @@ from urllib.parse import urlsplit
 from . import credentials
 
 from adb_events import (
+    VOCABULARY_VERSION,
     Envelope,
     CapturedLine,
     Payload,
@@ -40,6 +41,7 @@ from adb_events import (
 from .schema import Manifest, Params
 from adb_providers import PROVIDERS
 from adb_events.event_socket import event_socket
+from adb_events.version import VocabularyVersion
 from .store import RunStore
 from .card import CardProjection
 
@@ -53,6 +55,16 @@ ENV_ALLOWLIST = ["PATH", "HOME", "TERM", "TMPDIR", "DOCKER_HOST"]
 
 # Refresh the index card from captured records while live, even during quiet periods.
 HEARTBEAT_S = 10.0
+
+
+def check_vocabulary_version(manifest: Manifest) -> VocabularyVersion:
+    """Reject incompatible experiment/runner vocabularies before launch writes."""
+    version = manifest.get("v", 0)
+    if type(version) is not int or version != VOCABULARY_VERSION:
+        raise ValueError(
+            f"vocabulary version mismatch: runner v={VOCABULARY_VERSION}, manifest v={version}"
+        )
+    return VOCABULARY_VERSION
 
 
 def validate_fetch_ref(ref: str | None) -> str | None:
@@ -159,6 +171,7 @@ def execute_run(
     on_event: Callable[[dict[str, Any]], None] | None = None,
     credential_env: dict[str, str] | None = None,
 ) -> RunResult:
+    vocabulary_version = check_vocabulary_version(manifest)
     run_id = run_id or store.run_id
     if run_id != store.run_id:
         raise ValueError("run ID must match the store")
@@ -183,7 +196,7 @@ def execute_run(
         """Write one envelope while record_lock is held."""
         nonlocal seq
         envelope = Envelope(
-            v=0, ts=datetime.datetime.now(datetime.timezone.utc),
+            v=vocabulary_version, ts=datetime.datetime.now(datetime.timezone.utc),
             run=run_id, seq=seq, event=payload,
             experiment=manifest["name"], schema=manifest.get("schema", {}).get("version", 0),
         )

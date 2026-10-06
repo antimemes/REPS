@@ -2,6 +2,34 @@
 
 import pytest
 
+from adb_events import VOCABULARY_VERSION
+
+
+@pytest.mark.parametrize("version", [None, 0, VOCABULARY_VERSION + 1])
+def test_vocabulary_mismatch_refuses_before_any_run_files(tmp_path, monkeypatch, capsys, version):
+    import json
+    import sys
+    from adb_runner import cli
+
+    declaration = {"name": "fixture", "params": {}}
+    if version is not None:
+        declaration["v"] = version
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps(declaration))
+    marker = tmp_path / "child-started"
+    experiment = tmp_path / "experiment"
+    experiment.write_text(f"#!/bin/sh\ntouch '{marker}'\n")
+    experiment.chmod(0o755)
+    monkeypatch.setenv("ADB_MANIFEST", str(manifest))
+    monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(experiment))
+    monkeypatch.setattr(sys, "argv", ["adb-runner", "--data-dir", str(tmp_path / "runs")])
+    assert cli.main() == 2
+    assert not marker.exists() and not (tmp_path / "runs").exists()
+    error = capsys.readouterr().err
+    assert f"runner v={VOCABULARY_VERSION}" in error
+    assert f"manifest v={version or 0}" in error
+
+
 
 @pytest.mark.parametrize("ref", [
     "https://user:token@example.org/repo/revision",
@@ -15,7 +43,7 @@ def test_launch_rejects_fetch_ref_userinfo_before_writing_a_run(tmp_path, monkey
     from adb_runner import cli
 
     manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({"name": "fixture", "params": {}}))
+    manifest.write_text(json.dumps({"name": "fixture", "params": {}, "v": VOCABULARY_VERSION}))
     marker = tmp_path / "child-started"
     experiment = tmp_path / "experiment"
     experiment.write_text(f"#!/bin/sh\ntouch '{marker}'\n")
@@ -39,7 +67,7 @@ def test_launch_forwards_optional_revision_and_tree_hash(tmp_path, monkeypatch, 
     from adb_runner import cli
 
     manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({"name": "fixture", "params": {}}))
+    manifest.write_text(json.dumps({"name": "fixture", "params": {}, "v": VOCABULARY_VERSION}))
     experiment = tmp_path / "experiment"
     experiment.write_text("#!/bin/sh\n")
     experiment.chmod(0o755)
@@ -78,7 +106,7 @@ def run_cli(tmp_path, monkeypatch):
     from adb_runner import cli
 
     manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({"name": "fixture", "params": {}}))
+    manifest.write_text(json.dumps({"name": "fixture", "params": {}, "v": VOCABULARY_VERSION}))
     experiment = tmp_path / "experiment"
     experiment.write_text("#!/bin/sh\nprintf 'seed=%s\\n' \"$ADB_SEED\"\n")
     experiment.chmod(0o755)
@@ -186,7 +214,7 @@ def test_output_and_interaction_are_independent(
     from adb_runner import cli
 
     manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({"name": "fixture", "params": {}}))
+    manifest.write_text(json.dumps({"name": "fixture", "params": {}, "v": VOCABULARY_VERSION}))
     experiment = tmp_path / "experiment"
     experiment.write_text("#!/bin/sh\nexit 0\n")
     experiment.chmod(0o755)
@@ -225,7 +253,7 @@ def test_run_uses_selected_data_directory(data_directory, tmp_path, monkeypatch,
 
     home, flags = data_directory
     manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({"name": "fixture", "params": {}}))
+    manifest.write_text(json.dumps({"name": "fixture", "params": {}, "v": VOCABULARY_VERSION}))
     experiment = tmp_path / "experiment"
     experiment.write_text("#!/bin/sh\nexit 0\n")
     experiment.chmod(0o755)

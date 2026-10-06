@@ -36,12 +36,12 @@ and event vocabulary.
 ## Transport
 
 ```json
-{"v":0,"ts":"2026-01-01T12:00:00.000000Z","run":"RUN_ID","experiment":"example","schema":0,"seq":0,"event":{"type":"result","name":"score","value":1}}
+{"v":1,"ts":"2026-01-01T12:00:00.000000Z","run":"RUN_ID","experiment":"example","schema":0,"seq":0,"event":{"type":"result","name":"score","value":1}}
 ```
 
 | Envelope field | Meaning |
 | --- | --- |
-| `v` | Transport version; currently `0`. |
+| `v` | Shared vocabulary version (envelope and common events), declared by the experiment's manifest. Saved records may have older versions; the current `Envelope` accepts only `1`. |
 | `ts` | UTC capture timestamp from the runner. A producer timestamp can be included inside the payload. |
 | `run` | Run ID. |
 | `experiment` | Experiment name. |
@@ -178,10 +178,10 @@ The event library depends only on Pydantic. There is no tracing runtime.
 | `model` | Required requested model ID. |
 | `input` | Required list of typed `ChatMessage` values, discriminated by `role`. |
 | `tools`, `tool_choice` | `ToolInfo` definitions (including JSON Schema parameters and provider options); `auto`, `any`, `none`, or `{"name":"function"}`. Defaults: empty tools, `auto`. |
-| `output` | Required `ModelOutput`: all choices, completion text, optional usage, fallback, time, metadata and error. Failed calls can have empty choices. |
-| `call` | Optional raw provider request/response, error flag and timing, using Inspect's `ModelCall` fields. |
-| `error` | Optional error string. |
-| `retries` | Optional non-negative integer counting observed HTTP 429/5xx responses and HTTP 200 responses with empty `choices`, including the final failed attempt on exhaustion. A call whose every attempt returned empty choices is recorded with `error`. Zero means none; `None` (omitted on the wire) means unknown. Does not count connection failures or timeouts. When the wire field is absent or null, the Python property uses historical `metadata["adb_experiment.retries"]`, or zero if `metadata["adb_experiment.backend"]` is present. |
+| `output` | Required `ModelOutput`: all choices, completion text, optional usage, fallback, time, metadata and error. A failed call may contain a producer's placeholder choice. |
+| `call` | Optional raw provider request/response, error flag and timing, using Inspect's `ModelCall` fields. `call.error` is true only when the request failed with no response body captured. |
+| `error` | Set if and only if the model call failed and produced no usable output. A content-filter stop is output, not a failure; the presence of choices does not determine this field. |
+| `retries` | Optional non-negative integer counting observed HTTP 429/5xx responses and 2xx responses with empty choices, including the final failed attempt on exhaustion. A call whose every attempt returned empty choices is recorded with `error`. Zero means none; `None` (omitted on the wire) means unknown. Does not count connection failures or timeouts. When the wire field is absent or null, the Python property uses historical `metadata["adb_experiment.retries"]`, or zero if `metadata["adb_experiment.backend"]` is present. |
 | `completed`, `working_time` | Optional UTC completion datetime and working duration in seconds. |
 | `metadata` | Producer notes with producer-prefixed keys; shared readers and web views do not depend on keys. A key needed by two producers becomes a field. |
 | `agent` | Optional attribution. The shared client uses its constructed agent; Inspect uses the model role when set, otherwise the caller's agent. |
@@ -189,7 +189,8 @@ The event library depends only on Pydantic. There is no tracing runtime.
 SDK retries and empty-response retries are counted in the same `retries` field, so
 one record can exceed the per-layer cap: up to 8 attempts in the empty-response
 loop, each allowing 9 HTTP attempts (the initial request plus 8 SDK retries), for
-at most 72 HTTP attempts.
+at most 72 HTTP attempts. Exhausted HTTP 429/5xx retries stop at the SDK budget;
+the client does not start a second cycle after those nine rejections.
 
 Messages have system, user, assistant or tool roles. Content is text or typed
 blocks for text, reasoning, images, audio, video, documents, server-side tool use,
@@ -204,8 +205,20 @@ invent IDs. Provider-specific fields that do not fit these models remain in `cal
 `output.usage` keeps input/output/total tokens, cache-read/write tokens, reasoning
 tokens and cost. Inspect's `input_tokens` excludes cached tokens; consumers add
 cache-read/write tokens when computing total input usage. Missing usage remains
-unknown. `output.model` records the returned model; the SDK's requested model
+unknown. The shared usage model defaults absent token counts to zero, so the
+OpenAI-compatible converter leaves `output.usage` absent when required counts are
+missing, retaining all reported partial usage in `call.response`.
+`output.model` records the returned model; the SDK's requested model
 remains in `call.request` when available.
+
+A response with an empty model ID and a nonempty set of entirely content-filtered
+choices is exempt from the identity check. Verification warns once per run that
+model identity could not be checked on content-filtered calls. The client keeps
+its first-response identity check pending for the next response with a model name.
+Other empty or non-matching served IDs are mismatches.
+Version 0 records with empty choices and no error are read as failures with
+`Empty choices for model '<model>' (version 0 record, not retried)`. Verification
+fails these runs, including when the empty response supplied a model ID.
 
 Read generation settings, including temperature and token limits, from
 `call.request`. They are not projected onto separate fields. Inspect's
@@ -216,9 +229,48 @@ The first well-formed `<think>…</think>` block in assistant text is reasoning
 (Inspect's rule), provider `reasoning_content` is reasoning, and everything else
 is text, untrimmed. GovSim trims at its Pathfinder backend for parity with local
 generation and anchored parsing.
-`call.response` retains the original SDK response and its unmodified content
-strings. Existing stored messages are read unchanged, including historical
-inline reasoning strings.
+`call.response` retains the SDK response and its unmodified content strings,
+including HTTP error bodies. An error body containing valid completion choices
+uses the same output conversion as a 200 response and has no `error`;
+new records leave `call.error` unset (`None`). HTTP errors without usable output
+retain the body with `error` set and `call.error` unset. `call.error` becomes true
+only when the request failed without a captured body, such as a connection failure
+or timeout. Non-object HTTP bodies are retained under `call.response.body`.
+The response hook only counts
+HTTP 429/5xx responses. HTTP errors without valid
+choices retain the body and SDK message and are raised immediately. Only 2xx
+responses with empty choices enter the empty-response retry loop; exhaustion
+records `Empty choices` with the model, attempt count and last ID. The SDK's own
+retry policy is unchanged.
+
+`parse_event` validates a bare event payload. `parse_record` decodes a saved JSON
+envelope, applies `adb_events.migrate_record(record)` to the dict, then
+validates it with `Envelope`; `read_events` calls `parse_record` for each line in a
+file or run directory. Both readers accept an optional payload union or adapter,
+validated after migration. Migrations interpret version 0 error-body reprs and
+silent empty responses under the version 1 rule and set `v` to
+`VOCABULARY_VERSION`. They read `v` from the record, rejecting missing, invalid or
+newer versions without rewriting saved files. An absent `call` remains absent.
+Recovering a version 0 error body clears its stale `call.error`; converting its
+choices to usable output sets that legacy flag to false. The silent-empty-response
+migration leaves `call.error` as written.
+For prefixed version 0 errors, a body that cannot be parsed as a Python literal
+and JSON-compatible data, or whose `choices` cannot be converted, raises
+`MigrationError`; `read_events` wraps it in `EventReadError` with the line number.
+Errors without the SDK prefix remain unchanged.
+`Envelope` accepts only the current `v` and defaults to it when constructed.
+`derive_card` projects the records
+supplied by the reader without applying migrations itself.
+
+Verification uses migrated records for structure, order, identity, failed-call
+counts, model checks and the rebuilt card, failing on any remaining `llm.call.error`
+with the count and first message. Its experiment-union subprocess validates raw
+lines using the build's own `adb_events`, including the v0 model in retained old
+builds. An older card is accepted only if it exactly matches the original
+projection built from the JSON lines, or the migrated projection. Verification does
+not compare record versions with the manifest: the runner checks vocabulary
+compatibility before launch and stamps the manifest's version when writing.
+Historical inline reasoning strings remain unchanged.
 
 File deduplication references (`input_refs`), tracebacks, streaming state (`pending`,
 `working_start`), and Inspect's event identity/timestamps are omitted from the
