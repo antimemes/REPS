@@ -112,6 +112,14 @@ name = "adb-providers"
 version = "0.1.0"
 source = { directory = "../../lib/adb-providers" }
 
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
+]
+
 [[package]]
 name = "adb-testing"
 version = "0.1.0"

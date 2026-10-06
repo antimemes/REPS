@@ -5,6 +5,9 @@ description = "The canonical provider registry — ADB's vocabulary of provider 
 requires-python = ">=3.13"
 dependencies = []
 
+[dependency-groups]
+dev = ["pytest>=8", "pytest-xdist"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -16,3 +19,6 @@ packages = ["adb_providers"]
 # default key is pyproject.toml alone — key on the sources so edits propagate.
 [tool.uv]
 cache-keys = [{ file = "pyproject.toml" }, { file = "adb_providers/**/*.py" }, { file = "adb_providers/*.toml" }, { file = "adb_providers/py.typed" }]
+
+[tool.pytest.ini_options]
+addopts = "-n auto"

@@ -37,6 +37,7 @@ tasks:
       - cd runner && uv run -q pytest -q
       - cd lib/adb-testing && uv run -q pytest -q
       - cd lib/adb-events && uv run -q pytest -q
+      - cd lib/adb-providers && uv run -q pytest -q
       - cd lib/adb-experiment && uv run -q pytest -q
       - cd lib/adb-inspect && uv run -q pytest -q
       - nix flake check -L
@@ -47,8 +48,7 @@ tasks:
       - bash scripts/check-typing-policy.sh
       - cd lib/adb-testing && uv run -q pyright
       - cd lib/adb-events && uv run -q pyright
-      # dependency-free and lockless — bare pyright, no venv involved
-      - cd lib/adb-providers && pyright
+      - cd lib/adb-providers && uv run -q pyright
       - cd lib/adb-experiment && uv run -q pyright
       - cd lib/adb-inspect && uv run -q pyright
       - cd runner && uv run -q pyright
