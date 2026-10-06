@@ -22,7 +22,8 @@ dependencies = [
     # that wants one must declare it explicitly in its own pyproject.
     # `openai` also powers every OpenAI-compatible provider (openai-api, openrouter,
     # together, fireworks, ollama, moonshot, perplexity, cloudflare, …) via base_url.
-    "openai>=2.45.0",
+    # The locked Inspect HTTP providers import httpx2 and newer Responses types.
+    "openai>=3.24.0",
     "anthropic>=0.115.0",
     "google-genai>=1.69.0",
     "groq>=0.28.0",
