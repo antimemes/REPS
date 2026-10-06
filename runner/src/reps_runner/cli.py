@@ -67,7 +67,7 @@ def seed(raw: str) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="reps-runner", add_help=True,
-                                epilog="Management commands: credentials …; verify RUN_ID_OR_DIR; publish --to s3://BUCKET/PREFIX …; index --stores FILE --to DIR …")
+                                epilog="Management commands: preview; credentials …; verify RUN_ID_OR_DIR; publish --to s3://BUCKET/PREFIX …; index --stores FILE --to DIR …")
     p.add_argument("--set", action="append", default=[], metavar="KEY=VALUE",
                    help="set a param (JSON, @file, or bare string); repeatable")
     # profile NAMES are argv-safe (values never are — they live in the 0600 store);
@@ -153,6 +153,11 @@ def main() -> int:
     if sys.argv[1:2] == ["verify"]:
         from .verify import verify_cli
         return verify_cli(sys.argv[2:])
+
+    # `reps-runner preview` serves the local data directory to a browser
+    if sys.argv[1:2] == ["preview"]:
+        from .preview import preview_cli
+        return preview_cli(sys.argv[2:])
 
     # `reps-runner credentials …` manages the local credential store; it is a standalone
     # management command, not a run, so it needs no manifest/experiment env.
@@ -277,6 +282,7 @@ def main() -> int:
             credential_env=credential_env,
         )
         _log(f"{label} {result.run_id} {result.state} ({result.duration_s:.1f}s)")
+        _log(f"  {_sgr('▸ view', '2')}   {_sgr('reps-runner preview' + (f' --data-dir {shlex.quote(args.data_dir)}' if args.data_dir else ''), '2')}")
     except KeyboardInterrupt:
         _log("interrupted — partial runs kept (garbage is data)")
         return 130

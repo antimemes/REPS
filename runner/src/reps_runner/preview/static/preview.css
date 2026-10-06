@@ -1,0 +1,76 @@
+:root {
+  --bg: #fafafa;
+  --fg: #1b1b1b;
+  --muted: #6b6b6b;
+  --accent: #2a6fdb;
+  --panel: #ffffff;
+  --line: #e2e2e2;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1012;
+    --fg: #e6e6e6;
+    --muted: #9a9a9a;
+    --accent: #6ea2ff;
+    --panel: #141517;
+    --line: #2a2b2e;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(16em, 22em) minmax(0, 1fr);
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px system-ui, sans-serif;
+}
+#runs {
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  overflow: auto;
+  padding: 0.75em;
+}
+#runs h1 { font-size: 1em; margin: 0.25em 0 0.75em; color: var(--muted); font-weight: 600; }
+#run-list { list-style: none; margin: 0; padding: 0; }
+#run-list li a {
+  display: grid;
+  gap: 0.15em;
+  padding: 0.5em 0.6em;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+#run-list li a:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+#run-list li.selected a { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+#run-list .experiment { font-weight: 600; }
+#run-list .run-id, #run-list .started { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; }
+#run-list-empty, #run-none { color: var(--muted); padding: 0.6em; }
+.state { font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.state.completed { color: #2a9d5c; }
+.state.failed { color: #c0392b; }
+.state.interrupted { color: #b7791f; }
+.state.running, .state.provisioning { color: var(--accent); }
+#run { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+#run-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.75em;
+  padding: 0.6em 1em; border-bottom: 1px solid var(--line); background: var(--panel);
+}
+#run-experiment { font-weight: 600; }
+#run-id { color: var(--muted); }
+#run-started { color: var(--muted); font-size: 0.9em; }
+#events {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  --reps-bg: var(--panel);
+  --reps-fg: var(--fg);
+  --reps-muted: var(--muted);
+  --reps-accent: var(--accent);
+}
+@media (max-width: 720px) {
+  body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+  #runs { border-right: 0; border-bottom: 1px solid var(--line); max-height: 40vh; }
+}

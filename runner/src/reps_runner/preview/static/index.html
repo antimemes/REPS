@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REPS preview</title>
+<link rel="stylesheet" href="/static/preview.css">
+<script type="module" src="/static/reps-events.js"></script>
+</head>
+<body>
+<aside id="runs">
+  <h1>REPS runs</h1>
+  <ol id="run-list"></ol>
+  <p id="run-list-empty" hidden>no runs in the data directory yet</p>
+</aside>
+<main id="run">
+  <header id="run-head" hidden>
+    <span id="run-experiment"></span>
+    <code id="run-id"></code>
+    <span id="run-state"></span>
+    <span id="run-started"></span>
+  </header>
+  <p id="run-none">select a run</p>
+  <reps-events id="events" hidden></reps-events>
+</main>
+<script type="module">
+// The shell is the transport: it reads the served files and feeds <reps-events>.
+// It stays thin on purpose; the element is the piece adb-site adopts.
+const ENDED = new Set(["completed", "failed", "interrupted"]);
+const $ = (id) => document.getElementById(id);
+const events = $("events");
+let cards = new Map();  // run_id -> card from /api/runs (for its condition_dir)
+let current = null;
+let lastSeq = -1;   // highest seq handed to the element; the file is refetched whole
+let timer = null;
+
+async function fetchJson(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`${url}: ${res.status}`);
+  return res.json();
+}
+
+const stateOf = (card) => (card.lifecycle || {}).state || "?";
+const startedOf = (card) => {
+  const ts = (card.lifecycle || {}).started_at;
+  return ts ? new Date(ts).toLocaleString() : "";
+};
+const runPath = (card) => `/data/runs/${card.condition_dir}/${card.run_id}`;
+
+function line(className, text) {
+  const span = document.createElement("span");
+  span.className = className;
+  span.textContent = text ?? "";
+  return span;
+}
+
+function renderList(list) {
+  $("run-list").replaceChildren(...list.map((card) => {
+    const item = document.createElement("li");
+    item.classList.toggle("selected", card.run_id === current);
+    const a = document.createElement("a");
+    a.href = `#${card.run_id}`;
+    a.append(line("experiment", card.identity ? card.identity.experiment : card.condition_dir),
+             line("run-id", card.run_id), line(`state ${stateOf(card)}`, stateOf(card)),
+             line("started", startedOf(card)));
+    item.appendChild(a);
+    return item;
+  }));
+  $("run-list-empty").hidden = list.length > 0;
+}
+
+function renderHead(card) {
+  $("run-head").hidden = false;
+  $("run-none").hidden = true;
+  $("run-experiment").textContent = card.identity ? card.identity.experiment : "";
+  $("run-id").textContent = card.run_id;
+  $("run-state").textContent = stateOf(card);
+  $("run-state").className = `state ${stateOf(card)}`;
+  $("run-started").textContent = startedOf(card);
+  events.hidden = false;
+}
+
+async function refreshList() {
+  try {
+    const list = await fetchJson("/api/runs");
+    cards = new Map(list.map((card) => [card.run_id, card]));
+    renderList(list);
+    if (current === null && location.hash.length > 1) select(location.hash.slice(1));
+  } catch (err) {
+    console.warn(err);
+  }
+}
+
+// The card is read before the stream: once it reports an end state, the stream
+// read after it is complete, so the poll that stops is also the one that finishes.
+async function pull(card) {
+  const fresh = { ...card, ...(await fetchJson(`${runPath(card)}/run.json`)) };
+  const res = await fetch(`${runPath(card)}/events.jsonl`, { cache: "no-store" });
+  if (card.run_id !== current) return;
+  if (res.ok) {
+    const text = await res.text();
+    const lines = text.split("\n");
+    if (!text.endsWith("\n")) lines.pop();  // a line still being written
+    const newRecords = [];
+    for (const line of lines) {
+      if (!line) continue;
+      let record;
+      try { record = JSON.parse(line); } catch (err) { console.warn("bad line", err); continue; }
+      if (typeof record.seq === "number" && record.seq > lastSeq) newRecords.push(record);
+    }
+    if (newRecords.length) {
+      events.append(newRecords);
+      lastSeq = Math.max(lastSeq, ...newRecords.map((r) => r.seq));
+    }
+  }
+  renderHead(fresh);
+  const ended = ENDED.has(stateOf(fresh));
+  events.toggleAttribute("streaming", !ended);
+  if (ended) stop();
+}
+
+function stop() {
+  clearInterval(timer);
+  timer = null;
+}
+
+function select(runId) {
+  const card = cards.get(runId);
+  if (!card || runId === current) return;
+  stop();
+  current = runId;
+  lastSeq = -1;
+  events.clear();
+  for (const item of $("run-list").children) {
+    item.classList.toggle("selected", item.querySelector("a").hash === `#${runId}`);
+  }
+  document.title = `${runId} · REPS preview`;
+  const tick = () => pull(card).catch((err) => console.warn(err));
+  tick();
+  timer = setInterval(tick, 1000);
+}
+
+window.addEventListener("hashchange", () => select(location.hash.slice(1)));
+await refreshList();
+setInterval(refreshList, 5000);
+</script>
+</body>
+</html>
