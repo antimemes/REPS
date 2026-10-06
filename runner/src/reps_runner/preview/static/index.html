@@ -31,7 +31,7 @@ const $ = (id) => document.getElementById(id);
 const events = $("events");
 let cards = new Map();  // run_id -> card from /api/runs (for its condition_dir)
 let current = null;
-let lastSeq = -1;   // highest seq handed to the element; the file is refetched whole
+let lastSeq = -1;   // highest seq handed to the element; the next poll asks from lastSeq + 1
 let timer = null;
 
 async function fetchJson(url) {
@@ -95,14 +95,13 @@ async function refreshList() {
 // read after it is complete, so the poll that stops is also the one that finishes.
 async function pull(card) {
   const fresh = { ...card, ...(await fetchJson(`${runPath(card)}/run.json`)) };
-  const res = await fetch(`${runPath(card)}/events.jsonl`, { cache: "no-store" });
+  const res = await fetch(`/api/runs/${card.condition_dir}/${card.run_id}/events?from=${lastSeq + 1}`,
+                          { cache: "no-store" });
   if (card.run_id !== current) return;
-  if (res.ok) {
+  if (res.status === 200) {   // 204: nothing new since lastSeq
     const text = await res.text();
-    const lines = text.split("\n");
-    if (!text.endsWith("\n")) lines.pop();  // a line still being written
     const newRecords = [];
-    for (const line of lines) {
+    for (const line of text.split("\n")) {
       if (!line) continue;
       let record;
       try { record = JSON.parse(line); } catch (err) { console.warn("bad line", err); continue; }

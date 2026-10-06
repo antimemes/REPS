@@ -89,15 +89,35 @@ def test_run_list_survives_a_card_with_a_malformed_lifecycle(server):
     assert [c["run_id"] for c in json.loads(body)] == [RUN_B, RUN_A, "20260920t000000z-bbbbbbbbbbbb"]
 
 
-def test_run_files_are_served_as_written(server):
+def test_run_card_is_served_as_written(server):
     status, headers, body = get(server, f"/data/runs/{COND_A}/{RUN_A}/run.json")
     assert status == 200 and headers["Content-Type"] == "application/json"
     assert headers["Cache-Control"] == "no-store"
     assert body == (server.home / "runs" / COND_A / RUN_A / "run.json").read_bytes()
-    status, headers, body = get(server, f"/data/runs/{COND_B}/{RUN_B}/events.jsonl")
-    assert status == 200 and headers["Cache-Control"] == "no-store"
-    assert body == (server.home / "runs" / COND_B / RUN_B / "events.jsonl").read_bytes()
-    assert not body.endswith(b"\n")  # the partial line is the shell's to drop
+
+
+def test_events_from_a_sequence_number_and_204_when_nothing_is_new(server):
+    status, headers, body = get(server, f"/api/runs/{COND_A}/{RUN_A}/events?from=0")
+    assert status == 200 and headers["Content-Type"] == "application/x-ndjson"
+    assert [json.loads(line)["seq"] for line in body.decode().splitlines()] == [0, 1]
+    status, _, body = get(server, f"/api/runs/{COND_A}/{RUN_A}/events?from=1")
+    assert status == 200 and [json.loads(line)["seq"] for line in body.decode().splitlines()] == [1]
+    status, _, body = get(server, f"/api/runs/{COND_A}/{RUN_A}/events?from=2")
+    assert status == 204 and body == b""
+    status, _, _ = get(server, f"/api/runs/{COND_A}/{RUN_A}/events?from=-1")
+    assert status == 400
+
+
+def test_events_of_a_live_run_wait_for_the_partial_line(server):
+    stream = server.home / "runs" / COND_B / RUN_B / "events.jsonl"
+    status, _, body = get(server, f"/api/runs/{COND_B}/{RUN_B}/events?from=0")
+    assert status == 200 and [json.loads(line)["seq"] for line in body.decode().splitlines()] == [0]
+    assert get(server, f"/api/runs/{COND_B}/{RUN_B}/events?from=1")[0] == 204
+    with stream.open("a") as fh:   # the writer finishes the line and adds one more
+        fh.write('ent":{"type":"status","detail":"done"}}\n')
+        fh.write(_line(RUN_B, 2, {"type": "run.end", "state": "completed", "duration_s": 3.0, "exit_code": 0}))
+    status, _, body = get(server, f"/api/runs/{COND_B}/{RUN_B}/events?from=1")
+    assert status == 200 and [json.loads(line)["seq"] for line in body.decode().splitlines()] == [1, 2]
 
 
 @pytest.mark.parametrize("path, media", [
@@ -123,6 +143,10 @@ def test_static_files(server, path, media):
     "/data/runs",
     f"/data/runs/{COND_A}/{RUN_A}",
     "/api/nope",
+    "/api/runs/../" + RUN_A + "/events",
+    "/api/runs/%2e%2e/%2e%2e/events",
+    "/api/runs/" + COND_A + "/20260916t120000z-000000000000/events",
+    "/api/runs/" + COND_A + "/" + RUN_A + "/events.jsonl",
     "/etc/passwd",
     "/index.html",
 ])
@@ -183,6 +207,7 @@ def test_shell_references_the_element_and_the_element_defines_its_surface():
     static = resources.files("reps_runner.preview") / "static"
     shell = (static / "index.html").read_text()
     assert "/static/reps-events.js" in shell and "<reps-events" in shell
+    assert "/events?from=" in shell and "204" in shell     # the shell polls incrementally
     element = (static / "reps-events.js").read_text()
     assert 'customElements.define("reps-events"' in element
     for method in ("append(records)", "replace(seq, record)", "clear()"):
