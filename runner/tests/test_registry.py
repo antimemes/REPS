@@ -9,10 +9,11 @@ def test_registry_shape():
     for name, provider in PROVIDERS.items():
         assert provider.api_key.name.endswith(("_API_KEY", "_TOKEN")), name
         assert provider.base_url.name.endswith("_BASE_URL"), name
-    # the one annotation in the file: openai's key is optional (local
-    # OpenAI-compatible servers ignore auth) — everything else's is required
-    assert not PROVIDERS["openai"].api_key.required
-    assert all(p.api_key.required for n, p in PROVIDERS.items() if n != "openai")
+    # OpenAI-compatible local servers may ignore auth.
+    assert {n for n, p in PROVIDERS.items() if not p.api_key.required} == {
+        "openai", "vllm", "ollama"
+    }
+    assert all(not PROVIDERS[n].base_url.default for n in ("vllm", "ollama"))
     # and its base default is a real runtime fallback, like the OpenAI SDK's own
     assert PROVIDERS["openai"].base_url.default == "https://api.openai.com/v1"
 

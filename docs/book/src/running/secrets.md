@@ -18,7 +18,7 @@ Enter the requested values and profile name. Secret input is hidden. A bare set 
 nix run .#adb-runner -- credentials set openai.research
 ```
 
-The endpoint prompt offers the provider's configured default where one exists. Use the endpoint expected by the adapter and provider, including its scheme and API path. An OpenAI-compatible local server may use an address such as `http://127.0.0.1:8000/v1` and may require no key.
+The endpoint prompt offers the provider's configured default where one exists. Use the endpoint expected by the adapter and provider, including its scheme and API path. For self-hosted models, configure `vllm` with `VLLM_BASE_URL` (for example, `http://localhost:8000/v1`) or `ollama` with `OLLAMA_BASE_URL` (for example, `http://localhost:11434/v1`). Neither has a default endpoint; `VLLM_API_KEY` and `OLLAMA_API_KEY` are optional.
 
 List saved sets and locate the file with:
 
@@ -45,13 +45,15 @@ Preferences are stored separately in `$XDG_CONFIG_HOME/adb/preferences.toml`, de
 
 ## How do model IDs select credential sets?
 
-Usually the part before the first slash is the set: `openai/MODEL` uses `openai`. Inspect-style IDs of the form `openai-api/SERVICE/MODEL` use `SERVICE` instead. For example, configure a named compatible service with:
+Usually the part before the first slash is the set: `openai/MODEL` uses `openai`, and `vllm/Qwen/Qwen2.5-7B-Instruct` uses `vllm`. Configure a self-hosted service with:
 
 ```sh
-nix run .#adb-runner -- credentials set llama
+nix run .#adb-runner -- credentials set vllm.default
 ```
 
-That prompt uses `LLAMA_API_KEY` and `LLAMA_BASE_URL`; an adapter supporting Inspect's service syntax can use them through `openai-api/llama/MODEL`. Which model-ID forms are accepted depends on the experiment's adapter. An unknown prefix does not itself add provider support. Mock prefixes `mock` and `mockllm` require no credential set.
+That prompt uses `VLLM_API_KEY` and `VLLM_BASE_URL`; use `vllm/Qwen/Qwen2.5-7B-Instruct` as the model ID. For Ollama, configure `ollama.default` and use a library tag such as `ollama/qwen2.5:7b-instruct-fp16`. Profiles within each set select the venue; for example, `--credential vllm=cluster` selects `vllm.cluster`.
+
+Inspect-style IDs of the form `openai-api/SERVICE/MODEL` use `SERVICE` as the credential set. Which model-ID forms are accepted depends on the experiment's adapter. An unknown prefix does not itself add provider support. Mock prefixes `mock` and `mockllm` require no credential set.
 
 ADB discovers model IDs in `llm`-typed inputs, including nested lists and structures. It does not infer credentials from arbitrary string fields or free-form JSON objects.
 

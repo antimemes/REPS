@@ -230,7 +230,7 @@ def missing_sets(manifest: Manifest, realized_params: Params) -> list[str]:
     store is the ONLY source of credentials — a key exported in the shell neither
     reaches a run nor suppresses this gate (it would silently skip the setup prompt
     while the run still launched keyless). Only built-in names the registry knows need
-    credentials are reported: an unknown prefix (ollama, vllm, a local server) may
+    credentials are reported: an unknown prefix (a custom service) may
     legitimately need nothing, and blocking on a guess would be inferred-but-wrong.
     A run naming a built-in with zero configuration can only fail, so the runner
     refuses it up front with the fix in hand."""

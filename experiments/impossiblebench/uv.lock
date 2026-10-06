@@ -58,6 +58,7 @@ version = "0.1.0"
 source = { directory = "../../lib/adb-inspect" }
 dependencies = [
     { name = "adb-events" },
+    { name = "adb-providers" },
     { name = "aioboto3" },
     { name = "anthropic" },
     { name = "azure-ai-inference" },
@@ -73,6 +74,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "adb-events", editable = "../../lib/adb-events" },
+    { name = "adb-providers", directory = "../../lib/adb-providers" },
     { name = "aioboto3", specifier = ">=13.0.0" },
     { name = "anthropic", specifier = ">=0.115.0" },
     { name = "azure-ai-inference", specifier = ">=1.0.0b4" },
@@ -88,6 +90,19 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "adb-testing", editable = "../../lib/adb-testing" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
+]
+
+[[package]]
+name = "adb-providers"
+version = "0.1.0"
+source = { directory = "../../lib/adb-providers" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-xdist" },
 ]

@@ -35,6 +35,8 @@ dependencies = [
     "aioboto3>=13.0.0",
     # the shared ADB event shapes — typed, validated emission (no hand-built dicts)
     "adb-events",
+    # canonical provider credential requirements
+    "adb-providers",
     "pydantic>=2",
 ]
 
@@ -43,6 +45,7 @@ dependencies = [
 [tool.uv.sources]
 adb-testing = { path = "../adb-testing", editable = true }
 adb-events = { path = "../adb-events", editable = true }
+adb-providers = { path = "../adb-providers" }
 
 # Non-editable path-dep consumers (the inspect experiment families) rebuild only
 # when the cache key changes, and uv's default key is pyproject.toml alone — key

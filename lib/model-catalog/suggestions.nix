@@ -1,9 +1,8 @@
 # The `types.llm` combobox hints, generated — never edit a model id here by hand.
 # Concrete ids come from model_catalog.json (regenerate with `task models:update`)
-# — PROVIDER knowledge, wrapper-agnostic. The value strings here follow inspect's
-# provider-prefix convention (google/, grok/, openai-api/, ...) because inspect is
-# the only wrapper today; another wrapper (litellm, ...) would build its own
-# formatting over the same catalog rather than reuse this file. The static tail
+# — PROVIDER knowledge, wrapper-agnostic. Value strings use ADB's canonical
+# provider prefixes; adapters translate them into their framework's names.
+# The static tail
 # covers pattern-style providers with no enumerable model list. Shared infra: a
 # catalog refresh changes manifests but never condition identity.
 { lib }:
@@ -24,7 +23,8 @@ let
         p.models)
     order;
   patterns = [
-    { value = "openai/qwen3.5-9b"; description = "A model served from your own OpenAI-compatible server (set its base URL on the openai credential set)."; }
+    { value = "vllm/"; description = "vllm/<org>/<model>: a vLLM-served upstream repo id, e.g. vllm/Qwen/Qwen2.5-7B-Instruct. Set VLLM_BASE_URL on the vllm credential profile; API key optional."; }
+    { value = "ollama/"; description = "ollama/<tag>: an Ollama library tag, e.g. ollama/qwen2.5:7b-instruct-fp16. Set OLLAMA_BASE_URL to its OpenAI-compatible endpoint on the ollama credential profile; API key optional."; }
     { value = "openrouter/"; description = "openrouter/<org>/<model>: any OpenRouter-hosted model, including ones added since this catalog was generated. Needs OPENROUTER_API_KEY (asked for on first run)."; }
     { value = "azureai/"; description = "Type your Azure deployment name after the slash; endpoint + key asked for on first run."; }
     { value = "openai-api/"; description = "openai-api/<name>/<model>: an OpenAI-compatible server under a named credential set."; }

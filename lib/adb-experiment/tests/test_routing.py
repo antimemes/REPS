@@ -10,7 +10,34 @@ import pytest
 
 from adb_experiment.llm import ChatClient, EmptyResponse, ServedModelMismatch
 from adb_experiment.providers import resolve
+from adb_providers import served_model_matches
 from test_llm import client_and_reply
+
+
+@pytest.mark.parametrize("provider,served", [
+    ("vllm", "Qwen/Qwen2.5-7B-Instruct"),
+    ("ollama", "qwen2.5:7b-instruct-fp16"),
+])
+def test_selfhosted_resolution(provider, served):
+    model = f"{provider}/{served}"
+    base_var = f"{provider.upper()}_BASE_URL"
+    key_var = f"{provider.upper()}_API_KEY"
+    env = {base_var: "http://localhost:8000/v1/"}
+    endpoint = resolve(model, env)
+    assert endpoint.provider == provider
+    assert endpoint.served_model == served
+    assert endpoint.base_url == "http://localhost:8000/v1"
+    assert endpoint.api_key == "dummy"
+    assert served_model_matches(model, endpoint.served_model)
+    assert resolve(model, {**env, key_var: "test-key"}).api_key == "test-key"
+
+
+@pytest.mark.parametrize("provider", ["vllm", "ollama"])
+def test_selfhosted_resolution_requires_explicit_url(provider):
+    with pytest.raises(ValueError) as caught:
+        resolve(f"{provider}/Qwen/Qwen2.5-7B-Instruct", {})
+    assert f"${provider.upper()}_BASE_URL is unset" in str(caught.value)
+    assert f"credentials set {provider}" in str(caught.value)
 
 
 def test_azure_resolution_requires_both_credentials():

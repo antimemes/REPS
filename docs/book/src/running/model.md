@@ -165,6 +165,16 @@ The experiment name, declared source content and parameter values match. It does
 
 The condition hash excludes seeds, credential profiles, endpoints, the shared runner, platform and fetch reference. An experiment author chooses the source paths included in identity. A model ID is included as an input string, but a provider can change what a moving model alias resolves to.
 
+Self-hosted IDs name the serving stack: `vllm/Qwen/Qwen2.5-7B-Instruct` uses an
+upstream repo id, while `ollama/qwen2.5:7b-instruct-fp16` uses an Ollama library
+tag. Runs across engines do not pool into one condition because engines differ
+in hidden sampling defaults, chat templates and quantization formats. The
+convention for vLLM is to serve under the upstream repo id without renaming it
+or quantizing at load time; choose a repo or tag that names the intended
+quantization. The venue (laptop, cluster or Vast) belongs in a
+[credential profile](secrets.md), so moving the same model and engine between
+venues does not change the model ID.
+
 The served name must equal the requested name ignoring case, except that an
 unqualified or `-latest` request also accepts the same name plus one date suffix
 (`-YYYY-MM-DD`, `-YYYYMMDD`, `@YYYYMMDD`, `-YYYY-MM`; `-YYMM` for `mistral/` only).

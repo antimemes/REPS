@@ -173,8 +173,8 @@ def test_missing_sets_gate(cfg, monkeypatch):
     # mocks (both spellings) route to no credential set
     assert credentials.missing_sets(manifest, {"model": "mock/model"}) == []
     assert credentials.missing_sets(manifest, {"model": "mockllm/model"}) == []
-    # unknown prefix (a local ollama may legitimately need nothing) → never blocked
-    assert credentials.missing_sets(manifest, {"model": "ollama/llama3"}) == []
+    # unknown prefix (a custom service may legitimately need nothing) → never blocked
+    assert credentials.missing_sets(manifest, {"model": "custom/model"}) == []
     # a host env var does NOT satisfy the gate — the store is the only credential
     # source, and an accidentally exported key must not skip the setup prompt
     monkeypatch.setenv("OPENAI_API_KEY", "sk-ambient")
@@ -183,6 +183,26 @@ def test_missing_sets_gate(cfg, monkeypatch):
     # any stored profile satisfies it — not only default
     credentials.save({"openai": {"work": {"OPENAI_API_KEY": "k"}}})
     assert credentials.missing_sets(manifest, {"model": "openai/q"}) == []
+
+
+@pytest.mark.parametrize("provider,model", [
+    ("vllm", "Qwen/Qwen2.5-7B-Instruct"),
+    ("ollama", "qwen2.5:7b-instruct-fp16"),
+])
+def test_selfhosted_requires_profile_and_accepts_keyless_endpoint(cfg, monkeypatch, provider, model):
+    manifest = _manifest({"kind": "llm"})
+    params = {"model": f"{provider}/{model}"}
+    base_var = f"{provider.upper()}_BASE_URL"
+    monkeypatch.setenv(base_var, "http://ambient.invalid/v1")
+    assert credentials.missing_sets(manifest, params) == [provider]
+    with pytest.raises(ValueError, match=f"credentials set {provider}"):
+        credentials.resolve_run_credentials(manifest, params, experiment="exp", interactive=False)
+    endpoint = {base_var: "http://localhost:8000/v1"}
+    credentials.save({provider: {"default": endpoint}})
+    assert credentials.missing_sets(manifest, params) == []
+    assert credentials.resolve_run_credentials(
+        manifest, params, experiment="exp", interactive=False
+    ) == endpoint
 
 
 # -- the interactive ladder ------------------------------------------------------------

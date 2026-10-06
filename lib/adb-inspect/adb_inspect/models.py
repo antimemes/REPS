@@ -13,6 +13,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from adb_providers import PROVIDERS
+
 # ADB canonical provider prefix -> (inspect's name for the same backend, env-var
 # bridge from ADB's canonical vars to the vars inspect's provider reads). The
 # `types.llm` vocabulary speaks provider names (`moonshotai/kimi-k3`, matching the
@@ -22,6 +24,10 @@ from pydantic import BaseModel, ConfigDict, Field
 INSPECT_PROVIDER_REMAP: dict[str, tuple[str, dict[str, str]]] = {
     "moonshotai": ("moonshot", {"MOONSHOTAI_API_KEY": "MOONSHOT_API_KEY",
                                 "MOONSHOTAI_BASE_URL": "MOONSHOT_BASE_URL"}),
+    # HTTP serving stacks: Inspect's native vllm is in-process and its ollama
+    # uses a different client. openai-api reads each service's env vars directly.
+    "vllm": ("openai-api/vllm", {}),
+    "ollama": ("openai-api/ollama", {}),
 }
 
 
@@ -29,10 +35,18 @@ def inspect_model(model: str) -> str:
     """The model id `inspect_ai.eval` should receive for an ADB model id.
 
     Params and emitted events keep the canonical ADB id (it is the condition);
-    only the eval call sees inspect's spelling. Bridged env vars are copied,
+    only the eval call sees inspect's spelling. Prepare the environment the way
+    Inspect's provider reads it: optional keys in the registry get a placeholder
+    bearer when unset, following the chat client's rule, because Inspect's
+    providers, like the OpenAI SDK, refuse an empty key. Bridged env vars are copied,
     never overwritten — an explicitly set inspect-native var wins."""
     provider, sep, rest = model.partition("/")
-    remap = INSPECT_PROVIDER_REMAP.get(provider) if sep else None
+    if not sep:
+        return model
+    registered = PROVIDERS.get(provider)
+    if registered is not None and not registered.api_key.required:
+        os.environ.setdefault(registered.api_key.name, "dummy")
+    remap = INSPECT_PROVIDER_REMAP.get(provider)
     if remap is None:
         return model
     name, env_bridge = remap
@@ -49,9 +63,9 @@ class Params(BaseModel):
     # path (`path/to/file.py@task_fn`), or `pkg:<module>:<attr>` for a @task callable
     # from an installed package (how families select their task).
     task: str = Field(min_length=1)
-    # Inspect model id (provider/model). `mockllm/model` runs keyless & offline. A
+    # ADB model id (provider/model). `mockllm/model` runs keyless & offline. A
     # self-hosted / OpenAI-compatible server (Ollama, vLLM, …) is selected by the
-    # provider's base-URL env var (OPENAI_BASE_URL for `openai/…`), NOT a param —
+    # provider's base-URL env var (VLLM_BASE_URL or OLLAMA_BASE_URL), NOT a param —
     # where a model is served is environment, not part of the experimental condition.
     model: str = "mockllm/model"
     # `-T` task args (types.object → a real dict), e.g. {"cot": true}.
