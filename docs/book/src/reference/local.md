@@ -9,13 +9,13 @@ Experiment launchers, publishing and verification use the same data-directory co
 | Setting | Effect |
 | --- | --- |
 | `--data-dir DIR` | Selects storage for terminal experiments, publishing and verifier run-ID lookup; overrides the environment. |
-| `ADB_DATA_DIR` | Default for terminal experiments and run-management commands. |
-| No explicit directory | Uses `$XDG_DATA_HOME/adb` when `XDG_DATA_HOME` is set; otherwise `~/.local/share/adb`. |
+| `REPS_DATA_DIR` | Default for terminal experiments and run-management commands. |
+| No explicit directory | Uses `$XDG_DATA_HOME/reps` when `XDG_DATA_HOME` is set; otherwise `~/.local/share/reps`. |
 
 For example, set this in every terminal used for the session before launching an experiment or inspecting its runs:
 
 ```sh
-export ADB_DATA_DIR="$HOME/adb-first-run"
+export REPS_DATA_DIR="$HOME/reps-first-run"
 ```
 
 Changing the directory selects a different collection of runs; it does not move existing data. To inspect a run directly, use the `store` path printed by the terminal experiment. Under the chosen data directory:
@@ -29,7 +29,7 @@ Readers derive conditions by grouping cards on `condition`.
 
 ## Run the hello test in a terminal
 
-Run this command as written for the default data directory, or set `ADB_DATA_DIR` first or append `--data-dir DIR` to choose another directory.
+Run this command as written for the default data directory, or set `REPS_DATA_DIR` first or append `--data-dir DIR` to choose another directory.
 
 ```bash
 nix run .#inspect-hello -- \

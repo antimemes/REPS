@@ -1,11 +1,11 @@
-"""concordia: run one Concordia generative-agent simulation and translate it to ADB events.
+"""concordia: run one Concordia generative-agent simulation and translate it to REPS events.
 
     concordia-sim CONFIG.json
 
 One run = one Concordia `Simulation.play()`, assembled exactly as upstream's tutorial
 notebook does it: prefabs + instances + Config + Simulation + play. Everything beyond
 that assembly lives at the edges — params in (models.py), the instrumented model client
-(client.py), the transcript out (translate.py). A plain program: no ADB imports beyond
+(client.py), the transcript out (translate.py). A plain program: no REPS imports beyond
 the event vocabulary. Execution failures preserve partial events and summaries
 and return a nonzero exit code.
 """
@@ -20,8 +20,8 @@ from importlib.metadata import version
 
 import numpy as np
 
-from adb_events import Log, Status, emit
-from adb_experiment import deposit_artifact, experiment_main
+from reps_events import Log, Status, emit
+from reps_experiment import deposit_artifact, experiment_main
 from .models import Params
 from .translate import (GM_NAME, TurnEmitter, emit_provenance, emit_scene,
                         emit_summary)
@@ -52,7 +52,7 @@ def build_simulation(params: Params):
     from concordia.prefabs.entity import conversational
     from concordia.typing import prefab as prefab_lib
 
-    from .client import AdbLanguageModel, PerEntitySimulation
+    from .client import RepsLanguageModel, PerEntitySimulation
 
     # the game master is any prefab under concordia.prefabs.game_master, imported by
     # name. dialogic is a pure conversation: it hands control back to itself and cannot
@@ -92,10 +92,10 @@ def build_simulation(params: Params):
     )
 
     clients = {
-        agent.name: AdbLanguageModel(params, model=agent.model or None, agent=agent.name)
+        agent.name: RepsLanguageModel(params, model=agent.model or None, agent=agent.name)
         for agent in params.agents
     }
-    clients[GM_NAME] = AdbLanguageModel(params, agent=GM_NAME)
+    clients[GM_NAME] = RepsLanguageModel(params, agent=GM_NAME)
     sim = PerEntitySimulation(
         config=config, model=clients[GM_NAME], embedder=make_embedder(),
         clients=clients,

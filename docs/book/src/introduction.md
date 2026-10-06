@@ -1,6 +1,6 @@
-# What is ADB?
+# What is REPS?
 
-Agent Databank (ADB) packages agent experiments, runs them on your machine, and saves their inputs, results and execution records together. This repository provides the experiments, runner and Nix library.
+REPS packages replications of multi-agent safety experiments, runs them on your machine, and saves their inputs, results and execution records together. This repository provides the experiments, runner and Nix library.
 
 ## What would you like to do?
 
@@ -10,7 +10,7 @@ Agent Databank (ADB) packages agent experiments, runs them on your machine, and 
 | Run from a terminal or use a copied command | [Choose inputs and run](running/experiments.md#how-do-i-use-the-command-line): inspect the parameter schema, supply inputs and check the outcome. |
 | Explore saved results | [Read the files directly](reference/local.md#how-do-i-read-the-files-without-a-browser). |
 | Repeat a run or try different inputs | [Repeat and compare runs](running/model.md): keep the source and inputs, choose seeds and assess differences. |
-| Add an experiment or change its code | [Add or change an experiment](authoring/experiments.md): clone ADB, edit, test locally and submit a pull request. |
+| Add an experiment or change its code | [Add or change an experiment](authoring/experiments.md): clone REPS, edit, test locally and submit a pull request. |
 
 See the [Roadmap](start/roadmap.md) for planned work on execution and recorded data.
 

@@ -20,125 +20,6 @@ wheels = [
 ]
 
 [[package]]
-name = "adb-concordia"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "adb-events" },
-    { name = "adb-experiment", extra = ["llm"] },
-    { name = "gdm-concordia" },
-    { name = "numpy" },
-    { name = "openai" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "adb-testing" },
-    { name = "pytest" },
-    { name = "pytest-xdist" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "adb-events", editable = "../../lib/adb-events" },
-    { name = "adb-experiment", extras = ["llm"], directory = "../../lib/adb-experiment" },
-    { name = "gdm-concordia", specifier = "~=2.4.0" },
-    { name = "numpy", specifier = ">=1.26" },
-    { name = "openai", specifier = ">=1.60" },
-    { name = "pydantic", specifier = ">=2" },
-    { name = "pyyaml", specifier = ">=6" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "adb-testing", editable = "../../lib/adb-testing" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-xdist" },
-]
-
-[[package]]
-name = "adb-events"
-version = "0.1.0"
-source = { editable = "../../lib/adb-events" }
-dependencies = [
-    { name = "pydantic" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "pydantic", specifier = ">=2.12,<3" }]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "adb-testing", editable = "../../lib/adb-testing" },
-    { name = "duckdb", specifier = ">=1.4,<2" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-xdist" },
-]
-
-[[package]]
-name = "adb-experiment"
-version = "0.1.0"
-source = { directory = "../../lib/adb-experiment" }
-dependencies = [
-    { name = "adb-events" },
-    { name = "adb-providers" },
-]
-
-[package.optional-dependencies]
-llm = [
-    { name = "openai" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "adb-events", editable = "../../lib/adb-events" },
-    { name = "adb-providers", directory = "../../lib/adb-providers" },
-    { name = "openai", marker = "extra == 'llm'", specifier = ">=1.60" },
-]
-provides-extras = ["llm"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "adb-testing", editable = "../../lib/adb-testing" },
-    { name = "openai", specifier = ">=1.60" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-xdist" },
-]
-
-[[package]]
-name = "adb-providers"
-version = "0.1.0"
-source = { directory = "../../lib/adb-providers" }
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-xdist" },
-]
-
-[[package]]
-name = "adb-testing"
-version = "0.1.0"
-source = { editable = "../../lib/adb-testing" }
-dependencies = [
-    { name = "adb-events" },
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "adb-events", editable = "../../lib/adb-events" },
-    { name = "pytest", specifier = ">=8" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest-xdist" }]
-
-[[package]]
 name = "annotated-types"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1055,6 +936,125 @@ sdist = { url = "https://files.pythonhosted.org/packages/d0/aa/f7605d38763770443
 wheels = [
     { url = "https://files.pythonhosted.org/packages/97/45/fedda406c56dca118e29b907409570cc3e456555374989301cb4b6950cd1/reactivex-5.0.0-py3-none-any.whl", hash = "sha256:85f1c8e02b1fed9d8d4de2e42210beb3a8b4a0d7fe4ee4c1e1b236607363d26d", size = 256668, upload-time = "2026-07-20T20:04:02.475Z" },
 ]
+
+[[package]]
+name = "reps-concordia"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "gdm-concordia" },
+    { name = "numpy" },
+    { name = "openai" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "reps-events" },
+    { name = "reps-experiment", extra = ["llm"] },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-xdist" },
+    { name = "reps-testing" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "gdm-concordia", specifier = "~=2.4.0" },
+    { name = "numpy", specifier = ">=1.26" },
+    { name = "openai", specifier = ">=1.60" },
+    { name = "pydantic", specifier = ">=2" },
+    { name = "pyyaml", specifier = ">=6" },
+    { name = "reps-events", editable = "../../lib/reps-events" },
+    { name = "reps-experiment", extras = ["llm"], directory = "../../lib/reps-experiment" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
+    { name = "reps-testing", editable = "../../lib/reps-testing" },
+]
+
+[[package]]
+name = "reps-events"
+version = "0.1.0"
+source = { editable = "../../lib/reps-events" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.12,<3" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "duckdb", specifier = ">=1.4,<2" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
+    { name = "reps-testing", editable = "../../lib/reps-testing" },
+]
+
+[[package]]
+name = "reps-experiment"
+version = "0.1.0"
+source = { directory = "../../lib/reps-experiment" }
+dependencies = [
+    { name = "reps-events" },
+    { name = "reps-providers" },
+]
+
+[package.optional-dependencies]
+llm = [
+    { name = "openai" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "openai", marker = "extra == 'llm'", specifier = ">=1.60" },
+    { name = "reps-events", editable = "../../lib/reps-events" },
+    { name = "reps-providers", directory = "../../lib/reps-providers" },
+]
+provides-extras = ["llm"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "openai", specifier = ">=1.60" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
+    { name = "reps-testing", editable = "../../lib/reps-testing" },
+]
+
+[[package]]
+name = "reps-providers"
+version = "0.1.0"
+source = { directory = "../../lib/reps-providers" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
+]
+
+[[package]]
+name = "reps-testing"
+version = "0.1.0"
+source = { editable = "../../lib/reps-testing" }
+dependencies = [
+    { name = "pytest" },
+    { name = "reps-events" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "reps-events", editable = "../../lib/reps-events" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest-xdist" }]
 
 [[package]]
 name = "six"

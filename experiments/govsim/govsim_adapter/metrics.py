@@ -1,4 +1,4 @@
-"""GovSim's persisted environment rows → ADB results.
+"""GovSim's persisted environment rows → REPS results.
 
 Everything the paper's headline numbers need lands in ``log_env.json`` (pandas
 records, rewritten by the env every round). Survival and equality reuse the

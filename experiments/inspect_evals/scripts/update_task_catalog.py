@@ -51,7 +51,7 @@ SCALAR = {str: "str", int: "int", float: "float", bool: "bool"}
 
 
 def map_type(ann) -> dict | None:
-    """annotation -> adb type descriptor, or None when not representable."""
+    """annotation -> reps type descriptor, or None when not representable."""
     args = [a for a in typing.get_args(ann) if a is not type(None)]
     if typing.get_origin(ann) in (typing.Union, types.UnionType):
         if len(args) == 1:
@@ -198,7 +198,7 @@ def main() -> int:
                 "task": f"inspect_evals/{t.name}",
                 "summary": f"{ev.title}: {first_sentence(ev.description)}",
                 # Upstream's declared comparability version: regeneration prints
-                # changes for review; this is not the ADB source identity.
+                # changes for review; this is not the REPS source identity.
                 "version": ev.version.full_version,
                 "params": params,
                 "param_kwargs": kwargs_of,

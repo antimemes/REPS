@@ -3,9 +3,9 @@
 # experiment names (concordia-<scenario>) intentionally differ (same trick inspect
 # uses for the stdlib).
 [project]
-name = "adb-concordia"
+name = "reps-concordia"
 version = "0.1.0"
-description = "Concordia (google-deepmind) generative agent simulations as ADB experiments — one experiment per scenario, ADB events out"
+description = "Concordia (google-deepmind) generative agent simulations as REPS experiments — one experiment per scenario, REPS events out"
 requires-python = ">=3.13"
 dependencies = [
     # bounded so a relock is a deliberate line-edit, not silent drift of the wrapped
@@ -15,11 +15,11 @@ dependencies = [
     # transport for real backends: concordia.contrib's BaseGPTModel drives an
     # OpenAI-SDK client (we hand it an instrumented one; see concordia_sim/client.py)
     "openai>=1.60",
-    # the shared ADB event shapes — typed, validated emission (no hand-built dicts)
-    "adb-events",
+    # the shared REPS event shapes — typed, validated emission (no hand-built dicts)
+    "reps-events",
     # the experiment-side toolkit: protocol scaffold + provider routing; [llm] = the
     # instrumented OpenAI-compat ChatClient (llm.call emission, mock/ backend)
-    "adb-experiment[llm]",
+    "reps-experiment[llm]",
     "pydantic>=2",
     "pyyaml>=6",
     # the deterministic hash embedder (Concordia's memory bank wants numpy vectors);
@@ -27,12 +27,12 @@ dependencies = [
     "numpy>=1.26",
 ]
 
-# adb-events / adb-experiment are in-repo (not on PyPI); the nix build
-# (adb.mkPythonEnv) builds the sources recorded in uv.lock.
+# reps-events / reps-experiment are in-repo (not on PyPI); the nix build
+# (reps.mkPythonEnv) builds the sources recorded in uv.lock.
 [tool.uv.sources]
-adb-testing = { path = "../../lib/adb-testing", editable = true }
-adb-events = { path = "../../lib/adb-events", editable = true }
-adb-experiment = { path = "../../lib/adb-experiment" }
+reps-testing = { path = "../../lib/reps-testing", editable = true }
+reps-events = { path = "../../lib/reps-events", editable = true }
+reps-experiment = { path = "../../lib/reps-experiment" }
 
 # the console script can't be `concordia` (it would collide with the upstream package's
 # own entry namespace and reads ambiguously); the binary is `concordia-sim`.
@@ -40,7 +40,7 @@ adb-experiment = { path = "../../lib/adb-experiment" }
 concordia-sim = "concordia_sim.main:main"
 
 [dependency-groups]
-dev = ["pytest>=8", "pytest-xdist", "adb-testing"]
+dev = ["pytest>=8", "pytest-xdist", "reps-testing"]
 
 [build-system]
 requires = ["hatchling"]

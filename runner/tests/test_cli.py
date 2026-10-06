@@ -2,14 +2,14 @@
 
 import pytest
 
-from adb_events import VOCABULARY_VERSION
+from reps_events import VOCABULARY_VERSION
 
 
 @pytest.mark.parametrize("version", [None, 0, VOCABULARY_VERSION + 1])
 def test_vocabulary_mismatch_refuses_before_any_run_files(tmp_path, monkeypatch, capsys, version):
     import json
     import sys
-    from adb_runner import cli
+    from reps_runner import cli
 
     declaration = {"name": "fixture", "params": {}}
     if version is not None:
@@ -20,9 +20,9 @@ def test_vocabulary_mismatch_refuses_before_any_run_files(tmp_path, monkeypatch,
     experiment = tmp_path / "experiment"
     experiment.write_text(f"#!/bin/sh\ntouch '{marker}'\n")
     experiment.chmod(0o755)
-    monkeypatch.setenv("ADB_MANIFEST", str(manifest))
-    monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(experiment))
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "--data-dir", str(tmp_path / "runs")])
+    monkeypatch.setenv("REPS_MANIFEST", str(manifest))
+    monkeypatch.setenv("REPS_EXPERIMENT_BIN", str(experiment))
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "--data-dir", str(tmp_path / "runs")])
     assert cli.main() == 2
     assert not marker.exists() and not (tmp_path / "runs").exists()
     error = capsys.readouterr().err
@@ -40,7 +40,7 @@ def test_vocabulary_mismatch_refuses_before_any_run_files(tmp_path, monkeypatch,
 def test_launch_rejects_fetch_ref_userinfo_before_writing_a_run(tmp_path, monkeypatch, capsys, ref):
     import json
     import sys
-    from adb_runner import cli
+    from reps_runner import cli
 
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps({"name": "fixture", "params": {}, "v": VOCABULARY_VERSION}))
@@ -48,10 +48,10 @@ def test_launch_rejects_fetch_ref_userinfo_before_writing_a_run(tmp_path, monkey
     experiment = tmp_path / "experiment"
     experiment.write_text(f"#!/bin/sh\ntouch '{marker}'\n")
     experiment.chmod(0o755)
-    monkeypatch.setenv("ADB_MANIFEST", str(manifest))
-    monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(experiment))
-    monkeypatch.setenv("ADB_FETCH_REF", ref)
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "--data-dir", str(tmp_path / "runs")])
+    monkeypatch.setenv("REPS_MANIFEST", str(manifest))
+    monkeypatch.setenv("REPS_EXPERIMENT_BIN", str(experiment))
+    monkeypatch.setenv("REPS_FETCH_REF", ref)
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "--data-dir", str(tmp_path / "runs")])
     assert cli.main() == 2
     assert not marker.exists()
     assert not (tmp_path / "runs").exists()
@@ -64,27 +64,27 @@ def test_launch_rejects_fetch_ref_userinfo_before_writing_a_run(tmp_path, monkey
 def test_launch_forwards_optional_revision_and_tree_hash(tmp_path, monkeypatch, ref):
     import json
     import sys
-    from adb_runner import cli
+    from reps_runner import cli
 
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps({"name": "fixture", "params": {}, "v": VOCABULARY_VERSION}))
     experiment = tmp_path / "experiment"
     experiment.write_text("#!/bin/sh\n")
     experiment.chmod(0o755)
-    monkeypatch.setenv("ADB_MANIFEST", str(manifest))
-    monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(experiment))
-    monkeypatch.setenv("ADB_FETCH_REF", ref)
-    monkeypatch.setenv("ADB_TREE_HASH", "sha256-launcher-tree")
+    monkeypatch.setenv("REPS_MANIFEST", str(manifest))
+    monkeypatch.setenv("REPS_EXPERIMENT_BIN", str(experiment))
+    monkeypatch.setenv("REPS_FETCH_REF", ref)
+    monkeypatch.setenv("REPS_TREE_HASH", "sha256-launcher-tree")
     home = tmp_path / "data"
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "--data-dir", str(home)])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "--data-dir", str(home)])
     assert cli.main() == 0
     [path] = home.glob("runs/*/*/run.json")
     metadata = json.loads(path.read_text())
     [events] = path.parent.glob("events.jsonl")
     start = json.loads(events.read_text().splitlines()[0])["event"]
-    from adb_runner.canonical import condition_id
-    from adb_runner.store import condition_name, find_run
-    from adb_events import read_events
+    from reps_runner.canonical import condition_id
+    from reps_runner.store import condition_name, find_run
+    from reps_events import read_events
     cid = condition_id(metadata["identity"]["experiment"], metadata["provenance"]["source"], metadata["inputs"]["params"])
     assert len(cid) == 40 and cid == metadata["identity"]["condition"] == start["condition"]
     name = condition_name(cid, metadata["identity"]["experiment"])
@@ -103,20 +103,20 @@ def test_launch_forwards_optional_revision_and_tree_hash(tmp_path, monkeypatch, 
 def run_cli(tmp_path, monkeypatch):
     import json
     import sys
-    from adb_runner import cli
+    from reps_runner import cli
 
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps({"name": "fixture", "params": {}, "v": VOCABULARY_VERSION}))
     experiment = tmp_path / "experiment"
-    experiment.write_text("#!/bin/sh\nprintf 'seed=%s\\n' \"$ADB_SEED\"\n")
+    experiment.write_text("#!/bin/sh\nprintf 'seed=%s\\n' \"$REPS_SEED\"\n")
     experiment.chmod(0o755)
     home = tmp_path / "data"
-    monkeypatch.setenv("ADB_MANIFEST", str(manifest))
-    monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(experiment))
-    monkeypatch.delenv("ADB_FETCH_REF", raising=False)
+    monkeypatch.setenv("REPS_MANIFEST", str(manifest))
+    monkeypatch.setenv("REPS_EXPERIMENT_BIN", str(experiment))
+    monkeypatch.delenv("REPS_FETCH_REF", raising=False)
 
     def invoke(*args):
-        monkeypatch.setattr(sys, "argv", ["adb-runner", "--json", "--data-dir", str(home), *args])
+        monkeypatch.setattr(sys, "argv", ["reps-runner", "--json", "--data-dir", str(home), *args])
         return cli.main()
 
     return home, invoke
@@ -137,7 +137,7 @@ def assert_recorded_seed(path, seed):
 
 @pytest.mark.parametrize("seed", [0, 42, 2**31 - 1])
 def test_explicit_seed_is_recorded_and_forwarded_unchanged(run_cli, monkeypatch, seed):
-    from adb_runner import cli
+    from reps_runner import cli
 
     def unexpected_random(*args):
         raise AssertionError("an explicit seed must not draw a random seed")
@@ -151,7 +151,7 @@ def test_explicit_seed_is_recorded_and_forwarded_unchanged(run_cli, monkeypatch,
 
 @pytest.mark.parametrize("seed", [0, 2**31 - 1])
 def test_omitted_seed_draws_31_bits_and_records_the_draw(run_cli, monkeypatch, seed):
-    from adb_runner import cli
+    from reps_runner import cli
 
     draws = []
     def draw(self, bits):
@@ -169,7 +169,7 @@ def test_omitted_seed_draws_31_bits_and_records_the_draw(run_cli, monkeypatch, s
 def test_seed_does_not_depend_on_condition_or_invocation(run_cli, monkeypatch):
     home, invoke = run_cli
     for source in ("content:first", "content:first", "content:changed"):
-        monkeypatch.setenv("ADB_SOURCE", source)
+        monkeypatch.setenv("REPS_SOURCE", source)
         assert invoke("--seed", "42") == 0
     paths = list(home.glob("runs/*/*/run.json"))
     assert len(paths) == 3
@@ -211,15 +211,15 @@ def test_output_and_interaction_are_independent(
 ):
     import json
     import sys
-    from adb_runner import cli
+    from reps_runner import cli
 
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps({"name": "fixture", "params": {}, "v": VOCABULARY_VERSION}))
     experiment = tmp_path / "experiment"
     experiment.write_text("#!/bin/sh\nexit 0\n")
     experiment.chmod(0o755)
-    monkeypatch.setenv("ADB_MANIFEST", str(manifest))
-    monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(experiment))
+    monkeypatch.setenv("REPS_MANIFEST", str(manifest))
+    monkeypatch.setenv("REPS_EXPERIMENT_BIN", str(experiment))
     monkeypatch.setattr(sys.stdin, "isatty", lambda: terminal)
     interactions = []
 
@@ -228,7 +228,7 @@ def test_output_and_interaction_are_independent(
         return {}
 
     monkeypatch.setattr(cli.credentials, "resolve_run_credentials", resolve_credentials)
-    argv = ["adb-runner", "--data-dir", str(tmp_path / "runs")]
+    argv = ["reps-runner", "--data-dir", str(tmp_path / "runs")]
     if json_output:
         argv.append("--json")
     if non_interactive:
@@ -249,7 +249,7 @@ def test_output_and_interaction_are_independent(
 def test_run_uses_selected_data_directory(data_directory, tmp_path, monkeypatch, capsys):
     import json
     import sys
-    from adb_runner import cli
+    from reps_runner import cli
 
     home, flags = data_directory
     manifest = tmp_path / "manifest.json"
@@ -257,10 +257,10 @@ def test_run_uses_selected_data_directory(data_directory, tmp_path, monkeypatch,
     experiment = tmp_path / "experiment"
     experiment.write_text("#!/bin/sh\nexit 0\n")
     experiment.chmod(0o755)
-    monkeypatch.setenv("ADB_MANIFEST", str(manifest))
-    monkeypatch.setenv("ADB_EXPERIMENT_BIN", str(experiment))
-    monkeypatch.delenv("ADB_FETCH_REF", raising=False)
-    monkeypatch.setattr(sys, "argv", ["adb-runner", *flags])
+    monkeypatch.setenv("REPS_MANIFEST", str(manifest))
+    monkeypatch.setenv("REPS_EXPERIMENT_BIN", str(experiment))
+    monkeypatch.delenv("REPS_FETCH_REF", raising=False)
+    monkeypatch.setattr(sys, "argv", ["reps-runner", *flags])
 
     assert cli.main() == 0
     [card] = home.glob("runs/*/*/run.json")
@@ -272,9 +272,9 @@ def test_run_uses_selected_data_directory(data_directory, tmp_path, monkeypatch,
 @pytest.mark.parametrize("option,value", [("--out", "unused"), ("--replicates", "2")])
 def test_removed_options_are_rejected(tmp_path, monkeypatch, capsys, option, value):
     import sys
-    from adb_runner import cli
+    from reps_runner import cli
 
-    monkeypatch.setattr(sys, "argv", ["adb-runner", option, value])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", option, value])
     with pytest.raises(SystemExit) as exc:
         cli.main()
     assert exc.value.code == 2
@@ -285,9 +285,9 @@ def test_removed_options_are_rejected(tmp_path, monkeypatch, capsys, option, val
 
 def test_run_alias_is_rejected(monkeypatch, capsys):
     import sys
-    from adb_runner import cli
+    from reps_runner import cli
 
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "run"])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "run"])
     with pytest.raises(SystemExit) as exc:
         cli.main()
     assert exc.value.code == 2
@@ -297,9 +297,9 @@ def test_run_alias_is_rejected(monkeypatch, capsys):
 @pytest.mark.parametrize("command", [[], ["publish", "--to", "s3://throwaway/prefix"]])
 def test_aws_profile_rejects_credential_syntax(monkeypatch, capsys, command):
     import sys
-    from adb_runner import cli
+    from reps_runner import cli
 
-    monkeypatch.setattr(sys, "argv", ["adb-runner", *command, "--profile", "openai=work"])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", *command, "--profile", "openai=work"])
     with pytest.raises(SystemExit) as exc:
         cli.main()
     assert exc.value.code == 2
@@ -307,7 +307,7 @@ def test_aws_profile_rejects_credential_syntax(monkeypatch, capsys, command):
 
 
 def test_credential_selections_reach_resolver(run_cli, monkeypatch):
-    from adb_runner import cli
+    from reps_runner import cli
 
     _, invoke = run_cli
     seen = []

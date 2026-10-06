@@ -1,6 +1,6 @@
 # Native GovSim log
 
-`log_env.json` is the complete, unchanged upstream log from ADB run
+`log_env.json` is the complete, unchanged upstream log from REPS run
 `01M2K0ZJ4VF2ECAYPZ8T6Y4S14`: pinned GovSim `1d11adf047b24fa2ba0d44a1d4931015ea2e5210`,
 baseline fishing, one round, `openai/gpt-5-nano`, hash embedder, base seed 42.
 The run directory passed the credential scan. All four actions written by the

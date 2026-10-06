@@ -29,20 +29,20 @@ build-backend = "hatchling.build"
 """)
 
 
-with tempfile.TemporaryDirectory(prefix="adb-python-sources-") as directory:
+with tempfile.TemporaryDirectory(prefix="reps-python-sources-") as directory:
     root = Path(directory)
     app = root / "app"
-    # Deliberately use ADB names: the old inRepoOverlay replaced these sources.
-    package(root / "libs/events", "adb-events")
-    package(root / "libs/experiment", "adb-experiment")
+    # Deliberately use REPS names: the old inRepoOverlay replaced these sources.
+    package(root / "libs/events", "reps-events")
+    package(root / "libs/experiment", "reps-experiment")
     package(
         app,
         "source-fixture",
-        '["adb-events", "adb-experiment"]',
+        '["reps-events", "reps-experiment"]',
         """
 [tool.uv.sources]
-adb-events = { path = "../libs/events", editable = true }
-adb-experiment = { path = "../libs/experiment" }
+reps-events = { path = "../libs/events", editable = true }
+reps-experiment = { path = "../libs/experiment" }
 """,
     )
     subprocess.run(["uv", "lock"], cwd=app, check=True)
@@ -59,12 +59,12 @@ let
     inherit (pkgs) lib;
     inherit pyproject-nix uv2nix;
   };
-  adb = import (builtins.toPath repo + "/pkgs/build-support") {
+  reps = import (builtins.toPath repo + "/pkgs/build-support") {
     inherit pkgs pyproject-nix uv2nix pyproject-build-systems;
     origin = "fixture";
-    adb-runner = null;
+    reps-runner = null;
   };
-in adb.mkPythonEnv {
+in reps.mkPythonEnv {
   name = "source-fixture-env";
   workspaceRoot = /. + fixture;
   python = pkgs.python313;
@@ -97,15 +97,15 @@ in adb.mkPythonEnv {
             env + "/bin/python",
             "-c",
             """
-import adb_events, adb_experiment
-assert adb_events.ORIGIN == "locked-fixture"
-assert adb_experiment.ORIGIN == "locked-fixture"
+import reps_events, reps_experiment
+assert reps_events.ORIGIN == "locked-fixture"
+assert reps_experiment.ORIGIN == "locked-fixture"
 """,
         ],
         cwd=root,
         check=True,
     )
-    (root / "libs/events/adb_events/__init__.py").write_text('ORIGIN = "changed"\n')
+    (root / "libs/events/reps_events/__init__.py").write_text('ORIGIN = "changed"\n')
     changed = output("nix-instantiate", *arguments, cwd=root)
     assert changed != after, "Local implementation change did not reach the build"
     print("Python source selection and filtering: passed")

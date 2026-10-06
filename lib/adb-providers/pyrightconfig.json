@@ -1,6 +1,0 @@
-{
-  "typeCheckingMode": "strict",
-  "enableTypeIgnoreComments": false,
-  "reportUnnecessaryTypeIgnoreComment": "warning",
-  "include": ["adb_providers"]
-}

@@ -1,8 +1,8 @@
 import json
 
-from adb_events import read_events
-from adb_runner.card import derive_card
-from adb_runner import protocol
+from reps_events import read_events
+from reps_runner.card import derive_card
+from reps_runner import protocol
 from test_protocol import MANIFEST, run_fixture
 
 
@@ -34,10 +34,10 @@ def test_card_is_exact_copies_plus_stream_projection(tmp_path):
 
 def test_usage_includes_input_cache_reads_and_writes(tmp_path):
     script = '''#!/bin/sh
-adb-emit llm-call --model mock/x --input '[]' --output '{"usage":{"input_tokens":3,"input_tokens_cache_read":4,"input_tokens_cache_write":2,"output_tokens":5}}' </dev/null
-adb-emit llm-call --model mock/x --input '[]' --output '{"usage":{"input_tokens":7,"input_tokens_cache_read":11,"input_tokens_cache_write":13,"output_tokens":17}}' </dev/null
-adb-emit llm-call --model mock/x --input '[]' --output '{}' </dev/null
-adb-emit custom --kind t.usage --data '{"usage":{"input_tokens":99999}}'
+reps-emit llm-call --model mock/x --input '[]' --output '{"usage":{"input_tokens":3,"input_tokens_cache_read":4,"input_tokens_cache_write":2,"output_tokens":5}}' </dev/null
+reps-emit llm-call --model mock/x --input '[]' --output '{"usage":{"input_tokens":7,"input_tokens_cache_read":11,"input_tokens_cache_write":13,"output_tokens":17}}' </dev/null
+reps-emit llm-call --model mock/x --input '[]' --output '{}' </dev/null
+reps-emit custom --kind t.usage --data '{"usage":{"input_tokens":99999}}'
 '''
     result, _, store = run_fixture(tmp_path, script=script)
     assert result.state == "completed"
@@ -53,12 +53,12 @@ def test_agent_counts_use_only_model_calls_without_loading_schema(tmp_path):
     manifest = {**MANIFEST, "schema": {"version": 0, "models": "unused:Payload",
                                      "path": str(tmp_path / "missing-schema.json")}}
     script = '''#!/bin/sh
-adb-emit custom --kind t.message --data '{"agent":"a","text":"hi"}'
-adb-emit custom --kind t.message --data '{"agent":"observer","text":"hi"}'
-adb-emit llm-call --model mock/x --agent a --input '[]' --output '{"model":"x-z"}' </dev/null
-adb-emit llm-call --model mock/x --agent a --input '[]' --output '{}' --error offline </dev/null
-adb-emit llm-call --model mock/x --agent b --input '[]' --output '{"model":"x-a"}' </dev/null
-adb-emit llm-call --model mock/x --input '[]' --output '{"model":"x-z"}' </dev/null
+reps-emit custom --kind t.message --data '{"agent":"a","text":"hi"}'
+reps-emit custom --kind t.message --data '{"agent":"observer","text":"hi"}'
+reps-emit llm-call --model mock/x --agent a --input '[]' --output '{"model":"x-z"}' </dev/null
+reps-emit llm-call --model mock/x --agent a --input '[]' --output '{}' --error offline </dev/null
+reps-emit llm-call --model mock/x --agent b --input '[]' --output '{"model":"x-a"}' </dev/null
+reps-emit llm-call --model mock/x --input '[]' --output '{"model":"x-z"}' </dev/null
 '''
     result, _, store = run_fixture(tmp_path, script=script, manifest=manifest)
     assert result.state == "completed"
@@ -89,7 +89,7 @@ def test_live_heartbeat_refreshes_derived_without_reading_card_as_input(tmp_path
             (store.dir / "run.json").write_text('{"inputs":{"params":{"x":999}}}')
 
     monkeypatch.setattr(protocol.RunStore, "write_run_json", observe)
-    _, _, store = run_fixture(tmp_path, script='#!/bin/sh\nadb-emit result --name m --value 7\nexec >/dev/null 2>&1\nsleep 0.8\n')
+    _, _, store = run_fixture(tmp_path, script='#!/bin/sh\nreps-emit result --name m --value 7\nexec >/dev/null 2>&1\nsleep 0.8\n')
     live = [c for c in snapshots if c["lifecycle"]["state"] == "running" and c["derived"]["results"]]
     assert live and live[-1]["derived"]["results"] == {"m": 7}
     assert len(set(mtimes)) > 2

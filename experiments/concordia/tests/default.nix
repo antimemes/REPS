@@ -1,5 +1,5 @@
-{ experiment, adb, pkgs }: {
-  pytest = (adb.testers.pytest {
+{ experiment, reps, pkgs }: {
+  pytest = (reps.testers.pytest {
     inherit experiment;
     tests = ./.;
     env = { HF_HUB_OFFLINE = "1"; TRANSFORMERS_OFFLINE = "1"; };
@@ -7,14 +7,14 @@
   }).overrideAttrs {
     # The program is a shell adapter, not a Python venv. Select its test venv
     # explicitly without changing the identity-bearing package declaration.
-    nativeBuildInputs = [ (adb.mkPythonEnv {
+    nativeBuildInputs = [ (reps.mkPythonEnv {
       name = "concordia-test-env";
       workspaceRoot = ../.;
       python = pkgs.python313;
       groups = [ "dev" ];
     }) ];
   };
-  smoke = adb.testers.smoke {
+  smoke = reps.testers.smoke {
     inherit experiment;
     params = {
       model = "mock/model";

@@ -1,16 +1,16 @@
 [project]
-name = "adb-runner"
+name = "reps-runner"
 version = "0.1.0"
-description = "ADB experiment runner: validation, condition hashing, the runner protocol, storage, and provider credentials"
+description = "REPS experiment runner: validation, condition hashing, the runner protocol, storage, and provider credentials"
 requires-python = ">=3.13"
 dependencies = [
     "rfc8785>=0.1.4",
-    # the event vocabulary lives in adb-events (one definition, shared with every
-    # Python experiment); it also supplies the adb-emit console command.
-    "adb-events",
+    # the event vocabulary lives in reps-events (one definition, shared with every
+    # Python experiment); it also supplies the reps-emit console command.
+    "reps-events",
     # the canonical provider registry (names + credential templates); the runner
     # uses it for the credential store's prompt templates and the missing-set gate
-    "adb-providers",
+    "reps-providers",
 ]
 
 # Publishing stays optional for integrations that use the runner locally.
@@ -22,21 +22,21 @@ publish = [
     "zstandard>=0.25.0",
 ]
 
-# adb-events is in-repo (not yet on PyPI); the nix build resolves it from the same path
+# reps-events is in-repo (not yet on PyPI); the nix build resolves it from the same path
 [tool.uv.sources]
-adb-testing = { path = "../lib/adb-testing", editable = true }
-adb-events = { path = "../lib/adb-events", editable = true }
-adb-providers = { path = "../lib/adb-providers" }
+reps-testing = { path = "../lib/reps-testing", editable = true }
+reps-events = { path = "../lib/reps-events", editable = true }
+reps-providers = { path = "../lib/reps-providers" }
 
 [project.scripts]
-adb-runner = "adb_runner.cli:main"
+reps-runner = "reps_runner.cli:main"
 
 [dependency-groups]
 dev = [
-    "adb-runner[publish]",
+    "reps-runner[publish]",
     "pytest>=8",
     "pytest-xdist",
-    "adb-testing",
+    "reps-testing",
     "moto[s3]>=5.2.3",
     "boto3-stubs-lite>=1.43.97",
     "mypy-boto3-s3>=1.43.93",
@@ -48,7 +48,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/adb_runner"]
+packages = ["src/reps_runner"]
 
 [tool.pytest.ini_options]
 addopts = "-n auto"

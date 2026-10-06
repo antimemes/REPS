@@ -9,8 +9,8 @@ To add an experiment, follow the small keyless example below and check the compl
 Clone the repository and enter its development shell:
 
 ```sh
-git clone https://github.com/antimemetics-institute/agentdatabank.git
-cd agentdatabank
+git clone https://github.com/antimemetics-institute/reps.git
+cd reps
 nix-shell
 ```
 
@@ -21,24 +21,24 @@ Flake users can enter the same shell with `nix develop`. Create `experiments/exa
 Save this as `experiments/example-count/package.nix`:
 
 ```nix
-{ adb, writeShellApplication, jq, adb-runner }:
+{ reps, writeShellApplication, jq, reps-runner }:
 let
   program = writeShellApplication {
     name = "example-count-program";
-    runtimeInputs = [ jq adb-runner ]; # the runner's environment includes adb-events' CLI
+    runtimeInputs = [ jq reps-runner ]; # the runner's environment includes reps-events' CLI
     text = ''
       count="$(jq -er '.count')"
-      adb-emit result --name count --value "$count"
+      reps-emit result --name count --value "$count"
     '';
   };
 in
 {
-  example-count = adb.mkExperiment {
+  example-count = reps.mkExperiment {
     name = "example-count";
     summary = "Record an explicitly supplied count.";
     src = ./.;
     inherit program;
-    params = with adb.types; {
+    params = with reps.types; {
       count = param int {
         description = "Integer to record in the run results.";
         initial = 3;
@@ -47,7 +47,7 @@ in
     results = [
       {
         name = "count";
-        type = adb.types.int;
+        type = reps.types.int;
         label = "Recorded count";
         description = "The supplied count echoed by the program.";
         details = "This checks the integration, not model performance.";
@@ -67,21 +67,21 @@ These definitions describe possible outputs, not required outputs: an absent met
 
 ## What must the program do?
 
-`adb.mkExperiment` generates the named experiment launcher. Authors supply the
+`reps.mkExperiment` generates the named experiment launcher. Authors supply the
 underlying `program`; users invoke the named app.
 The generated launcher provides the manifest, source identity, and program path
-to the runner. Do not invoke `adb-runner`, build its execution environment by
+to the runner. Do not invoke `reps-runner`, build its execution environment by
 hand, or start the underlying program directly to create a run.
 
-The runner starts the program in a fresh workspace, sends the complete parameter object as JSON on standard input, and provides the run directory and seed in environment variables. Use `adb_events.emit()` in Python or the `adb-emit` CLI in other languages. The shell example reads its input with `jq` and calls `adb-emit` to record a result matching its declared result name. The CLI belongs to `adb-events`; this shell example obtains it through the runner's environment, and never invokes the runner itself. Ordinary stdout/stderr is captured as text, including printed JSON.
+The runner starts the program in a fresh workspace, sends the complete parameter object as JSON on standard input, and provides the run directory and seed in environment variables. Use `reps_events.emit()` in Python or the `reps-emit` CLI in other languages. The shell example reads its input with `jq` and calls `reps-emit` to record a result matching its declared result name. The CLI belongs to `reps-events`; this shell example obtains it through the runner's environment, and never invokes the runner itself. Ordinary stdout/stderr is captured as text, including printed JSON.
 
-For a larger program, put the implementation beside `package.nix` and have the adapter invoke its packaged executable. Pin dependencies in the package definition and dependency lock. Python experiments can use `adb.mkPythonEnv` to build a `pyproject.toml`/`uv.lock` workspace, and `adb-events` for validated event emission. `adb-experiment` provides a shared parameter-reading scaffold and artifact helper; see its [failure behavior](../reference/protocol.md#how-can-python-experiments-emit-validated-events) before adopting it.
-Each call to `adb.mkPythonEnv` must declare `python` explicitly, for example
+For a larger program, put the implementation beside `package.nix` and have the adapter invoke its packaged executable. Pin dependencies in the package definition and dependency lock. Python experiments can use `reps.mkPythonEnv` to build a `pyproject.toml`/`uv.lock` workspace, and `reps-events` for validated event emission. `reps-experiment` provides a shared parameter-reading scaffold and artifact helper; see its [failure behavior](../reference/protocol.md#how-can-python-experiments-emit-validated-events) before adopting it.
+Each call to `reps.mkPythonEnv` must declare `python` explicitly, for example
 `python = pkgs.python313;`; the helper has no interpreter default.
 
 Both emitter APIs handle validation and transport. Do not write a socket client in an experiment.
 
-Add [standard events](../reference/events.md) for the evidence a reader needs: model calls and results. Use custom events for messages and instance outcomes. Preserve useful native output as artifacts, write files under `ADB_RUN_DIR/artifacts/`, and emit pointers under an experiment-specific custom kind. Read `ADB_SEED` and pass it to supported random generators or backend settings. The [process protocol](../reference/protocol.md) defines the boundary in full.
+Add [standard events](../reference/events.md) for the evidence a reader needs: model calls and results. Use custom events for messages and instance outcomes. Preserve useful native output as artifacts, write files under `REPS_RUN_DIR/artifacts/`, and emit pointers under an experiment-specific custom kind. Read `REPS_SEED` and pass it to supported random generators or backend settings. The [process protocol](../reference/protocol.md) defines the boundary in full.
 
 ## Instrumenting an experiment
 
@@ -121,8 +121,8 @@ set their display order and definitions; its adapter computes the scientific
 quantities. Readers can use the emitted results without deriving experiment-specific
 metrics from native rows.
 
-Run the reusable [secrets scan](../../../../lib/adb-events/adb_events/secrets.py)
-from `adb_events.secrets` (also re-exported by `adb_testing`) on the entire run
+Run the reusable [secrets scan](../../../../lib/reps-events/reps_events/secrets.py)
+from `reps_events.secrets` (also re-exported by `reps_testing`) on the entire run
 directory with fake credentials seeded into the environment. GovSim's
 `test_resolved_config_copies_no_secrets` in [test_adapter.py](../../../../experiments/govsim/tests/test_adapter.py)
 checks captured events and every workspace file, so a resolved config or raw request cannot
@@ -144,14 +144,14 @@ adds missing packaging files without changing behavior.
 
 `package.nix` declares the experiment and never declares tests. Put checks in
 `tests/default.nix`, outside the experiment's identity sources. Like nixpkgs'
-`testers.*`, the shared `adb.testers` builders take test data and return ordinary
+`testers.*`, the shared `reps.testers` builders take test data and return ordinary
 derivations; the registry attaches them as `passthru.tests` and discovers them
 for `nix flake check` and `task test:python`.
 
 ```nix
-{ experiment, adb }: {
-  pytest = adb.testers.pytest { inherit experiment; tests = ./.; };
-  smoke = adb.testers.smoke {
+{ experiment, reps }: {
+  pytest = reps.testers.pytest { inherit experiment; tests = ./.; };
+  smoke = reps.testers.smoke {
     inherit experiment;
     params = {
       experiment = "fish_baseline_concurrent";
@@ -179,7 +179,7 @@ Environment knobs such as `HF_HUB_OFFLINE` belong to the experiment: set `env` a
 is the escape hatch. For example, Concordia's program is a shell adapter, so its
 [test declaration](../../../../experiments/concordia/tests/default.nix) supplies
 an explicit Python test venv through `nativeBuildInputs`. Nixpkgs `testers.*` are
-also fine for checks the two ADB testers do not cover.
+also fine for checks the two REPS testers do not cover.
 
 `smoke` takes the complete condition in `params`, runs the built launcher, and
 verifies its completed store. The oneliner IS the condition spec for a smoke run
@@ -196,19 +196,19 @@ your machine's system).
 
 Keep the three test layers separate:
 
-- `experiments/*/tests` uses `adb-testing`: `event_capture` and
+- `experiments/*/tests` uses `reps-testing`: `event_capture` and
   `assert_run_has_no_secrets` check that the adapter emits the right events, in
-  order, without secrets. Experiment tests never import `adb_runner`.
+  order, without secrets. Experiment tests never import `reps_runner`.
 - `runner/tests` uses small fixture programs to check that the runner executes
   anything that speaks the producer protocol.
 - Each experiment's `passthru.tests.smoke` runs its **built launcher** on a mock
-  configuration, then `adb-runner verify` on the completed store. This is the
+  configuration, then `reps-runner verify` on the completed store. This is the
   check that the runner executes that registered experiment offline, writes
   conforming evidence and a matching card, and leaks nothing.
 
 Keep smoke parameters in the experiment's check, not in the shared declaration
 API. The smoke tester runs with `--non-interactive`, asserts that exactly one run
-completed, and passes that experiment's manifest directly to `adb-runner verify`.
+completed, and passes that experiment's manifest directly to `reps-runner verify`.
 Verification checks that reported result names equal the manifest's declarations
 and reports missing or extra names. The separate completion check matters because
 `verify` can also audit failed or interrupted runs.
@@ -245,19 +245,19 @@ For a real experiment, test parameter rejection, event shapes, summary selection
 
 ## How do I test Python emission without launching a full run?
 
-Add `adb-testing` to your experiment's development dependencies and regenerate
+Add `reps-testing` to your experiment's development dependencies and regenerate
 its lock. From `experiments/EXPERIMENT/pyproject.toml`, the local source is:
 
 ```toml
 [dependency-groups]
-dev = ["pytest>=8", "pytest-xdist", "adb-testing"]
+dev = ["pytest>=8", "pytest-xdist", "reps-testing"]
 
 [tool.uv.sources]
-adb-testing = { path = "../../lib/adb-testing", editable = true }
+reps-testing = { path = "../../lib/reps-testing", editable = true }
 ```
 
 Merge these entries into existing sections. Pytest discovers the installed
-`adb-testing` plugin automatically; no `conftest.py` registration is needed.
+`reps-testing` plugin automatically; no `conftest.py` registration is needed.
 Tests that request `event_capture` receive the contract's reference socket receiver and its
 connection environment; the fixture cleans up afterward. It is not autouse:
 parameter-validation tests that do not emit events need not request it. Do not
@@ -268,7 +268,7 @@ this shows the fixture interface; in an adapter test, replace the direct `emit`
 call with the adapter function being tested:
 
 ```python
-from adb_events import Result, emit
+from reps_events import Result, emit
 
 
 def test_recorded_score(event_capture):

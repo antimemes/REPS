@@ -1,5 +1,5 @@
-# Concordia (google-deepmind's generative agent-based modeling library) as an ADB
-# experiment: multi-agent social simulations, translated live into ADB events.
+# Concordia (google-deepmind's generative agent-based modeling library) as a REPS
+# experiment: multi-agent social simulations, translated live into REPS events.
 #
 # ONE experiment: Concordia scenarios are data interpreted by one program, so the
 # scenario — the cast of `agents`, the `premise`, the `game_master` — is composed in
@@ -10,13 +10,13 @@
 # network), against any OpenAI-compatible /chat/completions server via
 # `openai/<served-name>`, or against a hosted provider's OpenAI-compatibility
 # endpoint (`anthropic/`, `google/`, `groq/`, `mistral/`, `grok/`, `openrouter/`,
-# `azureai/` — see adb_experiment/providers.py) — endpoint and key come from the
+# `azureai/` — see reps_experiment/providers.py) — endpoint and key come from the
 # credential store, never from params.
-{ adb, pkgs, lib, writeShellApplication, jq }:
+{ reps, pkgs, lib, writeShellApplication, jq }:
 
 let
-  env = adb.mkPythonEnv {
-    name = "adb-concordia-env";
+  env = reps.mkPythonEnv {
+    name = "reps-concordia-env";
     workspaceRoot = ./.;
     python = pkgs.python313;
   };
@@ -34,7 +34,7 @@ let
   ];
 in
 {
-  concordia = adb.mkExperiment {
+  concordia = reps.mkExperiment {
     schemaPython = "${env}/bin/python";
     name = "concordia";
     # NOT ./. — tests are not behavior, so a test edit re-versions nothing
@@ -45,7 +45,7 @@ in
       { label = "paper"; url = "https://arxiv.org/abs/2312.03664"; }
       { label = "source"; url = "https://github.com/google-deepmind/concordia"; }
     ];
-    params = with adb.types; {
+    params = with reps.types; {
       agents = param (listOf (struct {
         name = param str { description = "Character name (the message `from` in the transcript)."; };
         goal = param str { description = "What this character is trying to do — shapes how they act each turn."; };
@@ -104,14 +104,14 @@ in
         group = "generation";
       };
     };
-    results = with adb.types; [
+    results = with reps.types; [
       { name = "steps"; type = int; }         # simulation steps actually run
       { name = "agents"; type = int; }        # size of the scenario roster
       { name = "world_events"; type = int; }  # world-channel messages (premise + agent turns)
       { name = "model_calls"; type = int; }   # llm.call events emitted
     ];
     env = { network = true; };
-    # the lift between the runner protocol (flat params on stdin, seed in $ADB_SEED)
+    # the lift between the runner protocol (flat params on stdin, seed in $REPS_SEED)
     # and the sim's config file: rename model -> default_model, merge the seed.
     program = writeShellApplication {
       name = "concordia-adapter";
@@ -119,7 +119,7 @@ in
       text = ''
         config=$(mktemp)
         trap 'rm -f "$config"' EXIT
-        jq --argjson seed "''${ADB_SEED:-0}" '{
+        jq --argjson seed "''${REPS_SEED:-0}" '{
           agents: .agents,
           premise: .premise,
           game_master: .game_master,

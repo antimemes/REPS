@@ -10,10 +10,10 @@ from moto import mock_aws
 import pytest
 import zstandard
 
-from adb_events import read_events
-from adb_runner import cli
-from adb_runner.card import derive_card
-from adb_runner.publish import Publisher, PublishError, parse_target
+from reps_events import read_events
+from reps_runner import cli
+from reps_runner.card import derive_card
+from reps_runner.publish import Publisher, PublishError, parse_target
 from test_verify import saved, digest_files, rewrite_stream
 
 
@@ -47,10 +47,10 @@ def publication(saved, tmp_path, monkeypatch):
     home = tmp_path / "data dir's"
     directory.parents[2].rename(home)
     directory = home / "runs" / directory.parent.name / directory.name
-    monkeypatch.setenv("ADB_MANIFEST", str(manifest))
-    monkeypatch.setenv("ADB_DATA_DIR", str(tmp_path / "wrong-store"))
+    monkeypatch.setenv("REPS_MANIFEST", str(manifest))
+    monkeypatch.setenv("REPS_DATA_DIR", str(tmp_path / "wrong-store"))
     def invoke(*args):
-        monkeypatch.setattr(sys, "argv", ["adb-runner", "publish", "--to", "s3://throwaway/prefix",
+        monkeypatch.setattr(sys, "argv", ["reps-runner", "publish", "--to", "s3://throwaway/prefix",
             "--data-dir", str(home), *args])
         return cli.main()
     return directory, invoke
@@ -281,7 +281,7 @@ def test_botocore_failures_keep_actionable_messages(tmp_path, monkeypatch, capsy
     def unavailable(**kwargs):
         raise error
     monkeypatch.setattr(boto3, "Session", unavailable)
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "publish", "--to", "s3://throwaway/prefix",
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "publish", "--to", "s3://throwaway/prefix",
                                      "--data-dir", str(tmp_path), "--profile", "throwaway"])
     assert cli.main() == 1
     assert str(error) in capsys.readouterr().err

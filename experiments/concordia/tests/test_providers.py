@@ -1,10 +1,10 @@
-"""The provider table (shared: adb_experiment.providers): pure resolution from
+"""The provider table (shared: reps_experiment.providers): pure resolution from
 (model id, env) to an endpoint. Exercised from this experiment's suite — the lib
 has no test harness of its own yet."""
 
 import pytest
 
-from adb_experiment.providers import PROVIDERS, resolve
+from reps_experiment.providers import PROVIDERS, resolve
 
 
 def test_openai_env_overrides_default_and_tolerates_no_key():

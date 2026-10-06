@@ -10,7 +10,7 @@ Each invocation executes one run with a new run ID. Invoke the command again for
 
 ## How do seeds work?
 
-The recorded seed is the `--seed` argument, unchanged. It must be an integer from `0` through `2147483647`. When omitted, the runner draws a random non-negative 31-bit seed. The same value is passed to the experiment as `ADB_SEED` and recorded in `run.start` and `run.json`'s `inputs.seed`.
+The recorded seed is the `--seed` argument, unchanged. It must be an integer from `0` through `2147483647`. When omitted, the runner draws a random non-negative 31-bit seed. The same value is passed to the experiment as `REPS_SEED` and recorded in `run.start` and `run.json`'s `inputs.seed`.
 
 This complete keyless command makes one run with seed `42`:
 
@@ -27,17 +27,17 @@ To reuse a saved run's seed, pass the number shown on its run page or stored as 
 ## How do I audit the first real run?
 
 After the first live run of any experiment, verify its directory before launching
-more or publishing data. From the ADB checkout, run:
+more or publishing data. From the REPS checkout, run:
 
 ```sh
-adb-runner verify /path/to/run
+reps-runner verify /path/to/run
 # With the packaged runner:
-nix run .#adb-runner -- verify /path/to/run
+nix run .#reps-runner -- verify /path/to/run
 ```
 
-You can also pass the printed run ID: `nix run .#adb-runner -- verify RUN_ID --data-dir DIR`.
-Run-ID lookup selects `--data-dir`, then `ADB_DATA_DIR`, then `$XDG_DATA_HOME/adb`
-(default `~/.local/share/adb`). An explicit run-directory path is used directly.
+You can also pass the printed run ID: `nix run .#reps-runner -- verify RUN_ID --data-dir DIR`.
+Run-ID lookup selects `--data-dir`, then `REPS_DATA_DIR`, then `$XDG_DATA_HOME/reps`
+(default `~/.local/share/reps`). An explicit run-directory path is used directly.
 
 The command scans every file, including the workspace, for known credential
 values and common secret patterns, validates every envelope through the
@@ -55,7 +55,7 @@ usage, reasoning content when the endpoint supplies it, and served model name in
 the first live stream as well; verification checks evidence integrity, not the
 scientific result.
 
-The command uses `ADB_MANIFEST` when invoked through an experiment app
+The command uses `REPS_MANIFEST` when invoked through an experiment app
 (`nix run .#govsim -- verify /path/to/run`), or `--manifest FILE` / `--catalog DIR`
 for an existing build. Otherwise it builds the current checkout's manifest
 catalog. The manifest must match the recorded experiment and schema version;
@@ -75,7 +75,7 @@ truncated or filtered replies before launching more.
 ## Azure
 
 Create an Azure OpenAI deployment named **exactly like the requested model**,
-for example `gpt-5-nano`, and use `azure/gpt-5-nano` as the ADB model ID.
+for example `gpt-5-nano`, and use `azure/gpt-5-nano` as the REPS model ID.
 Identity names the model you asked for; the deployment is routing. A deployment
 label in identity would make conditions depend on an arbitrary label. A
 per-model deployment override is deferred until a deployment cannot be renamed.
@@ -83,7 +83,7 @@ per-model deployment override is deferred until a deployment cannot be renamed.
 Configure the profile locally, with the key entered at the hidden prompt:
 
 ```sh
-nix run .#adb-runner -- credentials set azure.default
+nix run .#reps-runner -- credentials set azure.default
 ```
 
 Supply `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_BASE_URL`:
@@ -99,7 +99,7 @@ nix run .#govsim -- --non-interactive --credential azure=default \
   --set model=azure/gpt-5-nano --set max_rounds=1 --seed 42 \
   --set max_tokens=3000 --set reasoning_effort=low \
   --set temperature=null --set top_p=null --set embedder=hash
-nix run .#adb-runner -- verify /path/to/run
+nix run .#reps-runner -- verify /path/to/run
 ```
 
 The hash embedder makes this an endpoint audit; choose `mxbai` for the paper's
@@ -180,8 +180,8 @@ unqualified or `-latest` request also accepts the same name plus one date suffix
 (`-YYYY-MM-DD`, `-YYYYMMDD`, `@YYYYMMDD`, `-YYYY-MM`; `-YYMM` for `mistral/` only).
 
 Source identity includes the experiment's declared files plus the source directories
-of the shared Python packages it uses. `mkExperiment` includes `adb_events` and
-`adb_experiment` by default; Inspect programs also include `adb_inspect`. These
+of the shared Python packages it uses. `mkExperiment` includes `reps_events` and
+`reps_experiment` by default; Inspect programs also include `reps_inspect`. These
 package directories pass through `cleanImport`, excluding development artifacts;
 their surrounding tests, READMEs and project tooling are outside the source list.
 Changes to shared execution code therefore change every dependent experiment's

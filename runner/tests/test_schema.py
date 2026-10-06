@@ -3,7 +3,7 @@
 import pytest
 import json
 
-from adb_runner.schema import (
+from reps_runner.schema import (
     MissingParamsError,
     SchemaError,
     bind_params,

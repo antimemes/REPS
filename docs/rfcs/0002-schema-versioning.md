@@ -21,7 +21,7 @@ Every record carries:
 
 ## 1. Envelope and payload versions
 
-`v` versions how records are written: the envelope, the meaning of common event types defined in `adb_events`, and how the repository's producers (e.g., `adb_experiment`) fill them.
+`v` versions how records are written: the envelope, the meaning of common event types defined in `reps_events`, and how the repository's producers (e.g., `reps_experiment`) fill them.
 
 `schema` identifies an experiment's custom events. The manifest declares `schema = { version, models }`, where `models` is a `module:attribute` pointer.
 
@@ -35,7 +35,7 @@ A version bump is not required when:
 - adding new union members; or
 - adding new optional fields, so long as their default value corresponds to the behavior in deserialization of records prior to their introduction.
 
-The `retries` fallback on `llm.call`, which reads `adb_experiment`'s legacy metadata markers, is a lossless parsing of old records into new models. It is grandfathered in as the `v: 0` reading; such migrations should be handled with a `v` version bump in the future.
+The `retries` fallback on `llm.call`, which reads `reps_experiment`'s legacy metadata markers, is a lossless parsing of old records into new models. It is grandfathered in as the `v: 0` reading; such migrations should be handled with a `v` version bump in the future.
 
 Whenever possible, old records are losslessly migrated to the new format, in JSON, before validation.
 
@@ -43,7 +43,7 @@ Whenever possible, old records are losslessly migrated to the new format, in JSO
 
 A changelog is kept for the history of `v` versions, and for each experiment's `schema` versions. Each version bump should add an entry in the corresponding changelog along with the same commit.
 
-For `v`, the changelog is in Appendix A below, and the `v` constant in `adb_events` links here.
+For `v`, the changelog is in Appendix A below, and the `v` constant in `reps_events` links here.
 
 For `schema`, each experiment keeps its changelog in the README.md in its `experiments` subfolder, at `<repository-root>/experiments/<experiment-name>/README.md`.
 

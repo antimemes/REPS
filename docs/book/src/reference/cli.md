@@ -2,9 +2,9 @@
 
 Run an experiment through its named app, such as `nix run .#inspect-hello -- ...`.
 This is a generated launcher that supplies the manifest, source identity, and
-program path before starting the runner internally. Do not invoke `adb-runner`
+program path before starting the runner internally. Do not invoke `reps-runner`
 or the underlying experiment program directly to execute an experiment.
-ADB's management tools use `adb-` names. Commands below follow the book's [Nix settings](../running/nix.md).
+REPS's management tools use `reps-` names. Commands below follow the book's [Nix settings](../running/nix.md).
 
 ## Experiment options
 
@@ -21,7 +21,7 @@ Pass these options to the named experiment app:
 | `--publish s3://BUCKET/PREFIX` | Publish the terminal run after a passing verification audit; publishing failures do not change the run exit code. |
 | `--profile NAME` | Select an AWS profile with `--publish`; omitted means boto3 default resolution. The name cannot contain `=`. |
 | `--credential SET=NAME` | Select a saved profile for a credential set used by this run. Repeat for multiple sets. |
-| `--data-dir DIR` | Write runs to this data directory, overriding `ADB_DATA_DIR`. |
+| `--data-dir DIR` | Write runs to this data directory, overriding `REPS_DATA_DIR`. |
 | `--json` | Print each recorded event, including its run metadata, to stdout as one JSON line as it happens. Events are also saved normally; diagnostics go to stderr. |
 | `--non-interactive` | Never prompt for input. Fail if required credentials or profile selections cannot be resolved automatically. Non-terminal stdin also disables prompts. |
 | `--dry-run` | Print resolved inputs, condition ID and run seed; do not execute or resolve credentials. Checks parameter names and types; list-length bounds are checked when executing. |
@@ -50,20 +50,20 @@ These are syntax examples; the keys must exist in the selected experiment. Unkno
 ## Publish saved runs
 
 ```text
-adb-runner publish --to s3://<bucket>/<prefix> [STEM ...] [--experiment X]
+reps-runner publish --to s3://<bucket>/<prefix> [STEM ...] [--experiment X]
   [--profile NAME] [--data-dir DIR] [--dry-run]
 ```
 
 Stems select `<condition>-<experiment>` or `<condition>-<experiment>/<run>`.
 Without stems, all runs are considered, optionally filtered by experiment.
 `--dry-run` verifies, prints exact keys and sizes, and writes nothing.
-Verification resolves manifests as `adb-runner verify` does. Each run uploads
+Verification resolves manifests as `reps-runner verify` does. Each run uploads
 only its compressed stream and card under `runs/`. See [Publishing](../running/publishing.md).
 
 ## Build a derived index
 
 ```text
-adb-runner index --stores FILE --catalog DIR --to DIR [--dry-run]
+reps-runner index --stores FILE --catalog DIR --to DIR [--dry-run]
 ```
 
 The store list provides source profiles, public URLs and optional filters.
@@ -75,11 +75,11 @@ creating or deleting anything. See [Build and serve an index](../running/publish
 
 ## Credential commands
 
-Credential management is a standalone use of `adb-runner`; these commands
+Credential management is a standalone use of `reps-runner`; these commands
 configure profiles and do not execute experiments:
 
 ```sh
-nix run .#adb-runner -- credentials --help
+nix run .#reps-runner -- credentials --help
 ```
 
 | Subcommand | Meaning |
@@ -96,19 +96,19 @@ Profile names start with a lowercase letter or digit and continue with lowercase
 
 ## Data and configuration settings
 
-Experiment launchers, `adb-runner publish`, and `adb-runner verify` select run
-storage in this order: `--data-dir DIR`, `ADB_DATA_DIR`, then `$XDG_DATA_HOME/adb`
-(or `~/.local/share/adb` when `XDG_DATA_HOME` is unset).
+Experiment launchers, `reps-runner publish`, and `reps-runner verify` select run
+storage in this order: `--data-dir DIR`, `REPS_DATA_DIR`, then `$XDG_DATA_HOME/reps`
+(or `~/.local/share/reps` when `XDG_DATA_HOME` is unset).
 
-To audit a saved run by ID, use `nix run .#adb-runner -- verify RUN_ID --data-dir DIR`.
+To audit a saved run by ID, use `nix run .#reps-runner -- verify RUN_ID --data-dir DIR`.
 `verify` also accepts a run-directory path directly; see [run auditing](../running/model.md#how-do-i-audit-the-first-real-run).
 
 | Setting | Effect |
 | --- | --- |
-| `ADB_DATA_DIR` | Default root for run data; overridden by `--data-dir`. |
-| `XDG_DATA_HOME` | When `ADB_DATA_DIR` is absent, data lives under this directory's `adb/`; default `~/.local/share`. |
-| `ADB_CREDENTIALS_FILE` | Override the credential TOML path. |
-| `XDG_CONFIG_HOME` | Base for `adb/credentials.toml` and `adb/preferences.toml`; default `~/.config`. The credential-file override does not relocate preferences. |
+| `REPS_DATA_DIR` | Default root for run data; overridden by `--data-dir`. |
+| `XDG_DATA_HOME` | When `REPS_DATA_DIR` is absent, data lives under this directory's `reps/`; default `~/.local/share`. |
+| `REPS_CREDENTIALS_FILE` | Override the credential TOML path. |
+| `XDG_CONFIG_HOME` | Base for `reps/credentials.toml` and `reps/preferences.toml`; default `~/.config`. The credential-file override does not relocate preferences. |
 | `NO_COLOR` | Disable runner terminal color. Nonterminal stderr and `TERM=dumb` also disable it. |
 | `DOCKER_HOST` | Forwarded to the experiment for Docker-backed tasks. The required daemon must be available separately. |
 
@@ -118,11 +118,11 @@ Provider keys and endpoints come from the credential store. The runner does not 
 
 | Entry point | Generated experiment launcher | Management tool |
 | --- | --- | --- |
-| Flake app | `NAME` | `adb-runner` |
+| Flake app | `NAME` | `reps-runner` |
 | Flake package | `experiment-NAME` | The same tool names |
 | Classic package | `experiment-NAME` | The same tool names |
-| Classic executable output | `exec.NAME` | `exec.adb-runner` |
+| Classic executable output | `exec.NAME` | `exec.reps-runner` |
 
 `manifests` builds a directory containing one manifest JSON file per registered experiment. [Working with Nix](../running/nix.md) explains fetching, registry aliases and revision pinning.
 
-The public package outputs are `manifests`, `adb-runner` and `experiment-<name>`, with `exec.<name>` executable outputs in the classic entry.
+The public package outputs are `manifests`, `reps-runner` and `experiment-<name>`, with `exec.<name>` executable outputs in the classic entry.

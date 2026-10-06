@@ -1,0 +1,52 @@
+# Everything a Python REPS experiment needs beyond the event vocabulary: the
+# runner-protocol scaffold (scaffold.py), provider->endpoint routing (providers.py),
+# and the instrumented OpenAI-compat LLM client (llm.py, behind the [llm] extra so
+# the base install stays SDK-free). Split from reps-events so the vocabulary package
+# the runner depends on stays exactly that — the vocabulary.
+[project]
+name = "reps-experiment"
+version = "0.1.0"
+description = "The Python experiment-side toolkit for REPS — protocol scaffold, provider routing, instrumented LLM client"
+requires-python = ">=3.13"
+dependencies = [
+    "reps-events",
+    # the canonical provider registry: names, credential templates, chat routing
+    "reps-providers",
+]
+
+# reps_experiment.llm needs the OpenAI SDK; experiments that call models depend on
+# `reps-experiment[llm]`, ones that only need the scaffold skip it
+[project.optional-dependencies]
+llm = ["openai>=1.60"]
+
+[dependency-groups]
+dev = [
+    "reps-testing",
+    "pytest>=8",
+    "pytest-xdist",
+    # mirrors the [llm] extra so `task typecheck` sees the SDK's real types;
+    # consumers still opt in via reps-experiment[llm]
+    "openai>=1.60",
+]
+
+# reps-events is in-repo (not on PyPI); the nix build (reps.mkPythonEnv) also
+# overrides it to the same source.
+[tool.uv.sources]
+reps-testing = { path = "../reps-testing", editable = true }
+reps-events = { path = "../reps-events", editable = true }
+reps-providers = { path = "../reps-providers" }
+
+# Non-editable path-dep consumers rebuild only when the cache key changes, and uv's
+# default key is pyproject.toml alone — key on the sources so edits propagate.
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "reps_experiment/**/*.py" }, { file = "reps_experiment/py.typed" }]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["reps_experiment"]
+
+[tool.pytest.ini_options]
+addopts = "-n auto"

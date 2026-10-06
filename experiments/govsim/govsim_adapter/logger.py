@@ -1,4 +1,4 @@
-"""AdbLogger — upstream's WandbLogger, neutralized and translated to ADB events.
+"""RepsLogger — upstream's WandbLogger, neutralized and translated to REPS events.
 
 Subclass, not fork (extend-tool-as-library): ``debug=True`` is forced, so
 ``wandb.init(mode="disabled")`` makes every trace/log upstream fires a no-op —
@@ -21,7 +21,7 @@ pool reported for a round is the value observed alongside its last stats entry
 
 from __future__ import annotations
 
-from adb_events import emit
+from reps_events import emit
 from simulation.utils import WandbLogger
 from .models import GovsimState, StateData
 
@@ -34,7 +34,7 @@ _FRAMEWORK_QUERIES = {
 }
 
 
-class AdbLogger(WandbLogger):
+class RepsLogger(WandbLogger):
     def __init__(self, experiment_name: str, config: dict, *, backend) -> None:
         super().__init__(experiment_name, config, debug=True)
         self._backend = backend

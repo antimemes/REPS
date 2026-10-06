@@ -11,10 +11,10 @@ import pandas as pd
 import pytest
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from adb_events.render import hint_paths
-from adb_events.testing import assert_conformant
-from adb_providers import PROVIDERS
-from adb_testing import assert_run_has_no_secrets
+from reps_events.render import hint_paths
+from reps_events.testing import assert_conformant
+from reps_providers import PROVIDERS
+from reps_testing import assert_run_has_no_secrets
 from govsim_adapter.models import Payload
 
 from govsim_adapter.main import EXPERIMENTS, Params
@@ -103,7 +103,7 @@ print("THREADS " + str(torch.get_num_threads()))
 raise SystemExit(status)
 '''
     proc = subprocess.run([sys.executable, "-c", script, str(config)], cwd=tmp_path,
-                          env=dict(os.environ, ADB_RUN_DIR=str(tmp_path), ADB_SEED="37",
+                          env=dict(os.environ, REPS_RUN_DIR=str(tmp_path), REPS_SEED="37",
                                    HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1"),
                           text=True, capture_output=True, timeout=120)
     assert proc.returncode == 0, proc.stderr
@@ -225,14 +225,14 @@ def test_mistral_prefill_response_parses_through_pathfinder(echo_prefix, event_c
 def test_logger_attributes_queries_without_changing_api_request(monkeypatch, event_capture, name, query, agent):
     from simulation.utils import WandbLogger
     from govsim_adapter.backend import ChatClientBackend
-    from govsim_adapter.logger import AdbLogger
+    from govsim_adapter.logger import RepsLogger
 
     # Replace wandb work only: use the real logger hooks, backend and event emitter.
     monkeypatch.setattr(WandbLogger, "__init__", lambda *args, **kwargs: None)
     monkeypatch.setattr(WandbLogger, "get_agent_chain", lambda *args: None)
     monkeypatch.setattr(WandbLogger, "start_chain", lambda *args: None)
     backend = ChatClientBackend("mock/model", 42, mock_responder=lambda _: "5")
-    logger = AdbLogger("test", {"experiment": {"personas": {
+    logger = RepsLogger("test", {"experiment": {"personas": {
         "num": 1, "persona_0": {"name": "John"},
     }}}, backend=backend)
     logger.get_agent_chain(name, "phase")
@@ -305,7 +305,7 @@ def test_upstream_mock_pipeline(tmp_path, experiment, event_capture, warmed_run)
     assert config.llm.reasoning_effort == "low"
     assert config.seed == 37
     assert config.llm.path == "mock/model"
-    assert config.llm.backend == "adb-experiment.ChatClient"
+    assert config.llm.backend == "reps-experiment.ChatClient"
     assert not any(e["type"] == "artifact" for e in events)
     assert not (tmp_path / "artifacts").exists()
     states = [e["data"] for e in events if e["type"] == "custom" and e["kind"] == "govsim.state"]
@@ -399,7 +399,7 @@ raise SystemExit(main())
 '''.replace("FAIL_SIMULATION", repr(fail_simulation))
     proc = warmed_run(
         script, config, cwd=tmp_path,
-        env=dict(os.environ, ADB_RUN_DIR=str(tmp_path), HF_HUB_OFFLINE="1",
+        env=dict(os.environ, REPS_RUN_DIR=str(tmp_path), HF_HUB_OFFLINE="1",
                  TRANSFORMERS_OFFLINE="1"),
     )
     assert proc.returncode == 1, proc.stderr
@@ -437,7 +437,7 @@ def _reply(text):
 
 
 def test_ingested_discussion_keeps_row_rounds_without_boundary_events(event_capture, tmp_path):
-    from adb_events import CustomEvent, parse_event
+    from reps_events import CustomEvent, parse_event
     from govsim_adapter.upstream import ingest_storage
 
     rows = [dict(action="utterance", round=round_, agent_id="a", utterance=text)
@@ -462,7 +462,7 @@ def _run_mock_pipeline(tmp_path, warmed_run, *, setup="", **overrides):
     script = setup + "\nfrom govsim_adapter.main import main; raise SystemExit(main())"
     return warmed_run(
         script, config, cwd=tmp_path,
-        env=dict(os.environ, ADB_RUN_DIR=str(tmp_path), ADB_SEED=str(2**31 + 37),
+        env=dict(os.environ, REPS_RUN_DIR=str(tmp_path), REPS_SEED=str(2**31 + 37),
                  HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1"),
     )
 
@@ -491,10 +491,10 @@ def test_resolved_config_copies_no_secrets(tmp_path, monkeypatch, event_capture,
     } | {
         "WANDB_API_KEY": "wandb-fixture-" + "b" * 40,
         "HF_TOKEN": "hf_" + "c" * 40,
-        "ADB_TEST_SECRET": "fixture-secret-" + "d" * 40,
-        "ADB_TEST_PASSWORD": "fixture-password-" + "e" * 40,
-        "ADB_TEST_CREDENTIAL": "fixture-credential-" + "f" * 40,
-        "ADB_TEST_AUTH_TOKEN": "Bearer fixture-auth-" + "g" * 40,
+        "REPS_TEST_SECRET": "fixture-secret-" + "d" * 40,
+        "REPS_TEST_PASSWORD": "fixture-password-" + "e" * 40,
+        "REPS_TEST_CREDENTIAL": "fixture-credential-" + "f" * 40,
+        "REPS_TEST_AUTH_TOKEN": "Bearer fixture-auth-" + "g" * 40,
     }
     for name, value in credentials.items():
         monkeypatch.setenv(name, value)
@@ -518,7 +518,7 @@ def test_served_model_mismatch_fails_real_upstream_instead_of_using_default_answ
     # Replace only the network. The real upstream wrapper normally catches model
     # exceptions and supplies default answers; a routing error must stop this run.
     setup = '''
-from adb_experiment.llm import ChatClient
+from reps_experiment.llm import ChatClient
 from openai.types.chat import ChatCompletion
 def wrong_model(self, kw):
     self.is_mock = False

@@ -1,0 +1,24 @@
+[project]
+name = "reps-providers"
+version = "0.1.0"
+description = "The canonical provider registry — REPS's vocabulary of provider names and their credential templates"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8", "pytest-xdist"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["reps_providers"]
+
+# Non-editable path-dep consumers rebuild only when the cache key changes, and uv's
+# default key is pyproject.toml alone — key on the sources so edits propagate.
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "reps_providers/**/*.py" }, { file = "reps_providers/*.toml" }, { file = "reps_providers/py.typed" }]
+
+[tool.pytest.ini_options]
+addopts = "-n auto"

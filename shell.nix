@@ -6,7 +6,7 @@
 
 pkgs.mkShell {
   packages = [
-    # python projects (runner, lib/adb-inspect, experiment families) — uv drives them;
+    # python projects (runner, lib/reps-inspect, experiment families) — uv drives them;
     # python is here solely as uv's interpreter (only-system preference: uv-managed
     # standalone builds are FHS-linked and break on NixOS)
     pkgs.uv

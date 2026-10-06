@@ -6,12 +6,12 @@
 # Bump the rev deliberately: it re-versions every impossiblebench experiment's
 # conditions (the pin is part of the family subtree).
 [project]
-name = "adb-experiment-impossiblebench"
+name = "reps-experiment-impossiblebench"
 version = "0.1.0"
-description = "ImpossibleBench (impossible SWE-bench / LiveCodeBench variants) as ADB experiments"
+description = "ImpossibleBench (impossible SWE-bench / LiveCodeBench variants) as REPS experiments"
 requires-python = ">=3.13"
 dependencies = [
-    "adb-inspect",
+    "reps-inspect",
     "impossiblebench",
 ]
 
@@ -19,7 +19,7 @@ dependencies = [
 package = false
 
 [tool.uv.sources]
-adb-inspect = { path = "../../lib/adb-inspect" }
+reps-inspect = { path = "../../lib/reps-inspect" }
 impossiblebench = { git = "https://github.com/safety-research/impossiblebench", rev = "061dc3dce6a96ab6cf02a855157263033dcfa3ba" }
 
 [dependency-groups]

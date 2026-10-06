@@ -1,5 +1,5 @@
 """Local credential store: resolution (which env to inject for a run's llm params),
-profile storage (0600 toml), the interactive ladder, and the `adb-runner credentials`
+profile storage (0600 toml), the interactive ladder, and the `reps-runner credentials`
 CLI."""
 
 import io
@@ -8,24 +8,24 @@ import stat
 
 import pytest
 
-from adb_runner import credentials
+from reps_runner import credentials
 
 
 @pytest.fixture
 def cfg(tmp_path, monkeypatch):
     path = tmp_path / "credentials.toml"
-    monkeypatch.setenv("ADB_CREDENTIALS_FILE", str(path))
+    monkeypatch.setenv("REPS_CREDENTIALS_FILE", str(path))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
     return path
 
 
 def test_preferences_location_uses_xdg_and_ignores_removed_override(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("ADB_PREFERENCES_FILE", str(tmp_path / "ignored.toml"))
+    monkeypatch.setenv("REPS_PREFERENCES_FILE", str(tmp_path / "ignored.toml"))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
-    assert credentials.prefs_path() == tmp_path / "config/adb/preferences.toml"
+    assert credentials.prefs_path() == tmp_path / "config/reps/preferences.toml"
     monkeypatch.delenv("XDG_CONFIG_HOME")
-    assert credentials.prefs_path() == tmp_path / "home/.config/adb/preferences.toml"
+    assert credentials.prefs_path() == tmp_path / "home/.config/reps/preferences.toml"
 
 
 def _stdin(monkeypatch, text):
@@ -322,7 +322,7 @@ def test_headless_remembered_choice_wins(cfg, monkeypatch, capsys):
     assert env == {"OPENAI_API_KEY": "w"}
 
 
-# -- the `adb-runner credentials` CLI --------------------------------------------------
+# -- the `reps-runner credentials` CLI --------------------------------------------------
 
 def _cli(argv, stdin="", monkeypatch=None):
     if monkeypatch is not None:
@@ -497,7 +497,7 @@ def test_picker_accepts_number_or_name(cfg, monkeypatch, capsys):
     err = capsys.readouterr().err
     assert " [1] default\n [2] work\n [3] set up a new profile" in err
     assert "choice [1]: " in err  # the pre-filled bracket is what Enter gives you
-    assert "adb: using openai.work" in err
+    assert "reps: using openai.work" in err
     # the new-profile entry is reachable by its number, not only by the word
     _stdin(monkeypatch, "3\nsk-p\nhttp://p/v1\npersonal\nn\n")
     env = _resolve(_manifest({"kind": "llm"}), {"model": "openai/q"})

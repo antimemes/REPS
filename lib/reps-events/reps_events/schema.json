@@ -1,0 +1,2552 @@
+{
+  "$defs": {
+    "CapturedLine": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "stdout"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "x-reps-render": {
+              "body": "line",
+              "format": "text",
+              "icon": "terminal"
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "stderr"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "x-reps-render": {
+              "body": "line",
+              "format": "text",
+              "icon": "terminal"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "stdout",
+            "stderr"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "line": {
+          "title": "Line",
+          "type": "string"
+        },
+        "meta": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meta"
+        }
+      },
+      "required": [
+        "type",
+        "line"
+      ],
+      "title": "CapturedLine",
+      "type": "object",
+      "x-reps-render": {
+        "body": "line",
+        "format": "text",
+        "icon": "terminal"
+      }
+    },
+    "ChatCompletionChoice": {
+      "additionalProperties": false,
+      "description": "Choice generated for completion.",
+      "properties": {
+        "message": {
+          "$ref": "#/$defs/ChatMessageAssistant"
+        },
+        "stop_reason": {
+          "default": "unknown",
+          "enum": [
+            "stop",
+            "max_tokens",
+            "model_length",
+            "tool_calls",
+            "content_filter",
+            "unknown"
+          ],
+          "title": "Stop Reason",
+          "type": "string"
+        },
+        "stop_details": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StopDetails"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "logprobs": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Logprobs"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "prompt_logprobs": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Logprobs"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "title": "ChatCompletionChoice",
+      "type": "object"
+    },
+    "ChatMessageAssistant": {
+      "additionalProperties": false,
+      "description": "Assistant chat message.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "discriminator": {
+                  "mapping": {
+                    "audio": "#/$defs/ContentAudio",
+                    "data": "#/$defs/ContentData",
+                    "document": "#/$defs/ContentDocument",
+                    "image": "#/$defs/ContentImage",
+                    "reasoning": "#/$defs/ContentReasoning",
+                    "text": "#/$defs/ContentText",
+                    "tool_use": "#/$defs/ContentToolUse",
+                    "video": "#/$defs/ContentVideo"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/ContentText"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentReasoning"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentImage"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentAudio"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentVideo"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentData"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentToolUse"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentDocument"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Content"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "role": {
+          "const": "assistant",
+          "default": "assistant",
+          "title": "Role",
+          "type": "string"
+        },
+        "tool_calls": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ToolCall"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Calls"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "title": "ChatMessageAssistant",
+      "type": "object"
+    },
+    "ChatMessageSystem": {
+      "additionalProperties": false,
+      "description": "System chat message.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "discriminator": {
+                  "mapping": {
+                    "audio": "#/$defs/ContentAudio",
+                    "data": "#/$defs/ContentData",
+                    "document": "#/$defs/ContentDocument",
+                    "image": "#/$defs/ContentImage",
+                    "reasoning": "#/$defs/ContentReasoning",
+                    "text": "#/$defs/ContentText",
+                    "tool_use": "#/$defs/ContentToolUse",
+                    "video": "#/$defs/ContentVideo"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/ContentText"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentReasoning"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentImage"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentAudio"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentVideo"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentData"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentToolUse"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentDocument"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Content"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "role": {
+          "const": "system",
+          "default": "system",
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "title": "ChatMessageSystem",
+      "type": "object"
+    },
+    "ChatMessageTool": {
+      "additionalProperties": false,
+      "description": "Tool chat message.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "discriminator": {
+                  "mapping": {
+                    "audio": "#/$defs/ContentAudio",
+                    "data": "#/$defs/ContentData",
+                    "document": "#/$defs/ContentDocument",
+                    "image": "#/$defs/ContentImage",
+                    "reasoning": "#/$defs/ContentReasoning",
+                    "text": "#/$defs/ContentText",
+                    "tool_use": "#/$defs/ContentToolUse",
+                    "video": "#/$defs/ContentVideo"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/ContentText"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentReasoning"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentImage"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentAudio"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentVideo"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentData"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentToolUse"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentDocument"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Content"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "role": {
+          "const": "tool",
+          "default": "tool",
+          "title": "Role",
+          "type": "string"
+        },
+        "tool_call_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Call Id"
+        },
+        "function": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Function"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ToolCallError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "title": "ChatMessageTool",
+      "type": "object"
+    },
+    "ChatMessageUser": {
+      "additionalProperties": false,
+      "description": "User chat message.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "discriminator": {
+                  "mapping": {
+                    "audio": "#/$defs/ContentAudio",
+                    "data": "#/$defs/ContentData",
+                    "document": "#/$defs/ContentDocument",
+                    "image": "#/$defs/ContentImage",
+                    "reasoning": "#/$defs/ContentReasoning",
+                    "text": "#/$defs/ContentText",
+                    "tool_use": "#/$defs/ContentToolUse",
+                    "video": "#/$defs/ContentVideo"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/ContentText"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentReasoning"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentImage"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentAudio"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentVideo"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentData"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentToolUse"
+                  },
+                  {
+                    "$ref": "#/$defs/ContentDocument"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Content"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "role": {
+          "const": "user",
+          "default": "user",
+          "title": "Role",
+          "type": "string"
+        },
+        "tool_call_id": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Call Id"
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "title": "ChatMessageUser",
+      "type": "object"
+    },
+    "ContentAudio": {
+      "additionalProperties": false,
+      "description": "Audio content.",
+      "properties": {
+        "internal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "const": "audio",
+          "default": "audio",
+          "title": "Type",
+          "type": "string"
+        },
+        "audio": {
+          "title": "Audio",
+          "type": "string"
+        },
+        "format": {
+          "enum": [
+            "wav",
+            "mp3"
+          ],
+          "title": "Format",
+          "type": "string"
+        }
+      },
+      "required": [
+        "audio",
+        "format"
+      ],
+      "title": "ContentAudio",
+      "type": "object"
+    },
+    "ContentCitation": {
+      "additionalProperties": false,
+      "description": "A generic content citation.",
+      "properties": {
+        "cited_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cited Text"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "internal": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Internal"
+        },
+        "type": {
+          "const": "content",
+          "default": "content",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "title": "ContentCitation",
+      "type": "object"
+    },
+    "ContentData": {
+      "additionalProperties": false,
+      "description": "Model internal.",
+      "properties": {
+        "internal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "const": "data",
+          "default": "data",
+          "title": "Type",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "title": "ContentData",
+      "type": "object"
+    },
+    "ContentDocument": {
+      "additionalProperties": false,
+      "description": "Document content (e.g. a PDF).",
+      "properties": {
+        "internal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "const": "document",
+          "default": "document",
+          "title": "Type",
+          "type": "string"
+        },
+        "document": {
+          "title": "Document",
+          "type": "string"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "mime_type": {
+          "title": "Mime Type",
+          "type": "string"
+        },
+        "citations": {
+          "default": false,
+          "title": "Citations",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "document"
+      ],
+      "title": "ContentDocument",
+      "type": "object"
+    },
+    "ContentImage": {
+      "additionalProperties": false,
+      "description": "Image content.",
+      "properties": {
+        "internal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "const": "image",
+          "default": "image",
+          "title": "Type",
+          "type": "string"
+        },
+        "image": {
+          "title": "Image",
+          "type": "string"
+        },
+        "detail": {
+          "default": "auto",
+          "enum": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ],
+          "title": "Detail",
+          "type": "string"
+        }
+      },
+      "required": [
+        "image"
+      ],
+      "title": "ContentImage",
+      "type": "object"
+    },
+    "ContentReasoning": {
+      "additionalProperties": false,
+      "description": "Reasoning content.\n\nSee the specification for [thinking blocks](https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#understanding-thinking-blocks) for Claude models.",
+      "properties": {
+        "internal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "const": "reasoning",
+          "default": "reasoning",
+          "title": "Type",
+          "type": "string"
+        },
+        "reasoning": {
+          "title": "Reasoning",
+          "type": "string"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Summary"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signature"
+        },
+        "redacted": {
+          "default": false,
+          "title": "Redacted",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "reasoning"
+      ],
+      "title": "ContentReasoning",
+      "type": "object"
+    },
+    "ContentText": {
+      "additionalProperties": false,
+      "description": "Text content.",
+      "properties": {
+        "internal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "const": "text",
+          "default": "text",
+          "title": "Type",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "refusal": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Refusal"
+        },
+        "citations": {
+          "anyOf": [
+            {
+              "items": {
+                "discriminator": {
+                  "mapping": {
+                    "content": "#/$defs/ContentCitation",
+                    "document": "#/$defs/DocumentCitation",
+                    "url": "#/$defs/UrlCitation"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/ContentCitation"
+                  },
+                  {
+                    "$ref": "#/$defs/DocumentCitation"
+                  },
+                  {
+                    "$ref": "#/$defs/UrlCitation"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Citations"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "ContentText",
+      "type": "object"
+    },
+    "ContentToolUse": {
+      "additionalProperties": false,
+      "description": "Server side tool use.",
+      "properties": {
+        "internal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "const": "tool_use",
+          "default": "tool_use",
+          "title": "Type",
+          "type": "string"
+        },
+        "tool_type": {
+          "enum": [
+            "web_search",
+            "mcp_call",
+            "code_execution"
+          ],
+          "title": "Tool Type",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context"
+        },
+        "arguments": {
+          "title": "Arguments",
+          "type": "string"
+        },
+        "result": {
+          "title": "Result",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        }
+      },
+      "required": [
+        "tool_type",
+        "id",
+        "name",
+        "arguments",
+        "result"
+      ],
+      "title": "ContentToolUse",
+      "type": "object"
+    },
+    "ContentVideo": {
+      "additionalProperties": false,
+      "description": "Video content.",
+      "properties": {
+        "internal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "const": "video",
+          "default": "video",
+          "title": "Type",
+          "type": "string"
+        },
+        "video": {
+          "title": "Video",
+          "type": "string"
+        },
+        "format": {
+          "enum": [
+            "mp4",
+            "mpeg",
+            "mov"
+          ],
+          "title": "Format",
+          "type": "string"
+        }
+      },
+      "required": [
+        "video",
+        "format"
+      ],
+      "title": "ContentVideo",
+      "type": "object"
+    },
+    "CustomEvent": {
+      "additionalProperties": false,
+      "description": "Experiment-specific observations within the public wire vocabulary.",
+      "properties": {
+        "type": {
+          "const": "custom",
+          "default": "custom",
+          "title": "Type",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        }
+      },
+      "required": [
+        "kind",
+        "data"
+      ],
+      "title": "CustomEvent",
+      "type": "object"
+    },
+    "DocumentCitation": {
+      "additionalProperties": false,
+      "description": "A citation that refers to a page range in a document.",
+      "properties": {
+        "cited_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cited Text"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "internal": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Internal"
+        },
+        "type": {
+          "const": "document",
+          "default": "document",
+          "title": "Type",
+          "type": "string"
+        },
+        "range": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DocumentRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "DocumentCitation",
+      "type": "object"
+    },
+    "DocumentRange": {
+      "additionalProperties": false,
+      "description": "A range specifying a section of a document.",
+      "properties": {
+        "type": {
+          "enum": [
+            "block",
+            "page",
+            "char"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "start_index": {
+          "title": "Start Index",
+          "type": "integer"
+        },
+        "end_index": {
+          "title": "End Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "start_index",
+        "end_index"
+      ],
+      "title": "DocumentRange",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "LLMCall": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "llm.call",
+          "default": "llm.call",
+          "title": "Type",
+          "type": "string"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "input": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "assistant": "#/$defs/ChatMessageAssistant",
+                "system": "#/$defs/ChatMessageSystem",
+                "tool": "#/$defs/ChatMessageTool",
+                "user": "#/$defs/ChatMessageUser"
+              },
+              "propertyName": "role"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/ChatMessageSystem"
+              },
+              {
+                "$ref": "#/$defs/ChatMessageUser"
+              },
+              {
+                "$ref": "#/$defs/ChatMessageAssistant"
+              },
+              {
+                "$ref": "#/$defs/ChatMessageTool"
+              }
+            ]
+          },
+          "title": "Input",
+          "type": "array"
+        },
+        "tools": {
+          "items": {
+            "$ref": "#/$defs/ToolInfo"
+          },
+          "title": "Tools",
+          "type": "array"
+        },
+        "tool_choice": {
+          "anyOf": [
+            {
+              "enum": [
+                "auto",
+                "any",
+                "none"
+              ],
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/ToolFunction"
+            }
+          ],
+          "default": "auto",
+          "title": "Tool Choice"
+        },
+        "output": {
+          "$ref": "#/$defs/ModelOutput"
+        },
+        "call": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelCall"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "completed": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completed"
+        },
+        "working_time": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Working Time"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "agent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Agent"
+        },
+        "retries": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Observed HTTP 429/5xx responses, including the final rejection on exhaustion; zero when none, absent when unknown.",
+          "title": "Retries"
+        }
+      },
+      "required": [
+        "model",
+        "input",
+        "output"
+      ],
+      "title": "LLMCall",
+      "type": "object",
+      "x-reps-render": {
+        "actor": "agent",
+        "format": "text",
+        "icon": "sparkles"
+      }
+    },
+    "Log": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "level": {
+                "const": "debug"
+              }
+            },
+            "required": [
+              "level"
+            ]
+          },
+          "then": {
+            "x-reps-render": {
+              "body": "message",
+              "format": "text",
+              "icon": "bug"
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "level": {
+                "const": "info"
+              }
+            },
+            "required": [
+              "level"
+            ]
+          },
+          "then": {
+            "x-reps-render": {
+              "body": "message",
+              "format": "text",
+              "icon": "info"
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "level": {
+                "const": "warn"
+              }
+            },
+            "required": [
+              "level"
+            ]
+          },
+          "then": {
+            "x-reps-render": {
+              "body": "message",
+              "format": "text",
+              "icon": "triangle-alert"
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "level": {
+                "const": "error"
+              }
+            },
+            "required": [
+              "level"
+            ]
+          },
+          "then": {
+            "x-reps-render": {
+              "body": "message",
+              "format": "text",
+              "icon": "circle-x"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "log",
+          "default": "log",
+          "title": "Type",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "level": {
+          "default": "info",
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "title": "Level",
+          "type": "string"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "title": "Log",
+      "type": "object",
+      "x-reps-render": {
+        "body": "message",
+        "format": "text",
+        "icon": "info"
+      }
+    },
+    "Logprob": {
+      "additionalProperties": false,
+      "description": "Log probability for a token.",
+      "properties": {
+        "token": {
+          "title": "Token",
+          "type": "string"
+        },
+        "logprob": {
+          "title": "Logprob",
+          "type": "number"
+        },
+        "bytes": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bytes"
+        },
+        "top_logprobs": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TopLogprob"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top Logprobs"
+        }
+      },
+      "required": [
+        "token",
+        "logprob"
+      ],
+      "title": "Logprob",
+      "type": "object"
+    },
+    "Logprobs": {
+      "additionalProperties": false,
+      "description": "Log probability information for a completion choice.",
+      "properties": {
+        "content": {
+          "items": {
+            "$ref": "#/$defs/Logprob"
+          },
+          "title": "Content",
+          "type": "array"
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "title": "Logprobs",
+      "type": "object"
+    },
+    "ModelCall": {
+      "additionalProperties": false,
+      "description": "Model call (raw request/response data).",
+      "properties": {
+        "request": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Request",
+          "type": "object"
+        },
+        "response": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Response"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "time": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time"
+        }
+      },
+      "required": [
+        "request"
+      ],
+      "title": "ModelCall",
+      "type": "object"
+    },
+    "ModelFallback": {
+      "additionalProperties": false,
+      "description": "A model fallback (request served by a different model than requested).",
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "fallback_model": {
+          "title": "Fallback Model",
+          "type": "string"
+        },
+        "count": {
+          "default": 1,
+          "title": "Count",
+          "type": "integer"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        }
+      },
+      "required": [
+        "model",
+        "fallback_model"
+      ],
+      "title": "ModelFallback",
+      "type": "object"
+    },
+    "ModelOutput": {
+      "additionalProperties": false,
+      "description": "Output from model generation.",
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "choices": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ChatCompletionChoice"
+          },
+          "title": "Choices",
+          "type": "array"
+        },
+        "completion": {
+          "default": "",
+          "title": "Completion",
+          "type": "string"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "fallback": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelFallback"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "time": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        }
+      },
+      "title": "ModelOutput",
+      "type": "object"
+    },
+    "ModelUsage": {
+      "additionalProperties": false,
+      "description": "Token usage for completion.",
+      "properties": {
+        "input_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        },
+        "input_tokens_cache_write": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens Cache Write"
+        },
+        "input_tokens_cache_read": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens Cache Read"
+        },
+        "reasoning_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reasoning Tokens"
+        },
+        "total_cost": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Cost"
+        }
+      },
+      "title": "ModelUsage",
+      "type": "object"
+    },
+    "ProducerPayload": {
+      "discriminator": {
+        "mapping": {
+          "custom": "#/$defs/CustomEvent",
+          "llm.call": "#/$defs/LLMCall",
+          "log": "#/$defs/Log",
+          "producer.python": "#/$defs/ProducerPython",
+          "result": "#/$defs/Result",
+          "status": "#/$defs/Status",
+          "stderr": "#/$defs/CapturedLine",
+          "stdout": "#/$defs/CapturedLine"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ProducerPython"
+        },
+        {
+          "$ref": "#/$defs/Status"
+        },
+        {
+          "$ref": "#/$defs/Log"
+        },
+        {
+          "$ref": "#/$defs/CapturedLine"
+        },
+        {
+          "$ref": "#/$defs/Result"
+        },
+        {
+          "$ref": "#/$defs/LLMCall"
+        },
+        {
+          "$ref": "#/$defs/CustomEvent"
+        }
+      ]
+    },
+    "ProducerPython": {
+      "additionalProperties": false,
+      "description": "The producing interpreter's toolchain, emitted once before its observations.",
+      "properties": {
+        "type": {
+          "const": "producer.python",
+          "default": "producer.python",
+          "title": "Type",
+          "type": "string"
+        },
+        "implementation": {
+          "title": "Implementation",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        },
+        "executable": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Executable"
+        },
+        "platform": {
+          "title": "Platform",
+          "type": "string"
+        },
+        "libc": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Libc"
+        },
+        "locale": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Locale"
+        },
+        "hash_seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hash Seed"
+        },
+        "flags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Flags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "implementation",
+        "version",
+        "platform",
+        "flags"
+      ],
+      "title": "ProducerPython",
+      "type": "object",
+      "x-reps-render": {
+        "body": "{implementation} {version}",
+        "format": "text",
+        "icon": "code"
+      }
+    },
+    "Result": {
+      "additionalProperties": false,
+      "description": "An experiment reports a result declared in its manifest.",
+      "properties": {
+        "type": {
+          "const": "result",
+          "default": "result",
+          "title": "Type",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/Scalar"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "title": "Result",
+      "type": "object",
+      "x-reps-render": {
+        "body": "value",
+        "format": "text",
+        "icon": "chart-no-axes-combined",
+        "title": "name"
+      }
+    },
+    "RunEnd": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "run.end",
+          "default": "run.end",
+          "title": "Type",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "completed",
+            "failed",
+            "interrupted"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "duration_s": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "ge": 0,
+          "title": "Duration S"
+        },
+        "exit_code": {
+          "title": "Exit Code",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "state",
+        "duration_s",
+        "exit_code"
+      ],
+      "title": "RunEnd",
+      "type": "object",
+      "x-reps-render": {
+        "format": "text",
+        "icon": "flag"
+      }
+    },
+    "RunEnvironment": {
+      "additionalProperties": false,
+      "properties": {
+        "platform": {
+          "title": "Platform",
+          "type": "string"
+        },
+        "cpu_model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cpu Model"
+        },
+        "cpu_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cpu Count"
+        },
+        "experiment_bin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Experiment Bin"
+        },
+        "runner_python_version": {
+          "title": "Runner Python Version",
+          "type": "string"
+        },
+        "runner_bin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Runner Bin"
+        },
+        "endpoints": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Endpoints",
+          "type": "object"
+        }
+      },
+      "required": [
+        "platform",
+        "runner_python_version"
+      ],
+      "title": "RunEnvironment",
+      "type": "object"
+    },
+    "RunStart": {
+      "additionalProperties": false,
+      "description": "A launch snapshot: identity, inputs, seed and provenance.\n\nWritten before starting the child; it does not assert successful execution.\nExperiment identity belongs to the envelope on every record.",
+      "properties": {
+        "type": {
+          "const": "run.start",
+          "default": "run.start",
+          "title": "Type",
+          "type": "string"
+        },
+        "condition": {
+          "title": "Condition",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "fetch_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fetch Ref"
+        },
+        "tree_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tree Hash"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        },
+        "seed": {
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "runtime": {
+          "$ref": "#/$defs/RunEnvironment"
+        },
+        "result_definitions": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Result Definitions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "condition",
+        "source",
+        "params",
+        "seed",
+        "runtime",
+        "result_definitions"
+      ],
+      "title": "RunStart",
+      "type": "object",
+      "x-reps-render": {
+        "format": "text",
+        "icon": "play"
+      }
+    },
+    "Scalar": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "Status": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "status",
+          "default": "status",
+          "title": "Type",
+          "type": "string"
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        }
+      },
+      "required": [
+        "detail"
+      ],
+      "title": "Status",
+      "type": "object",
+      "x-reps-render": {
+        "body": "detail",
+        "format": "text",
+        "icon": "info"
+      }
+    },
+    "StopCategory": {
+      "additionalProperties": false,
+      "description": "A single refusal/safety category reported by (or derived for) a model stop.",
+      "properties": {
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Level"
+        }
+      },
+      "required": [
+        "category"
+      ],
+      "title": "StopCategory",
+      "type": "object"
+    },
+    "StopDetails": {
+      "additionalProperties": false,
+      "description": "Additional detail about why a model stopped generating (e.g. a content refusal).\n\n`categories` is the canonical list (always iterable; a single-category provider\nappears as one entry). `category` and `explanation` are a convenience high-level\nsummary derived from the same data \u2014 `category` is the primary category and\n`explanation` is human-readable (synthesized from `categories` when the provider\nsupplies no text). Read either way; both describe the same stop.",
+      "properties": {
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "explanation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Explanation"
+        },
+        "categories": {
+          "items": {
+            "$ref": "#/$defs/StopCategory"
+          },
+          "title": "Categories",
+          "type": "array"
+        }
+      },
+      "title": "StopDetails",
+      "type": "object"
+    },
+    "ToolCall": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "function": {
+          "title": "Function",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": true,
+          "title": "Arguments",
+          "type": "object"
+        },
+        "parse_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parse Error"
+        },
+        "type": {
+          "default": "function",
+          "enum": [
+            "function",
+            "custom"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "function",
+        "arguments"
+      ],
+      "title": "ToolCall",
+      "type": "object"
+    },
+    "ToolCallError": {
+      "additionalProperties": false,
+      "description": "Error raised by a tool call.",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "message"
+      ],
+      "title": "ToolCallError",
+      "type": "object"
+    },
+    "ToolFunction": {
+      "additionalProperties": false,
+      "description": "Indicate that a specific tool function should be called.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ToolFunction",
+      "type": "object"
+    },
+    "ToolInfo": {
+      "additionalProperties": false,
+      "description": "Tool specification; parameters is the original JSON Schema object.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "title": "Parameters",
+          "type": "object"
+        },
+        "options": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Options"
+        }
+      },
+      "required": [
+        "name",
+        "description"
+      ],
+      "title": "ToolInfo",
+      "type": "object"
+    },
+    "TopLogprob": {
+      "additionalProperties": false,
+      "description": "List of the most likely tokens and their log probability, at this token position.",
+      "properties": {
+        "token": {
+          "title": "Token",
+          "type": "string"
+        },
+        "logprob": {
+          "title": "Logprob",
+          "type": "number"
+        },
+        "bytes": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bytes"
+        }
+      },
+      "required": [
+        "token",
+        "logprob"
+      ],
+      "title": "TopLogprob",
+      "type": "object"
+    },
+    "UrlCitation": {
+      "additionalProperties": false,
+      "description": "A citation that refers to a URL.",
+      "properties": {
+        "cited_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cited Text"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "internal": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Internal"
+        },
+        "type": {
+          "const": "url",
+          "default": "url",
+          "title": "Type",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "title": "UrlCitation",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "custom": "#/$defs/ProducerPayload",
+      "llm.call": "#/$defs/ProducerPayload",
+      "log": "#/$defs/ProducerPayload",
+      "producer.python": "#/$defs/ProducerPayload",
+      "result": "#/$defs/ProducerPayload",
+      "run.end": "#/$defs/RunEnd",
+      "run.start": "#/$defs/RunStart",
+      "status": "#/$defs/ProducerPayload",
+      "stderr": "#/$defs/ProducerPayload",
+      "stdout": "#/$defs/ProducerPayload"
+    },
+    "propertyName": "type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ProducerPayload"
+    },
+    {
+      "$ref": "#/$defs/RunStart"
+    },
+    {
+      "$ref": "#/$defs/RunEnd"
+    }
+  ]
+}

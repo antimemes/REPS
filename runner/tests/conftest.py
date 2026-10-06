@@ -18,15 +18,15 @@ def data_directory(request, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("HOME", str(tmp_path / "user"))
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "xdg"))
-    monkeypatch.setenv("ADB_DATA_DIR", str(tmp_path / "env"))
-    monkeypatch.setenv("ADB_CREDENTIALS_FILE", str(tmp_path / "credentials.toml"))
+    monkeypatch.setenv("REPS_DATA_DIR", str(tmp_path / "env"))
+    monkeypatch.setenv("REPS_CREDENTIALS_FILE", str(tmp_path / "credentials.toml"))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
     if request.param == "flag":
         return tmp_path / "data dir's", ["--data-dir", "data dir's"]
     if request.param == "env":
         return tmp_path / "env", []
-    monkeypatch.delenv("ADB_DATA_DIR")
+    monkeypatch.delenv("REPS_DATA_DIR")
     if request.param == "xdg":
-        return tmp_path / "xdg/adb", []
+        return tmp_path / "xdg/reps", []
     monkeypatch.delenv("XDG_DATA_HOME")
-    return tmp_path / "user/.local/share/adb", []
+    return tmp_path / "user/.local/share/reps", []

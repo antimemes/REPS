@@ -9,10 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from adb_runner import cli, credentials
-from adb_runner.verify import VerificationError, verify_run
-from adb_events import LLMCall, ModelCall, ModelOutput, ChatCompletionChoice, ChatMessageAssistant, read_events
-from adb_runner.card import CardProjection, derive_card
+from reps_runner import cli, credentials
+from reps_runner.verify import VerificationError, verify_run
+from reps_events import LLMCall, ModelCall, ModelOutput, ChatCompletionChoice, ChatMessageAssistant, read_events
+from reps_runner.card import CardProjection, derive_card
 from test_protocol import MANIFEST, run_fixture
 
 
@@ -89,7 +89,7 @@ def test_captured_import_noise_can_precede_producer(saved):
 def test_legacy_producer_absence_warns_without_failing(saved, monkeypatch, capsys):
     directory, manifest = saved
     before = digest_files(directory)
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", str(directory), "--manifest", str(manifest)])
     assert cli.main() == 0
     output = capsys.readouterr()
     assert "WARN: producer.python absent (older producer)" in output.err
@@ -98,14 +98,14 @@ def test_legacy_producer_absence_warns_without_failing(saved, monkeypatch, capsy
 
 
 def _build_saved(tmp_path, monkeypatch):
-    monkeypatch.setenv("ADB_CREDENTIALS_FILE", str(tmp_path / "credentials.toml"))
-    monkeypatch.delenv("ADB_MANIFEST", raising=False)
-    monkeypatch.delenv("ADB_MANIFESTS", raising=False)
+    monkeypatch.setenv("REPS_CREDENTIALS_FILE", str(tmp_path / "credentials.toml"))
+    monkeypatch.delenv("REPS_MANIFEST", raising=False)
+    monkeypatch.delenv("REPS_MANIFESTS", raising=False)
     models = tmp_path / "verify_models.py"
     models.write_text('''from typing import Annotated, Literal, Union
 from pydantic import Field
-from adb_events import CustomEvent, EVENT_MODELS
-from adb_events.models.base import Model
+from reps_events import CustomEvent, EVENT_MODELS
+from reps_events.models.base import Model
 class Data(Model):
     value: int
 class Note(CustomEvent[Data]):
@@ -116,9 +116,9 @@ Payload = Annotated[Union[tuple({model for tag, model in EVENT_MODELS.items() if
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps({**MANIFEST, "schema": {"version": 0, "models": "verify_models:Payload"}}))
     _, _, store = run_fixture(tmp_path, script='''#!/bin/sh
-adb-emit custom --kind t.note --data '{"value":3}'
-adb-emit result --name m --value 7
-adb-emit result --name missing --value 1.0
+reps-emit custom --kind t.note --data '{"value":3}'
+reps-emit result --name m --value 7
+reps-emit result --name missing --value 1.0
 ''')
     return store.dir, manifest
 
@@ -127,9 +127,9 @@ adb-emit result --name missing --value 1.0
 def saved(saved_template, tmp_path, monkeypatch):
     template, relative_run = saved_template
     shutil.copytree(template, tmp_path, dirs_exist_ok=True)
-    monkeypatch.setenv("ADB_CREDENTIALS_FILE", str(tmp_path / "credentials.toml"))
-    monkeypatch.delenv("ADB_MANIFEST", raising=False)
-    monkeypatch.delenv("ADB_MANIFESTS", raising=False)
+    monkeypatch.setenv("REPS_CREDENTIALS_FILE", str(tmp_path / "credentials.toml"))
+    monkeypatch.delenv("REPS_MANIFEST", raising=False)
+    monkeypatch.delenv("REPS_MANIFESTS", raising=False)
     monkeypatch.setenv("PYTHONPATH", str(tmp_path))
     return tmp_path / relative_run, tmp_path / "manifest.json"
 
@@ -145,17 +145,17 @@ def use_legacy_build(manifest):
     interpreter.parent.mkdir()
     interpreter.write_text(f'''#!{sys.executable}
 import sys
-import adb_events
-from adb_events.models.base import NonNegativeInt
-class LegacyEnvelope[T](adb_events.Envelope[T]):
+import reps_events
+from reps_events.models.base import NonNegativeInt
+class LegacyEnvelope[T](reps_events.Envelope[T]):
     v: NonNegativeInt
-adb_events.Envelope = LegacyEnvelope
+reps_events.Envelope = LegacyEnvelope
 script, sys.argv = sys.argv[2], ["-c", *sys.argv[3:]]
 exec(script)
 ''')
     interpreter.chmod(0o755)
     declaration = json.loads(manifest.read_text())
-    declaration["schema"]["path"] = str(interpreter.parent / "adb-emit")
+    declaration["schema"]["path"] = str(interpreter.parent / "reps-emit")
     manifest.write_text(json.dumps(declaration))
 
 
@@ -185,7 +185,7 @@ def test_public_command_checks_all_three_and_preserves_every_file(saved, monkeyp
     before = digest_files(directory)
     monkeypatch.chdir(directory.parent)
     run_arg = "./" + directory.name if relative else str(directory)
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", run_arg, "--manifest", str(manifest)])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", run_arg, "--manifest", str(manifest)])
     assert cli.main() == 0
     assert "verify: PASS:" in capsys.readouterr().out
     assert digest_files(directory) == before
@@ -200,7 +200,7 @@ def test_verify_resolves_run_id_in_selected_store(saved, data_directory, monkeyp
     home.parent.mkdir(parents=True, exist_ok=True)
     original_home.rename(home)
     before = digest_files(home)
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", directory.name, *flags,
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", directory.name, *flags,
                                      "--manifest", str(manifest)])
     assert cli.main() == 0
     assert "verify: PASS:" in capsys.readouterr().out
@@ -211,8 +211,8 @@ def test_verify_resolves_run_id_in_selected_store(saved, data_directory, monkeyp
 def test_verify_does_not_fall_back_to_another_store(saved, tmp_path, monkeypatch, capsys):
     directory, manifest = saved
     missing = tmp_path / "missing"
-    monkeypatch.setenv("ADB_DATA_DIR", str(directory.parents[2]))
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", directory.name,
+    monkeypatch.setenv("REPS_DATA_DIR", str(directory.parents[2]))
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", directory.name,
                                      "--data-dir", str(missing), "--manifest", str(manifest)])
     assert cli.main() == 1
     assert f"not found in {missing}" in capsys.readouterr().err
@@ -285,7 +285,7 @@ def test_all_served_models_checked_once_per_pair_and_truncated_calls_counted(sav
     assert result.content_filter_stops == 1
     expected = (("azure/gpt-5-nano", "gpt-4.1"), ("azure/gpt-5-nano", "gpt-5-mini")) if mismatch else ()
     assert result.model_mismatches == expected
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", str(directory), "--manifest", str(manifest)])
     assert cli.main() == int(mismatch)
     output = capsys.readouterr()
     assert f"max_tokens stops: {len(calls) - 1}; content_filter stops: 1; empty_responses: 0 (llm.call records)" in output.out
@@ -323,7 +323,7 @@ def test_legacy_empty_responses_fail_without_changing_records(saved, monkeypatch
     before = digest_files(directory)
     with pytest.raises(VerificationError, match="failed model calls: 1; first error: Empty choices"):
         verify_run(directory, manifest=manifest, environment={})
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", str(directory), "--manifest", str(manifest)])
     assert cli.main() == 1
     assert "Empty choices for model 'azure/gpt-5-nano' (version 0 record, not retried)" in capsys.readouterr().err
     assert digest_files(directory) == before
@@ -359,7 +359,7 @@ def test_failed_model_observations_fail_with_count_and_first_message(saved, monk
     before = digest_files(directory)
     with pytest.raises(VerificationError, match=f"failed model calls: {count}; first error: HTTP 429"):
         verify_run(directory, manifest=manifest, environment={})
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", str(directory), "--manifest", str(manifest)])
     assert cli.main() == 1
     assert f"failed model calls: {count}; first error: HTTP 429" in capsys.readouterr().err
     assert digest_files(directory) == before
@@ -370,7 +370,7 @@ def test_failed_model_observations_fail_with_count_and_first_message(saved, monk
 def test_legacy_content_filters_pass_without_rewriting_evidence(saved, monkeypatch, capsys, no_model, old_card):
     directory, manifest = saved
     filename = "azure-content-filter-no-model-v0.json" if no_model else "azure-content-filter-v0.json"
-    fixture = Path(__file__).resolve().parents[2] / "lib/adb-events/tests/fixtures" / filename
+    fixture = Path(__file__).resolve().parents[2] / "lib/reps-events/tests/fixtures" / filename
     event = json.loads(fixture.read_text())
     event["call"]["request"]["seed"] = 42
 
@@ -389,7 +389,7 @@ def test_legacy_content_filters_pass_without_rewriting_evidence(saved, monkeypat
     # The historical union must validate the written error, not lifted output.
     with (manifest.parent / "verify_models.py").open("a") as models:
         models.write('''
-from adb_events import LLMCall
+from reps_events import LLMCall
 class LegacyCall(LLMCall):
     error: str
 Payload = Annotated[Union[tuple(model for tag, model in EVENT_MODELS.items()
@@ -401,7 +401,7 @@ Payload = Annotated[Union[tuple(model for tag, model in EVENT_MODELS.items()
     assert projection.snapshot()["derived"]["counts"]["failed_calls"] == 2
     (directory / "run.json").write_text(json.dumps(projection.snapshot() if old_card else upgraded_card))
     before = digest_files(directory)
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", str(directory), "--manifest", str(manifest)])
     assert cli.main() == 0
     output = capsys.readouterr()
     assert "content_filter stops: 2" in output.out
@@ -489,7 +489,7 @@ def test_truncated_line_failure_never_echoes_input(saved, monkeypatch, capsys):
     directory, manifest = saved
     with (directory / "events.jsonl").open("a") as file:
         file.write('{"private": "do-not-echo-this-value"')
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", str(directory), "--manifest", str(manifest)])
     assert cli.main() == 1
     output = capsys.readouterr()
     assert "envelope validation failed" in output.err
@@ -506,7 +506,7 @@ def test_applicable_migration_failure_is_named_without_echoing_body(saved, monke
                     error=f"Error code: 400 - {body}")
     rewrite_stream(directory, lambda rows: rows[1].update(v=0, event=event.model_dump(mode="json")))
     before = digest_files(directory)
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", str(directory), "--manifest", str(manifest)])
     assert cli.main() == 1
     output = capsys.readouterr()
     assert "vocabulary migration failed at events.jsonl:2" in output.err
@@ -532,7 +532,7 @@ def test_scan_checks_real_credential_sources_and_workspace_without_echoing(saved
     workspace = directory / "workspace" / "nested"
     workspace.mkdir()
     (workspace / "config.json").write_text(json.dumps({"leaked": secret}))
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", str(directory), "--manifest", str(manifest)])
     assert cli.main() == 1
     output = capsys.readouterr()
     assert "secrets scan" in output.err
@@ -598,7 +598,7 @@ def test_every_request_seed_matches_the_recorded_run_seed(saved, monkeypatch, ca
     rewrite_stream(directory, insert)
     (directory / "run.json").write_text(json.dumps(derive_card(read_events(directory))))
     before = digest_files(directory)
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "verify", str(directory), "--manifest", str(manifest)])
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "verify", str(directory), "--manifest", str(manifest)])
     valid = seed in ("matching", "absent")
     assert cli.main() == (0 if valid else 1)
     output = capsys.readouterr()

@@ -1,5 +1,5 @@
 {
-  description = "ADB — Agent Databank: reusable agent experiments + a databank of runs";
+  description = "REPS: replications of multi-agent safety experiments";
 
   # channel tarball, not github: channels.nixos.org serves an immutable-link header, so
   # the lock pins the permanent release URL (and it's what nix-channel users mirror).
@@ -19,41 +19,41 @@
     in
     {
       # Namespace policy (nixpkgs-flat, like `nixpkgs#dig`): experiments get bare names —
-      # they are the product and the headline oneliner (`nix run adb#inspect-hello`).
-      # ADB's own tools carry the `adb-` prefix (`adb-runner`), so the bare
+      # they are the product and the headline oneliner (`nix run reps#inspect-hello`).
+      # REPS's own tools carry the `reps-` prefix (`reps-runner`), so the bare
       # namespace belongs to the registry and name collisions are a curation duty, as
       # in nixpkgs.
       apps = forAllSystems (pkgs:
         let
-          adbPkgs = import ./pkgs/top-level { inherit pkgs pyproject-nix uv2nix pyproject-build-systems; rev = self.rev or null; narHash = self.narHash or null; };
+          repsPkgs = import ./pkgs/top-level { inherit pkgs pyproject-nix uv2nix pyproject-build-systems; rev = self.rev or null; narHash = self.narHash or null; };
         in
         builtins.mapAttrs
           (name: exp: {
             type = "app";
-            program = "${exp.app}/bin/adb-${name}";
+            program = "${exp.app}/bin/reps-${name}";
           })
-          adbPkgs.experiments
-        # `nix run .#adb-runner -- credentials …` to manage local model credentials
+          repsPkgs.experiments
+        # `nix run .#reps-runner -- credentials …` to manage local model credentials
         # (endpoints + keys), which the runner injects into experiments so they never
         # land in params or on the command line.
         // {
-          adb-runner = {
+          reps-runner = {
             type = "app";
-            program = "${adbPkgs.adb-runner}/bin/adb-runner";
+            program = "${repsPkgs.reps-runner}/bin/reps-runner";
           };
         });
 
 
       packages = forAllSystems (pkgs:
         let
-          adbPkgs = import ./pkgs/top-level { inherit pkgs pyproject-nix uv2nix pyproject-build-systems; rev = self.rev or null; narHash = self.narHash or null; };
+          repsPkgs = import ./pkgs/top-level { inherit pkgs pyproject-nix uv2nix pyproject-build-systems; rev = self.rev or null; narHash = self.narHash or null; };
         in
         {
-          inherit (adbPkgs) adb-runner;
-          manifests = adbPkgs.manifests;
+          inherit (repsPkgs) reps-runner;
+          manifests = repsPkgs.manifests;
         }
         // nixpkgs.lib.mapAttrs' (name: exp: nixpkgs.lib.nameValuePair "experiment-${name}" exp.app)
-          adbPkgs.experiments);
+          repsPkgs.experiments);
 
       # lean by design: pure builds only (registry-wide manifest eval + the tools).
       # The impure entrypoint identity checks
@@ -61,18 +61,18 @@
       # scripts/ + CI instead.
       checks = forAllSystems (pkgs:
         let
-          adbPkgs = import ./pkgs/top-level { inherit pkgs pyproject-nix uv2nix pyproject-build-systems; rev = self.rev or null; narHash = self.narHash or null; };
+          repsPkgs = import ./pkgs/top-level { inherit pkgs pyproject-nix uv2nix pyproject-build-systems; rev = self.rev or null; narHash = self.narHash or null; };
           experimentChecks = nixpkgs.lib.mapAttrs
             (name: experiment: pkgs.linkFarm "${name}-tests"
               (nixpkgs.lib.mapAttrsToList (test: path: { name = test; inherit path; })
                 experiment.passthru.tests))
             (nixpkgs.lib.filterAttrs (_: experiment: (experiment.passthru.tests or { }) != { })
-              adbPkgs.experiments);
+              repsPkgs.experiments);
         in
         {
-          inherit (adbPkgs) manifests adb-runner;
+          inherit (repsPkgs) manifests reps-runner;
           identity-lock = pkgs.runCommand "identity-lock" { } ''
-            echo ${nixpkgs.lib.escapeShellArg (builtins.toJSON adbPkgs.adb.tests.identity-lock)} > $out
+            echo ${nixpkgs.lib.escapeShellArg (builtins.toJSON repsPkgs.reps.tests.identity-lock)} > $out
           '';
         } // experimentChecks);
 

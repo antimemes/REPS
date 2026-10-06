@@ -1,5 +1,5 @@
 """govsim — GovSim ("Cooperate or Collapse", Piatti et al., NeurIPS 2024) as an
-ADB experiment.
+REPS experiment.
 
 Five LLM personas share a common-pool resource (fishery / pasture / river):
 each month they harvest concurrently, observe each other's catch, negotiate at
@@ -13,7 +13,7 @@ Persisted persona nodes are ingested too. ``persona_*/embeddings.json`` is
 recomputable from node descriptions and the embedder named in ``govsim.config``
 (``data.embedder``), so embeddings are left out of the event stream.
 
-The program speaks the runner protocol (adb-experiment packages it): params
+The program speaks the runner protocol (reps-experiment packages it): params
 arrive as JSON on stdin (or a config path on argv for hand-runs), events leave
 as JSON over the event socket. Any params or results change here must be mirrored in
 package.nix.
@@ -28,8 +28,8 @@ import warnings
 from pathlib import Path
 from typing import Literal
 
-from adb_events import Result, Status, emit
-from adb_experiment.scaffold import experiment_main
+from reps_events import Result, Status, emit
+from reps_experiment.scaffold import experiment_main
 from pydantic import BaseModel, Field, field_validator
 from pydantic.warnings import UnsupportedFieldAttributeWarning
 from .models import ConfigData, GovsimConfig
@@ -119,8 +119,8 @@ def run(params: Params) -> None:
 
     # Match the launcher's non-negative 31-bit range for provider seeds and
     # local RNGs; use this same value in cfg.seed, RNGs and ChatClient.
-    seed = int(os.environ.get("ADB_SEED", "0")) & 0x7FFFFFFF
-    # belt and braces on top of AdbLogger's debug=True: wandb must never leave
+    seed = int(os.environ.get("REPS_SEED", "0")) & 0x7FFFFFFF
+    # belt and braces on top of RepsLogger's debug=True: wandb must never leave
     # the run dir or touch the network — set before simulation.utils imports it
     os.environ.setdefault("WANDB_MODE", "disabled")
     os.environ.setdefault("WANDB_DIR", os.getcwd())
@@ -130,7 +130,7 @@ def run(params: Params) -> None:
     # Save the effective model in the simulation config. The runner records
     # launch parameters, source identity and build provenance for every experiment.
     cfg.llm.path = params.model
-    cfg.llm.backend = "adb-experiment.ChatClient"
+    cfg.llm.backend = "reps-experiment.ChatClient"
     from omegaconf import OmegaConf
     from transformers import set_seed
 
@@ -140,7 +140,7 @@ def run(params: Params) -> None:
     set_seed(seed)  # mirrored from upstream main.py (global python/numpy/torch)
 
     # model: our pathfinder backend, wrapped in the upstream wrapper — never
-    # pathfinder.get_model (its name-substring dispatch rejects ADB model ids).
+    # pathfinder.get_model (its name-substring dispatch rejects REPS model ids).
     # Single-LLM only: upstream's mix_llm path is broken at these pins.
     from .backend import ChatClientBackend
     from .embedder import make_embedder
@@ -156,9 +156,9 @@ def run(params: Params) -> None:
         mock_responder=govsim_mock_responder,  # only consulted on mock/
     )
 
-    from .logger import AdbLogger  # imports simulation.utils (wandb) — after env vars
+    from .logger import RepsLogger  # imports simulation.utils (wandb) — after env vars
 
-    logger = AdbLogger(str(cfg.experiment.name), OmegaConf.to_object(cfg),
+    logger = RepsLogger(str(cfg.experiment.name), OmegaConf.to_object(cfg),
                        backend=backend)
 
     from simulation.utils import ModelWandbWrapper

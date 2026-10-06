@@ -1,4 +1,4 @@
-# The wiring: experiments/ is autoimported into a callPackage scope; ADB's own tools
+# The wiring: experiments/ is autoimported into a callPackage scope; REPS's own tools
 # are defined here, all-packages.nix style. Entries are functions over their
 # dependencies; the scope injects them by argument name and makes everything
 # overridable.
@@ -8,9 +8,9 @@
 #   experiments/<dir>/package.nix → an attrset of experiments, one attr per
 #   experiment name. One directory usually declares one experiment, but may declare
 #   several backed by the same code (impossiblebench, inspect_evals). Each value is
-#   an adb.mkExperiment result ({ app, manifest, name }).
+#   an reps.mkExperiment result ({ app, manifest, name }).
 #
-# experiments/ holds experiment code only; everything ADB-specific (this wiring,
+# experiments/ holds experiment code only; everything REPS-specific (this wiring,
 # build-support, tool packaging) lives under pkgs/ and the tools' own source trees
 # (runner/).
 { pkgs, pyproject-nix, uv2nix, pyproject-build-systems, rev ? null, narHash ? null }:
@@ -18,7 +18,7 @@
 let
   inherit (pkgs) lib;
 
-  origin = "github:antimemetics-institute/agentdatabank";
+  origin = "github:antimemetics-institute/reps";
 
   experimentsDir = ../../experiments;
 
@@ -39,15 +39,15 @@ let
         inherit (final) pyproject-nix uv2nix;
       };
 
-      # build support — the `adb` attrset experiment declarations take as an argument.
-      adb = final.callPackage ../build-support {
+      # build support — the `reps` attrset experiment declarations take as an argument.
+      reps = final.callPackage ../build-support {
         inherit origin rev narHash;
       };
 
-      # ADB's own tools; the adb- prefix keeps them out of the registry's bare namespace.
+      # REPS's own tools; the reps- prefix keeps them out of the registry's bare namespace.
       # The runner packages itself from its own uv.lock (uv2nix) — see runner/default.nix,
-      # including why its workspace import cannot go through adb.cleanImport.
-      adb-runner = final.callPackage ../../runner { };
+      # including why its workspace import cannot go through reps.cleanImport.
+      reps-runner = final.callPackage ../../runner { };
 
     }
     # experiments/<dir>/package.nix → { <experiment-name> = mkExperiment …; }
@@ -64,13 +64,13 @@ let
         (final.callPackage (directory + "/package.nix") {
           # A directory can declare several experiments; they share its README.
           # Markdown ships in manifests, with images in the catalog assets.
-          adb = final.adb // {
-            mkExperiment = args: let experiment = final.adb.mkExperiment (args // {
+          reps = final.reps // {
+            mkExperiment = args: let experiment = final.reps.mkExperiment (args // {
               readme = if hasMarkdown then builtins.readFile markdown else null;
               # Package committed images; illustration tools are never build inputs.
               readmeAssets = lib.cleanSourceWith {
                 src = directory;
-                name = "adb-readme-assets-${name}";
+                name = "reps-readme-assets-${name}";
                 filter = path: type: (type == "directory"
                   && !(lib.hasPrefix "." (baseNameOf path))
                   && !(builtins.elem (baseNameOf path) [ "node_modules" "__pycache__" ])) ||
@@ -101,7 +101,7 @@ let
       else acc // set)
     { }
     (map (name: scope."experiments-${name}") dirNames);
-  catalog = pkgs.linkFarm "adb-manifests"
+  catalog = pkgs.linkFarm "reps-manifests"
     (lib.concatLists (lib.mapAttrsToList
       (name: exp: [{ name = "${name}.json"; path = exp.manifest; }]
         ++ lib.optional (exp.readmeAssets != null) {
@@ -112,5 +112,5 @@ in
 {
   experiments = registry;
   manifests = catalog;
-  inherit (scope) adb adb-runner;
+  inherit (scope) reps reps-runner;
 }

@@ -1,8 +1,8 @@
-"""ChatClientBackend — ADB's instrumented ChatClient as a pathfinder backend.
+"""ChatClientBackend — REPS's instrumented ChatClient as a pathfinder backend.
 
 pathfinder's ModelAPI already emulates gen/find/select over one buffered chat
 completion; ``request_api`` is its single abstract hook. Subclassing it (library
-use, never a fork) routes every GovSim model call through ADB's ChatClient:
+use, never a fork) routes every GovSim model call through REPS's ChatClient:
 ``mock/...`` runs keyless and offline, any provider prefix reaches its
 OpenAI-compatible mount, and each completion emits one ``llm.call`` event.
 
@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from adb_experiment.llm import ChatClient
+from reps_experiment.llm import ChatClient
 from pathfinder.api import ModelAPI
 
 
@@ -33,7 +33,7 @@ def _strip_prefill_ws(messages: list[dict]) -> list[dict]:
 
 class ChatClientBackend(ModelAPI):
     """One shared backend serves every persona plus the framework (upstream's
-    single-LLM shape). ``client.agent`` is read at emit time, so the AdbLogger
+    single-LLM shape). ``client.agent`` is read at emit time, so the RepsLogger
     hook re-points it per persona for llm.call attribution."""
 
     def __init__(

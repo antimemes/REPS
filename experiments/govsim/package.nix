@@ -1,4 +1,4 @@
-# GovSim ("Cooperate or Collapse", Piatti et al., NeurIPS 2024) as an ADB
+# GovSim ("Cooperate or Collapse", Piatti et al., NeurIPS 2024) as a REPS
 # experiment: 5 LLM personas share a common-pool resource — harvest, negotiate,
 # collapse or sustain.
 #
@@ -7,7 +7,7 @@
 # missing packaging. Its pathfinder DSL is a uv git dependency. Other adaptation
 # lives in ./govsim_adapter: Hydra composition, model injection, hash embeddings
 # for keyless runs, wandb neutralization, and results from persisted native logs.
-{ adb, pkgs, lib }:
+{ reps, pkgs, lib }:
 let
   govsimUpstream = final: final.callPackage
     ({ stdenv, pyprojectHook, resolveBuildSystem }: stdenv.mkDerivation {
@@ -29,7 +29,7 @@ let
         nativeBuildInputs = (old.nativeBuildInputs or [ ])
           ++ final.resolveBuildSystem { setuptools = [ ]; };
       })) // { govsim = govsimUpstream final; };
-  env = (adb.mkPythonEnv {
+  env = (reps.mkPythonEnv {
     name = "govsim-env";
     workspaceRoot = ./.;
     python = pkgs.python313;
@@ -43,7 +43,7 @@ let
   };
 in
 {
-  govsim = adb.mkExperiment {
+  govsim = reps.mkExperiment {
     name = "govsim";
     schema = { version = 0; models = "govsim_adapter.models:Payload"; };
     schemaPython = "${env}/bin/python";
@@ -54,7 +54,7 @@ in
       { label = "paper"; url = "https://arxiv.org/abs/2404.16698"; }
       { label = "source"; url = "https://github.com/giorgiopiatti/GovSim"; }
     ];
-    params = with adb.types; {
+    params = with reps.types; {
       experiment = param (enum [
         "fish_baseline_concurrent"
         "fish_baseline_concurrent_paraphrase_1"
@@ -132,7 +132,7 @@ in
         group = "generation";
       };
     };
-    results = with adb.types; [
+    results = with reps.types; [
       {
         name = "rounds";
         type = int;

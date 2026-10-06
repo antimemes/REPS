@@ -24,8 +24,8 @@ fetched anonymously from their public source — the provider's authored list of
 every accepted id, which both supplies dated ids the catalogs missed and
 proves when a new model's canonical id is genuinely undated (Anthropic's
 newest are); (2) the provider's authenticated /models endpoint, when a key is
-available in the environment or the adb runner's credential store
-(`adb-runner credentials` / ~/.config/adb/credentials.toml). Keyless runs are
+available in the environment or the reps runner's credential store
+(`reps-runner credentials` / ~/.config/reps/credentials.toml). Keyless runs are
 first-class: SDK literals cover the id-form question without credentials.
 Providers listed here are the API-backed providers with a first-party enumerable
 model list and a declared mapping in at least one wrapper (an explicit map,
@@ -56,14 +56,14 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-# the canonical provider registry (the adb-providers package's providers.toml:
+# the canonical provider registry (the reps-providers package's providers.toml:
 # names + credential templates) — this catalog is a LAYER over it: foreign catalog
 # spellings and /models endpoints are declared here; provider names, env var
 # names, and hints are the registry's facts. Read directly (this script runs as
 # bare python3, deliberately dependency-free).
 _REGISTRY = tomllib.loads(
     (Path(__file__).resolve().parents[1]
-     / "adb-providers" / "adb_providers" / "providers.toml").read_text()
+     / "reps-providers" / "reps_providers" / "providers.toml").read_text()
 )
 SECRET_VARS: dict[str, str] = {
     name: p["api_key"]["name"] for name, p in _REGISTRY["providers"].items()
@@ -167,25 +167,25 @@ BEDROCK_REGION = re.compile(r"^(?:us|eu|apac|jp|au|ca|global)\.")
 
 
 def fetch(url: str, headers: dict | None = None) -> dict:
-    req = urllib.request.Request(url, headers={"User-Agent": "adb-model-catalog-updater", **(headers or {})})
+    req = urllib.request.Request(url, headers={"User-Agent": "reps-model-catalog-updater", **(headers or {})})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
 
 
 def stored_credentials() -> dict[str, str]:
-    """Env-var -> value from the adb runner's credential store (never printed).
+    """Env-var -> value from the reps runner's credential store (never printed).
 
-    Mirrors adb_runner.credentials.config_path(): $ADB_CREDENTIALS_FILE overrides,
-    else $XDG_CONFIG_HOME/adb/credentials.toml, else ~/.config/adb/credentials.toml.
+    Mirrors reps_runner.credentials.config_path(): $REPS_CREDENTIALS_FILE overrides,
+    else $XDG_CONFIG_HOME/reps/credentials.toml, else ~/.config/reps/credentials.toml.
     """
     import tomllib
 
-    override = os.environ.get("ADB_CREDENTIALS_FILE")
+    override = os.environ.get("REPS_CREDENTIALS_FILE")
     if override:
         path = Path(override)
     else:
         base = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
-        path = Path(base) / "adb" / "credentials.toml"
+        path = Path(base) / "reps" / "credentials.toml"
     if not path.is_file():
         return {}
     data = tomllib.loads(path.read_text())
@@ -202,7 +202,7 @@ def first_party_doc_ids(prefix: str) -> list[str]:
     ids: list[str] = []
     for url, pattern in FIRST_PARTY_ID_SOURCES.get(prefix, []):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "adb-model-catalog-updater"})
+            req = urllib.request.Request(url, headers={"User-Agent": "reps-model-catalog-updater"})
             with urllib.request.urlopen(req, timeout=60) as r:
                 source = r.read().decode(errors="replace")
         except OSError:
@@ -395,7 +395,7 @@ def main() -> int:
         print(
             f"WARNING: no first-party id source for {', '.join(keyless)} (no SDK literal "
             f"list, no credentials) — their newest ids may be undated aliases. Configure "
-            f"keys (`nix run .#adb-runner -- credentials set ...`) and rerun to check them "
+            f"keys (`nix run .#reps-runner -- credentials set ...`) and rerun to check them "
             f"against the providers' own /models endpoints."
         )
     return 0

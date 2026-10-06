@@ -1,15 +1,15 @@
-# The inspect_evals family: one ADB experiment per runnable task in the GENERATED
+# The inspect_evals family: one REPS experiment per runnable task in the GENERATED
 # task_catalog.json (the task is the experiment, never a param) — regenerate with
 # `task tasks:update`; never add a catalog task by hand. Tasks whose eval declares a
 # pip extra we don't install get no experiment (degraded but correct — install the
 # extra in pyproject + relock + regen to enable them); sandbox needs come from the
 # eval's own declared runtime metadata. The bundled keyless `hello` smoke ships from
 # this family (hello_task/), so getting-started needs no key, network, or sandbox.
-{ adb, pkgs, lib, writeShellApplication, jq }:
+{ reps, pkgs, lib, writeShellApplication, jq }:
 
 let
-  env = adb.mkPythonEnv {
-    name = "adb-inspect-evals-env";
+  env = reps.mkPythonEnv {
+    name = "reps-inspect-evals-env";
     workspaceRoot = ./.;
     python = pkgs.python313;
   };
@@ -17,9 +17,9 @@ let
   catalog = builtins.fromJSON (builtins.readFile ./task_catalog.json);
   # the typed sub-form schema for generate_args, generated from the pinned
   # inspect_ai's GenerateConfig (shared infra, like the model catalog) —
-  # through `adb`, never a ../../ path, so the declaration uses the
-  # schema provided by the selected adb package set
-  genFields = adb.inspectGenerateFields;
+  # through `reps`, never a ../../ path, so the declaration uses the
+  # schema provided by the selected reps package set
+  genFields = reps.inspectGenerateFields;
 
   # task = the wrapper's task spec: `inspect_evals/<id>` resolves through inspect's
   # registry (the upstream package registers its tasks); `pkg:<module>:<attr>`
@@ -41,7 +41,7 @@ let
     };
   };
 
-  results = with adb.types; [
+  results = with reps.types; [
     { name = "samples"; type = int; }
     { name = "completed"; type = int; }
     { name = "errors"; type = int; }
@@ -58,9 +58,9 @@ let
     { value = "mockllm/model"; description = "Inspect's built-in mock — keyless, offline, deterministic."; }
   ];
 
-  mkTask = name: { task, summary, keyless ? false, sandbox ? false, taskParams ? { }, paramKwargs ? { }, links ? [ ] }: adb.mkExperiment {
+  mkTask = name: { task, summary, keyless ? false, sandbox ? false, taskParams ? { }, paramKwargs ? { }, links ? [ ] }: reps.mkExperiment {
     schemaPython = "${env}/bin/python";
-    sharedSrcs = adb.inspectSharedSrcs;
+    sharedSrcs = reps.inspectSharedSrcs;
     inherit name summary links;
     # The declaration and environment pin define this family's source identity.
     # task_catalog.json is not included; catalog regeneration alone leaves it unchanged.
@@ -71,7 +71,7 @@ let
     # presentation order (`order`/`group` hints): the task's own params first —
     # they're what a researcher cares about — then model, then the inspect harness
     # knobs, then generation.
-    params = with adb.types;
+    params = with reps.types;
       # the task's own kwargs, flattened to real typed params (catalog-generated:
       # concrete defaults become `initial`s; declared-None defaults become required
       # nullable params bound with `--set k=null`). Their `order` is the upstream
@@ -117,7 +117,7 @@ let
       // lib.optionalAttrs sandbox { docker = true; };
 
     # The adapter — the lift between the runner protocol (params JSON on stdin, seed
-    # in $ADB_SEED) and the wrapper's interface (`adb-inspect-eval CONFIG.json`):
+    # in $REPS_SEED) and the wrapper's interface (`reps-inspect-eval CONFIG.json`):
     # every flattened task param regroups into inspect task_args under its real
     # kwarg name (the catalog's kwarg map un-does the `task_` collision prefix);
     # explicit nulls pass through — the task is called with kwarg=None, exactly
@@ -135,7 +135,7 @@ let
         text = ''
           config=$(mktemp)
           trap 'rm -f "$config"' EXIT
-          jq --argjson seed "''${ADB_SEED:-0}" '{
+          jq --argjson seed "''${REPS_SEED:-0}" '{
             task: ${builtins.toJSON task},
             model: .model,
             limit: .limit,
@@ -144,7 +144,7 @@ let
             seed: $seed,
             task_args: ${regroup}
           }' > "$config"
-          ${lib.getExe' env "adb-inspect-eval"} "$config"
+          ${lib.getExe' env "reps-inspect-eval"} "$config"
         '';
       };
   };

@@ -1,7 +1,7 @@
 [book]
-title = "ADB — Agent Databank User Guide"
+title = "REPS User Guide"
 authors = ["Antimemetics Institute"]
-description = "Run, inspect and author agent experiments with Agent Databank."
+description = "REPS: replications of multi-agent safety experiments."
 language = "en"
 src = "src"
 
@@ -9,7 +9,7 @@ src = "src"
 create-missing = false
 
 # expands {{repo}} to the owner/name slug derived from git-repository-url below —
-# the ONE place the repository is named (vars.py; adb-commands.js necessarily
+# the ONE place the repository is named (vars.py; reps-commands.js necessarily
 # repeats it as its GITHUB/TARBALL constants)
 [preprocessor.vars]
 command = "python3 vars.py"
@@ -17,11 +17,11 @@ command = "python3 vars.py"
 [output.html]
 default-theme = "rust"
 preferred-dark-theme = "ayu"
-git-repository-url = "https://github.com/antimemetics-institute/agentdatabank"
-edit-url-template = "https://github.com/antimemetics-institute/agentdatabank/edit/main/docs/book/{path}"
+git-repository-url = "https://github.com/antimemetics-institute/reps"
+edit-url-template = "https://github.com/antimemetics-institute/reps/edit/main/docs/book/{path}"
 no-section-label = false
-additional-css = ["theme/adb-commands.css", "theme/adb-tabs.css"]
-additional-js = ["theme/adb-commands.js"]
+additional-css = ["theme/reps-commands.css", "theme/reps-tabs.css"]
+additional-js = ["theme/reps-commands.js"]
 
 [output.html.fold]
 enable = true

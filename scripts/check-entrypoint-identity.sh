@@ -8,9 +8,9 @@
 #
 #   check-entrypoint-identity.sh [--dir DIR] [--exp NAME] [-- --set k=v …]
 #
-# Default: inspect-hello on mockllm in the adb checkout — four doors. The flake
+# Default: inspect-hello on mockllm in the reps checkout — four doors. The flake
 # door sees git-TRACKED files only, so a mismatch there can also mean a file that
-# should be tracked isn't yet. --dir can select another ADB checkout.
+# should be tracked isn't yet. --dir can select another REPS checkout.
 set -euo pipefail
 
 dir="$(cd "$(dirname "$0")/.." && pwd)"

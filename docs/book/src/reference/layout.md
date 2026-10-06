@@ -4,7 +4,7 @@ The local store keeps run metadata, the event stream and working files as ordina
 
 ## Where are runs saved?
 
-Terminal experiments, publishing, and verifier run-ID lookup use `--data-dir DIR`, then `ADB_DATA_DIR`, then `$XDG_DATA_HOME/adb`, with `XDG_DATA_HOME` defaulting to `~/.local/share`.
+Terminal experiments, publishing, and verifier run-ID lookup use `--data-dir DIR`, then `REPS_DATA_DIR`, then `$XDG_DATA_HOME/reps`, with `XDG_DATA_HOME` defaulting to `~/.local/share`.
 
 ```text
 DATA_DIR/
@@ -42,7 +42,7 @@ condition_id = hex(sha256(JCS({experiment, source, params})))[:40]
 
 JCS is RFC 8785 JSON canonicalization. The interface usually displays the first 12 characters of the condition ID. The hash uses values, not shell quoting or JSON object-key order.
 
-`source` has the form `content:sha256:HASH`. Packaging computes it from the experiment's declared `src` paths plus shared package sources (`adb_events` and `adb_experiment` by default; Inspect programs add `adb_inspect`), imported into the Nix store after filtering development artifacts. The filtered names are `.venv`, `__pycache__`, `node_modules`, `dist`, `.direnv`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `result` and names beginning `result-`.
+`source` has the form `content:sha256:HASH`. Packaging computes it from the experiment's declared `src` paths plus shared package sources (`reps_events` and `reps_experiment` by default; Inspect programs add `reps_inspect`), imported into the Nix store after filtering development artifacts. The filtered names are `.venv`, `__pycache__`, `node_modules`, `dist`, `.direnv`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `result` and names beginning `result-`.
 
 The identity excludes the runner, docs, and other undeclared paths. It also excludes the packaging `tree_hash`, fetch reference, platform, seed, credentials and endpoints. See [repeat and compare runs](../running/model.md) for the consequences.
 
@@ -143,7 +143,7 @@ byte-authoritative. Index objects are replaceable and never authoritative.
 
 Supply `stores.yaml` (or JSON) with each S3 prefix, AWS profile, public HTTPS URL,
 filters and exclusions. Build the index with
-`adb-runner index --stores stores.yaml --catalog DIR --to site/index`.
+`reps-runner index --stores stores.yaml --catalog DIR --to site/index`.
 The command deletes and rewrites `site/index` in full, writing `index.json` last.
 AWS profiles are used only to read source stores.
 

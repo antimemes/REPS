@@ -4,8 +4,8 @@ from typing import Annotated, ClassVar, Literal
 
 from pydantic import ConfigDict, Field, JsonValue, RootModel
 
-from adb_events import ActorRegistry, CapturedLine, CustomEvent, RenderHint, LLMCall, Log, ProducerPython, Result, RunEnd, RunStart, Status
-from adb_events.models.base import Model, NonNegativeInt
+from reps_events import ActorRegistry, CapturedLine, CustomEvent, RenderHint, LLMCall, Log, ProducerPython, Result, RunEnd, RunStart, Status
+from reps_events.models.base import Model, NonNegativeInt
 
 
 class ConfigData(Model):

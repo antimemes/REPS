@@ -1,6 +1,6 @@
 # The bundled hello task is this family's offline integration check. Test wiring
 # is outside the task family's identity sources; no other task is launched here.
-{ lib, fetchurl, experiment, adb }:
+{ lib, fetchurl, experiment, reps }:
 let
   # Inspect's mock counts tokens with tiktoken. Supply its pinned vocabulary as
   # a build input so the built launcher itself runs without network access.
@@ -11,7 +11,7 @@ let
   };
 in
 lib.optionalAttrs (experiment.name == "inspect-hello") {
-  smoke = (adb.testers.smoke {
+  smoke = (reps.testers.smoke {
     inherit experiment;
     # Inspect reports "mockllm" as the served name irrespective of the mock alias.
     params = { model = "mockllm/mockllm"; limit = 0; epochs = 1; generate_args = { }; };

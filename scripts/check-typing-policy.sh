@@ -18,8 +18,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PY_ROOTS=(runner/src lib/adb-testing/adb_testing lib/adb-events/adb_events lib/adb-providers/adb_providers
-          lib/adb-experiment/adb_experiment lib/adb-inspect/adb_inspect)
+PY_ROOTS=(runner/src lib/reps-testing/reps_testing lib/reps-events/reps_events lib/reps-providers/reps_providers
+          lib/reps-experiment/reps_experiment lib/reps-inspect/reps_inspect)
 
 # Rules that MAY appear in `# pyright: ignore[...]`, and why:
 #   reportUnnecessaryIsInstance   emit-side runtime guards: callers are untyped
@@ -32,7 +32,7 @@ ALLOWED_IGNORE_RULES="reportUnnecessaryIsInstance reportUnknownVariableType repo
 
 # Files that MAY contain cast(); currently only the OpenAI-SDK response ingress,
 # whose module contract is deliberately dynamic (duck-typed client).
-ALLOWED_CAST_FILES="lib/adb-experiment/adb_experiment/llm.py"
+ALLOWED_CAST_FILES="lib/reps-experiment/reps_experiment/llm.py"
 
 fail=0
 say() { echo "typing-policy: $*" >&2; fail=1; }

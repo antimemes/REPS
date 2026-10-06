@@ -37,8 +37,8 @@ def test_run_passes_effective_seed_to_environment(
         raise ReachedReset
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("ADB_RUN_DIR", str(tmp_path))
-    monkeypatch.setenv("ADB_SEED", "37")
+    monkeypatch.setenv("REPS_RUN_DIR", str(tmp_path))
+    monkeypatch.setenv("REPS_SEED", "37")
     monkeypatch.setattr(ConcurrentEnv, "reset", observe_reset)
     with pytest.raises(ReachedReset):
         run(parameters(experiment))

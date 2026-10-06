@@ -5,19 +5,19 @@ from pathlib import Path
 import pytest
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from adb_events import emit, export_schema
-from adb_events.render import hint_path_declared, hint_paths
+from reps_events import emit, export_schema
+from reps_events.render import hint_path_declared, hint_paths
 from govsim_adapter.models import GovsimConfig, GovsimState, Payload, StateData, ACTION_MODELS
 
 
 def test_union_includes_every_shared_tag():
-    from adb_events import EVENT_MODELS
+    from reps_events import EVENT_MODELS
 
     assert set(TypeAdapter(Payload).json_schema()["discriminator"]["mapping"]) == set(EVENT_MODELS)
 
 
 def test_config_hint_exports_the_persona_registry():
-    hint = export_schema(Payload)["$defs"]["GovsimConfig"]["x-adb-render"]
+    hint = export_schema(Payload)["$defs"]["GovsimConfig"]["x-reps-render"]
     assert hint["actor_registry"] == {"path": "data.experiment.personas", "label": "name"}
     event = GovsimConfig.model_validate({"data": {
         "experiment": {"personas": {"persona_0": {"name": "John"}, "persona_1": {"name": "Kate"}, "num": 2}},
@@ -140,8 +140,8 @@ def test_govsim_hint_paths_are_declared_for_typed_data():
             # Open native rows have no declared fields; the real log fixture
             # above checks every one of their paths against actual evidence.
             continue
-        from adb_events import RenderHint
-        hint = RenderHint.model_validate(schema["x-adb-render"]) if "x-adb-render" in schema else None
+        from reps_events import RenderHint
+        hint = RenderHint.model_validate(schema["x-reps-render"]) if "x-reps-render" in schema else None
         if hint is None:
             continue
         for path in hint_paths(hint):

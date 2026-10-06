@@ -1,6 +1,6 @@
 # Dev targets — run inside the devshell (`nix develop`), which provides task,
-# python, jq, mdbook. Data lands in the tools' default $ADB_DATA_DIR
-# (~/.local/share/adb); override with ADB_DATA_DIR=... — but never point it inside this
+# python, jq, mdbook. Data lands in the tools' default $REPS_DATA_DIR
+# (~/.local/share/reps); override with REPS_DATA_DIR=... — but never point it inside this
 # repo (a dirty-tree flake hashes its whole directory, so an in-repo data dir mints a
 # new condition every run).
 version: "3"
@@ -32,25 +32,25 @@ tasks:
       MANIFESTS:
         sh: nix build .#manifests --no-link --print-out-paths
     env:
-      ADB_TEST_MANIFESTS: '{{.MANIFESTS}}'
+      REPS_TEST_MANIFESTS: '{{.MANIFESTS}}'
     cmds:
       - cd runner && uv run -q pytest -q
-      - cd lib/adb-testing && uv run -q pytest -q
-      - cd lib/adb-events && uv run -q pytest -q
-      - cd lib/adb-providers && uv run -q pytest -q
-      - cd lib/adb-experiment && uv run -q pytest -q
-      - cd lib/adb-inspect && uv run -q pytest -q
+      - cd lib/reps-testing && uv run -q pytest -q
+      - cd lib/reps-events && uv run -q pytest -q
+      - cd lib/reps-providers && uv run -q pytest -q
+      - cd lib/reps-experiment && uv run -q pytest -q
+      - cd lib/reps-inspect && uv run -q pytest -q
       - nix flake check -L
 
   typecheck:
     desc: pyright STRICT (per-package pyrightconfig.json) over the shared libs + runner package sources (not tests — rejection tests pass garbage deliberately); through `uv run` so stale path-dep venv copies resync first. The policy script gates the escapes pyright can't police (ignore-rule + cast allowlists).
     cmds:
       - bash scripts/check-typing-policy.sh
-      - cd lib/adb-testing && uv run -q pyright
-      - cd lib/adb-events && uv run -q pyright
-      - cd lib/adb-providers && uv run -q pyright
-      - cd lib/adb-experiment && uv run -q pyright
-      - cd lib/adb-inspect && uv run -q pyright
+      - cd lib/reps-testing && uv run -q pyright
+      - cd lib/reps-events && uv run -q pyright
+      - cd lib/reps-providers && uv run -q pyright
+      - cd lib/reps-experiment && uv run -q pyright
+      - cd lib/reps-inspect && uv run -q pyright
       - cd runner && uv run -q pyright
 
   docs:
@@ -78,14 +78,14 @@ tasks:
         # extraction needs). fuse-overlayfs because kernel overlayfs refuses a
         # virtiofs upperdir. --group so the socket is usable without sudo.
         sudo mkdir -p /var/lib/dev/docker
-        (sudo env "PATH=$PATH" setsid dockerd --data-root /var/lib/dev/docker --storage-driver fuse-overlayfs --group "$(id -gn)" --pidfile /run/dockerd-adb.pid >/tmp/dockerd-adb.log 2>&1 &)
+        (sudo env "PATH=$PATH" setsid dockerd --data-root /var/lib/dev/docker --storage-driver fuse-overlayfs --group "$(id -gn)" --pidfile /run/dockerd-reps.pid >/tmp/dockerd-reps.log 2>&1 &)
         for _ in $(seq 50); do
           docker info >/dev/null 2>&1 && break
           sleep 0.2
         done
         docker info >/dev/null 2>&1 && echo "docker: up" || {
-          echo "docker: failed to start; log tail (/tmp/dockerd-adb.log):" >&2
-          sudo tail -20 /tmp/dockerd-adb.log >&2
+          echo "docker: failed to start; log tail (/tmp/dockerd-reps.log):" >&2
+          sudo tail -20 /tmp/dockerd-reps.log >&2
           exit 1
         }
 
@@ -93,7 +93,7 @@ tasks:
     desc: stop the docker daemon started by docker:up (images and containers survive in /var/lib/dev/docker)
     cmds:
       - |
-        sudo kill "$(sudo cat /run/dockerd-adb.pid 2>/dev/null)" 2>/dev/null && echo "docker: stopped" || echo "docker: was not running"
+        sudo kill "$(sudo cat /run/dockerd-reps.pid 2>/dev/null)" 2>/dev/null && echo "docker: stopped" || echo "docker: was not running"
 
   lock:check:
     desc: verify every uv.lock is current with its pyproject (catches an edited dependency list shipped without a relock — nix builds strictly from the lock, so drift only surfaces at runtime)
@@ -105,7 +105,7 @@ tasks:
         done
 
   lock:update:
-    desc: relock every uv project — run after any pyproject edit; a lib change cascades (consumer locks embed path-dep metadata, e.g. adb-inspect deps → the inspect experiments' locks)
+    desc: relock every uv project — run after any pyproject edit; a lib change cascades (consumer locks embed path-dep metadata, e.g. reps-inspect deps → the inspect experiments' locks)
     cmds:
       - |
         for dir in $(git ls-files '*uv.lock' ':!:pkgs/build-support/tests/fixtures/**' | xargs -n1 dirname); do
@@ -126,8 +126,8 @@ tasks:
       - uv run -q python scripts/update_task_catalog.py
 
   genconfig:update:
-    desc: regenerate lib/adb-inspect/generate_fields.json (the generate_args typed sub-form) from the pinned inspect_ai's GenerateConfig
-    dir: lib/adb-inspect
+    desc: regenerate lib/reps-inspect/generate_fields.json (the generate_args typed sub-form) from the pinned inspect_ai's GenerateConfig
+    dir: lib/reps-inspect
     cmds:
       - uv run -q python scripts/update_generate_fields.py
 
@@ -143,7 +143,7 @@ tasks:
       # registry eval through the classic door (test:python forced the flake door)
       - nix-build --no-out-link -A manifests
       # The packaged CLI includes publishing, even though fixture consumers do not.
-      - nix run .#adb-runner -- publish --help
+      - nix run .#reps-runner -- publish --help
       - ./scripts/check-entrypoint-identity.sh
 
   check:

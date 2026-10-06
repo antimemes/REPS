@@ -1,6 +1,6 @@
 # Publishing
 
-ADB publishes verified terminal runs to an S3 bucket at a target supplied by you.
+REPS publishes verified terminal runs to an S3 bucket at a target supplied by you.
 There are no built-in hosts, provider presets, saved remotes, or target
 environment variables. The bucket contains only `runs/` under the selected prefix.
 
@@ -16,7 +16,7 @@ and credentials in the provider's supported credential source.
 
 `--profile research` selects that AWS profile. Omit it to use
 [boto3's normal credential resolution](https://docs.aws.amazon.com/boto3/latest/guide/credentials.html).
-ADB creates a boto3 session and its S3 client without overriding endpoint, region
+REPS creates a boto3 session and its S3 client without overriding endpoint, region
 or client configuration. Ambient AWS settings are not passed into the experiment
 process; credential sets explicitly selected for the experiment still are.
 
@@ -26,10 +26,10 @@ Add `--publish` and optionally an AWS `--profile` to the experiment command. Thi
 complete mock-model example executes one run and publishes it:
 
 ```bash
-nix run .#inspect-hello -- --set model=mockllm/model --set limit=0 --set epochs=1 --set 'generate_args={}' --publish s3://my-bucket/adb-v1 --profile research
+nix run .#inspect-hello -- --set model=mockllm/model --set limit=0 --set epochs=1 --set 'generate_args={}' --publish s3://my-bucket/reps-v1 --profile research
 ```
 
-The run's data directory still follows `--data-dir`, `ADB_DATA_DIR`, then the
+The run's data directory still follows `--data-dir`, `REPS_DATA_DIR`, then the
 [XDG default](../reference/local.md#choose-where-results-are-saved).
 
 `--profile NAME` selects the AWS profile for publication. Model credentials
@@ -47,7 +47,7 @@ A publishing error is logged without changing the run state or exit code.
 Run the batch command against a local data directory:
 
 ```bash
-nix run .#adb-runner -- publish --to s3://my-bucket/adb-v1 --profile research --data-dir "$HOME/adb-data"
+nix run .#reps-runner -- publish --to s3://my-bucket/reps-v1 --profile research --data-dir "$HOME/reps-data"
 ```
 
 With no stems, it considers all runs. Add `--experiment NAME` to filter by the
@@ -59,8 +59,8 @@ The command returns a nonzero exit code if any run fails to publish.
 
 `--dry-run` verifies and prints the exact object keys and byte sizes, including
 compressed streams. It checks the bucket for existing run keys but writes nothing.
-Verification resolves the manifest in the same way as `adb-runner verify`: from
-`ADB_MANIFEST`, then the experiment's file in `ADB_MANIFESTS`, or a manifest catalog
+Verification resolves the manifest in the same way as `reps-runner verify`: from
+`REPS_MANIFEST`, then the experiment's file in `REPS_MANIFESTS`, or a manifest catalog
 built from the current checkout.
 
 Publication checks both destination run keys with HEAD. If either already exists,
@@ -84,16 +84,16 @@ Workspaces are never uploaded. See the [published layout](../reference/layout.md
 ## Build and serve an index
 
 Experiment buckets contain only `runs/`. A separate, replaceable index lets a
-static site discover those runs. Write `stores.yaml` yourself; ADB does not infer
+static site discover those runs. Write `stores.yaml` yourself; REPS does not infer
 a public URL from an S3 address. Store lists accept YAML (`.yaml` or `.yml`) or JSON.
 `data.example.org` below is an example store hostname.
 
 ```yaml
 v: 0
 stores:
-  - s3: s3://my-experiment-bucket/adb-v1
+  - s3: s3://my-experiment-bucket/reps-v1
     profile: research
-    url: https://data.example.org/experiments/adb-v1
+    url: https://data.example.org/experiments/reps-v1
     experiments:
       - govsim
     exclude:
@@ -118,7 +118,7 @@ directory that the site deploys.
 The index reads only `ListObjectsV2` and `GetObject`, using each store's profile
 without endpoint, region or client-configuration overrides.
 
-Run cards are cached under `$XDG_CACHE_HOME/adb/index` (or `~/.cache/adb/index`),
+Run cards are cached under `$XDG_CACHE_HOME/reps/index` (or `~/.cache/reps/index`),
 keyed by profile (`default` when omitted), bucket, full object key and the listed
 ETag. Every rebuild still lists the store, so the listing determines membership
 and changed ETags trigger a fetch.
@@ -131,7 +131,7 @@ Build the index with this repository's public outputs:
 
 ```bash
 catalog="$(nix build .#manifests --no-link --print-out-paths)"
-nix run .#adb-runner -- index --stores stores.yaml --catalog "$catalog" --to site/index
+nix run .#reps-runner -- index --stores stores.yaml --catalog "$catalog" --to site/index
 ```
 
 Deploy the generated `site/index` directory alongside your site. The index command

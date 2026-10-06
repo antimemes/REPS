@@ -1,4 +1,4 @@
-"""Concordia's run record -> ADB events. A pure function of plain data (the roster, the
+"""Concordia's run record -> REPS events. A pure function of plain data (the roster, the
 premise, and one (step, actor, action) tuple per turn), so it needs no Concordia import
 and its test can feed hand-built inputs.
 
@@ -8,7 +8,7 @@ events. Their meanings follow Concordia's recorded data.
 
 from __future__ import annotations
 
-from adb_events import CustomEvent, Result, emit
+from reps_events import CustomEvent, Result, emit
 
 # The narrator's display name — sits next to roster names ("Alice", "Bob") in the
 # transcript, so it's spelled like one. main.py names the Concordia game-master

@@ -11,7 +11,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from adb_events import emit
+from reps_events import emit
 
 from .models import (
     ACTION_MODELS, GovsimMemory, GovsimRecord, GovsimUnparsedLog, GovsimUpstreamLog,

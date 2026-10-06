@@ -23,7 +23,7 @@ nix run .#inspect-hello -- --describe
 | `origin` | Packaging repository reference, separate from a run's pinned fetch reference. |
 | `links` | External references, each with `label` and `url`. |
 
-The source identity and executable are wrapper settings, not manifest fields. [`adb.mkExperiment`](../authoring/experiments.md) takes `name`, `summary`, `params`, `program` and `src`, with optional `results`, `schema`, `schemaPython`, `sharedSrcs`, `env` and `links`. Schema defaults to version 0 and `adb_events:Payload`; typed experiments supply their own union pointer and `schemaPython = "${env}/bin/python"` from the built program environment. Packaging imports that pointer and calls `export_schema`, failing the build if it cannot import. `schema.json` and the shared export sit beside the manifest, along with a `python` link to the schema interpreter used by `adb-runner verify`; `schema.path` is generated, not author-supplied.
+The source identity and executable are wrapper settings, not manifest fields. [`reps.mkExperiment`](../authoring/experiments.md) takes `name`, `summary`, `params`, `program` and `src`, with optional `results`, `schema`, `schemaPython`, `sharedSrcs`, `env` and `links`. Schema defaults to version 0 and `reps_events:Payload`; typed experiments supply their own union pointer and `schemaPython = "${env}/bin/python"` from the built program environment. Packaging imports that pointer and calls `export_schema`, failing the build if it cannot import. `schema.json` and the shared export sit beside the manifest, along with a `python` link to the schema interpreter used by `reps-runner verify`; `schema.path` is generated, not author-supplied.
 
 The catalog packages the experiment directory's images under
 `assets/<experiment-name>/`, preserving subdirectories such as `figures/`. Relative
@@ -62,7 +62,7 @@ LLM-typed parameters receive shared model suggestions during manifest generation
 | `details` | Optional longer string explaining the calculation, aggregation or interpretation caveats. |
 | `unit` | Optional string displayed alongside the value; it does not convert or rescale the value. |
 
-In Nix, use `results = [ { name = "count"; type = adb.types.int; label = "Recorded count"; description = "Count supplied to the program."; } ];`. The manifest preserves the list and its presentation fields in that order. Map declarations and bare-type shorthand are not supported.
+In Nix, use `results = [ { name = "count"; type = reps.types.int; label = "Recorded count"; description = "Count supplied to the program."; } ];`. The manifest preserves the list and its presentation fields in that order. Map declarations and bare-type shorthand are not supported.
 
 Results are possible outputs, not required outputs. A declared metric that was never emitted is absent from the summary; absence does not mean zero. Undeclared results remain in the stream but warn and stay out of the summary. Boolean results do not inherently indicate success or failure; their meaning comes from the declaration.
 
@@ -72,22 +72,22 @@ The runner snapshots the ordered declaration list in `run.json` under `definitio
 
 | Nix constructor | JSON descriptor | Accepted value |
 | --- | --- | --- |
-| `adb.types.str` | `{ "kind": "str" }` | String |
-| `adb.types.llm` | `{ "kind": "llm" }` | Model-ID string; also participates in credential discovery |
-| `adb.types.int` | `{ "kind": "int" }` | Integer, excluding booleans |
-| `adb.types.float` | `{ "kind": "float" }` | JSON number, excluding booleans |
-| `adb.types.bool` | `{ "kind": "bool" }` | Boolean |
-| `adb.types.enum values` | `{ "kind": "enum", "values": [...] }` | One declared value |
-| `adb.types.listOf type` | `{ "kind": "list", "of": TYPE }` | Array whose elements match `TYPE` |
-| `adb.types.struct fields` | `{ "kind": "struct", "fields": {...} }` | Object with exactly the declared keys and matching field types |
-| `adb.types.object` | `{ "kind": "object" }` | JSON object with arbitrary keys and values |
+| `reps.types.str` | `{ "kind": "str" }` | String |
+| `reps.types.llm` | `{ "kind": "llm" }` | Model-ID string; also participates in credential discovery |
+| `reps.types.int` | `{ "kind": "int" }` | Integer, excluding booleans |
+| `reps.types.float` | `{ "kind": "float" }` | JSON number, excluding booleans |
+| `reps.types.bool` | `{ "kind": "bool" }` | Boolean |
+| `reps.types.enum values` | `{ "kind": "enum", "values": [...] }` | One declared value |
+| `reps.types.listOf type` | `{ "kind": "list", "of": TYPE }` | Array whose elements match `TYPE` |
+| `reps.types.struct fields` | `{ "kind": "struct", "fields": {...} }` | Object with exactly the declared keys and matching field types |
+| `reps.types.object` | `{ "kind": "object" }` | JSON object with arbitrary keys and values |
 
 Use `listOf (struct {...})` for a list of structured values. A structure field can be a bare type descriptor or a wrapper containing `type`, `description` and `suggestions`. `param type attrs` attaches parameter metadata in Nix.
 
 For example:
 
 ```nix
-with adb.types; {
+with reps.types; {
   agents = param (listOf (struct {
     name = str;
     model = param llm { description = "Model for this agent."; };

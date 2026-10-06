@@ -1,5 +1,5 @@
 """Manifest conformance sweep — every real nix-built manifest against the schema
-vocabulary in adb_runner.schema.
+vocabulary in reps_runner.schema.
 
 Full structural validation, driven by the TypedDicts themselves (annotations are
 introspected, so there is no second schema to drift): at every level, keys must
@@ -8,7 +8,7 @@ type — a manifest with `order: "1"` or a string where a list belongs fails her
 with the file and path in the message. The walker checks the generated manifest
 directly against the declared TypedDict vocabulary.
 
-Gated on ADB_TEST_MANIFESTS (task test:python wires it to the nix-built manifests
+Gated on REPS_TEST_MANIFESTS (task test:python wires it to the nix-built manifests
 dir); skips without it.
 """
 
@@ -22,8 +22,8 @@ from pathlib import Path
 
 import pytest
 
-from adb_events import VOCABULARY_VERSION, Json
-from adb_runner.schema import Manifest
+from reps_events import VOCABULARY_VERSION, Json
+from reps_runner.schema import Manifest
 
 # kinds the nix `types` constructors can produce (plus reserved run/harness kinds)
 KINDS = {"llm", "str", "int", "float", "bool", "enum", "list", "struct", "object",
@@ -97,9 +97,9 @@ def _kinds(node: object) -> typing.Iterator[str]:
 
 
 def test_every_shipped_manifest_conforms():
-    manifests_dir = os.environ.get("ADB_TEST_MANIFESTS")
+    manifests_dir = os.environ.get("REPS_TEST_MANIFESTS")
     if not manifests_dir:
-        pytest.skip("ADB_TEST_MANIFESTS unset (run via `task test:python`)")
+        pytest.skip("REPS_TEST_MANIFESTS unset (run via `task test:python`)")
     files = sorted(Path(manifests_dir).glob("*.json"))
     assert files, f"no manifests in {manifests_dir}"
     for f in files:
@@ -112,7 +112,7 @@ def test_every_shipped_manifest_conforms():
         schema_path = Path(doc["schema"]["path"])
         assert schema_path.name == "schema.json"
         assert schema_path.parent == f.resolve().parent
-        assert json.loads(schema_path.read_text())["$defs"]["LLMCall"]["x-adb-render"]["actor"] == "agent"
+        assert json.loads(schema_path.read_text())["$defs"]["LLMCall"]["x-reps-render"]["actor"] == "agent"
         assert (schema_path.parent / "shared-schema.json").is_file()
         unknown_kinds = set(_kinds([doc["params"], doc.get("results", [])])) - KINDS
         assert not unknown_kinds, f"{f.name}: unknown kinds {sorted(unknown_kinds)}"
@@ -147,9 +147,9 @@ def test_walker_rejects_wrong_types():
 
 
 def test_shipped_readmes_follow_presentation_format():
-    manifests_dir = os.environ.get("ADB_TEST_MANIFESTS")
+    manifests_dir = os.environ.get("REPS_TEST_MANIFESTS")
     if not manifests_dir:
-        pytest.skip("ADB_TEST_MANIFESTS unset (run via `task test:python`)")
+        pytest.skip("REPS_TEST_MANIFESTS unset (run via `task test:python`)")
     root = Path(__file__).resolve().parents[2]
     catalog = Path(manifests_dir)
     govsim = json.loads((catalog / "govsim.json").read_text())
@@ -192,8 +192,8 @@ def test_registry_readme_formats(tmp_path, formats):
     for suffix in formats:
         (experiment / f"README.{suffix}").write_text(text)
     (experiment / "overview.svg").write_text("<svg/>")
-    (experiment / "package.nix").write_text('''{ adb }: {
-      readme-fixture = adb.mkExperiment {
+    (experiment / "package.nix").write_text('''{ reps }: {
+      readme-fixture = reps.mkExperiment {
         name = "readme-fixture"; summary = "README registry fixture";
         params = {}; program = "/unused"; src = ./package.nix;
       };
@@ -203,11 +203,11 @@ def test_registry_readme_formats(tmp_path, formats):
       let
         root = builtins.toPath repo;
         sources = import (root + "/pkgs/locked-sources.nix") {};
-        adb = import (builtins.toPath fixture + "/pkgs/top-level") {
+        reps = import (builtins.toPath fixture + "/pkgs/top-level") {
           pkgs = (import (root + "/default.nix") {}).pkgs;
           inherit (sources) pyproject-nix uv2nix pyproject-build-systems;
         };
-      in adb.manifests
+      in reps.manifests
     ''')
     result = subprocess.run([
         "nix-build", "--no-out-link", str(expression), "--argstr", "repo", str(root),

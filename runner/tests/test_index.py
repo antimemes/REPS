@@ -11,7 +11,7 @@ import boto3
 from moto import mock_aws
 import pytest
 
-from adb_runner import cli, index
+from reps_runner import cli, index
 from test_verify import saved
 
 
@@ -91,7 +91,7 @@ def stores(saved, tmp_path, monkeypatch, catalog):
         ]}
         path.write_text(json.dumps(value))
         def invoke(to, *args):
-            monkeypatch.setattr(sys, "argv", ["adb-runner", "index", "--stores", str(path), "--to", str(to), "--catalog", str(catalog), *args])
+            monkeypatch.setattr(sys, "argv", ["reps-runner", "index", "--stores", str(path), "--to", str(to), "--catalog", str(catalog), *args])
             return cli.main()
         yield s3, path, value, originals, invoke
         for (bucket, key), raw in originals.items():
@@ -127,7 +127,7 @@ def test_second_build_uses_cached_cards_with_identical_output(stores, tmp_path, 
     assert invoke(first) == 0
     assert s3_calls.count("GetObject") == 3
     assert s3_calls.count("ListObjectsV2") == 2
-    cache = tmp_path / "cache/adb/index"
+    cache = tmp_path / "cache/reps/index"
     assert len(directory_bytes(cache)) == 6
     for (bucket, key), body in originals.items():
         profile = "first" if bucket == "store-one" else "second"
@@ -161,7 +161,7 @@ def test_same_bucket_with_different_profiles_has_separate_cache_entries(stores, 
     assert invoke(destination) == 0
     assert s3_calls.count("GetObject") == 4
     assert s3_calls.count("ListObjectsV2") == 2
-    cache = tmp_path / "cache/adb/index"
+    cache = tmp_path / "cache/reps/index"
     assert len(directory_bytes(cache)) == 8
     for (bucket, key), body in originals.items():
         if bucket != "store-one":
@@ -188,7 +188,7 @@ def test_changed_etag_refetches_only_changed_card(stores, tmp_path, s3_calls):
     card = json.loads(original)
     card["inputs"]["params"]["unicode"] = "updated"
     updated = json.dumps(card).encode()
-    path = tmp_path / "cache/adb/index/first" / bucket / key
+    path = tmp_path / "cache/reps/index/first" / bucket / key
     token = path.with_name(path.name + ".etag")
     old_etag = token.read_text()
     try:
@@ -210,7 +210,7 @@ def test_deleted_run_is_ignored_without_pruning_cache(stores, tmp_path, s3_calls
     s3, _, _, originals, invoke = stores
     destination = tmp_path / "index"
     assert invoke(destination) == 0
-    cache = tmp_path / "cache/adb/index"
+    cache = tmp_path / "cache/reps/index"
     before = directory_bytes(cache)
     (bucket, key), original = next(iter(originals.items()))
     events = key.replace("run.json", "events.jsonl.zst")
@@ -263,7 +263,7 @@ def test_partial_cache_entry_is_refetched(stores, tmp_path, s3_calls, missing):
     destination = tmp_path / "index"
     assert invoke(destination) == 0
     (bucket, key), original = next(iter(originals.items()))
-    path = tmp_path / "cache/adb/index/first" / bucket / key
+    path = tmp_path / "cache/reps/index/first" / bucket / key
     token = path.with_name(path.name + ".etag")
     (path if missing == "card" else token).unlink()
     s3_calls.clear()
@@ -278,7 +278,7 @@ def test_dry_run_uses_cache_without_writing(stores, tmp_path, monkeypatch, s3_ca
     _, _, _, _, invoke = stores
     if warm:
         assert invoke(tmp_path / "warm") == 0
-    cache = tmp_path / "cache/adb/index"
+    cache = tmp_path / "cache/reps/index"
     before = directory_bytes(cache)
     write_bytes = Path.write_bytes
     def writing(path, body):
@@ -300,7 +300,7 @@ def test_interrupted_cache_write_leaves_no_matching_etag(stores, tmp_path, monke
     destination = tmp_path / "index"
     assert invoke(destination) == 0
     (bucket, key), original = next(iter(originals.items()))
-    path = tmp_path / "cache/adb/index/first" / bucket / key
+    path = tmp_path / "cache/reps/index/first" / bucket / key
     token = path.with_name(path.name + ".etag")
     token.write_text('"stale"')
     write_bytes = Path.write_bytes
@@ -348,7 +348,7 @@ def test_missing_listing_etag_never_reuses_cached_card(stores, tmp_path, monkeyp
     monkeypatch.setattr(index, "keys", without_etag)
     destination = tmp_path / "index"
     assert invoke(destination) == 0
-    assert not (tmp_path / "cache/adb/index/first" / bucket / key).exists()
+    assert not (tmp_path / "cache/reps/index/first" / bucket / key).exists()
     s3_calls.clear()
     assert invoke(destination) == 0
     assert s3_calls.count("GetObject") == 1
@@ -718,7 +718,7 @@ def test_dry_run_counts_and_sizes_without_creating_or_deleting(stores, tmp_path,
 
 @pytest.mark.parametrize("removed", [["--profile", "first"], ["--to", "s3://indexes/public"]])
 def test_removed_destination_options_are_rejected(tmp_path, monkeypatch, removed, catalog):
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "index", "--stores", str(tmp_path / "stores.json"),
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "index", "--stores", str(tmp_path / "stores.json"),
                                      "--to", str(tmp_path / "index"), "--catalog", str(catalog), *removed])
     with pytest.raises(SystemExit) as error:
         cli.main()
@@ -727,7 +727,7 @@ def test_removed_destination_options_are_rejected(tmp_path, monkeypatch, removed
 
 
 def test_catalog_is_required(tmp_path, monkeypatch, capsys):
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "index", "--stores", str(tmp_path / "stores.json"),
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "index", "--stores", str(tmp_path / "stores.json"),
                                      "--to", str(tmp_path / "index")])
     with pytest.raises(SystemExit) as error:
         cli.main()
@@ -751,7 +751,7 @@ def test_invalid_catalog_fails_before_collecting_or_replacing_output(tmp_path, m
     def unexpected_collect(_):
         pytest.fail("invalid catalog must be rejected before collect()")
     monkeypatch.setattr(index, "collect", unexpected_collect)
-    monkeypatch.setattr(sys, "argv", ["adb-runner", "index", "--stores", str(stores),
+    monkeypatch.setattr(sys, "argv", ["reps-runner", "index", "--stores", str(stores),
                                      "--catalog", str(catalog), "--to", str(destination),
                                      *(["--dry-run"] if dry_run else [])])
     assert cli.main() == 1

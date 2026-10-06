@@ -1,7 +1,7 @@
-"""The canonical provider registry (the adb-providers package): parsing and
+"""The canonical provider registry (the reps-providers package): parsing and
 validation hold the invariants consumers lean on."""
 
-from adb_providers import MOCK_PREFIXES, PROVIDERS
+from reps_providers import MOCK_PREFIXES, PROVIDERS
 
 
 def test_registry_shape():

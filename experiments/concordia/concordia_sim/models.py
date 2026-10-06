@@ -9,7 +9,7 @@ premise, game_master) per experiment and expose only the comparison axes (models
 steps, generation knobs) as params: the scenario is the experiment, never a param.
 The defaults here exist so a standalone/test invocation has a sensible scenario;
 they never reach a real run, whose adapter always writes a complete config.
-`seed` is not authored by a caller — the adapter merges `$ADB_SEED` in.
+`seed` is not authored by a caller — the adapter merges `$REPS_SEED` in.
 """
 
 from __future__ import annotations
@@ -66,7 +66,7 @@ class Params(BaseModel):
     # `openai/<name>` is sent to an OpenAI-compatible /chat/completions server. The
     # endpoint + key are NOT params — they come from the credential set's env
     # (OPENAI_BASE_URL / OPENAI_API_KEY), which the runner injects from the local
-    # credential store (`nix run .#adb-runner -- credentials set openai`). So the model
+    # credential store (`nix run .#reps-runner -- credentials set openai`). So the model
     # *name* is the condition; where it is served is not.
     default_model: str = Field(default="mock/model", min_length=1)
 
@@ -74,5 +74,5 @@ class Params(BaseModel):
     temperature: float = Field(default=0.5, ge=0.0, le=2.0)
     max_tokens: int = Field(default=256, gt=0)
 
-    # merged in from $ADB_SEED by the adapter; makes the mock backend deterministic.
+    # merged in from $REPS_SEED by the adapter; makes the mock backend deterministic.
     seed: int = 0

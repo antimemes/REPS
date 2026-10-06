@@ -11,103 +11,6 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "adb-events"
-version = "0.1.0"
-source = { editable = "../../lib/adb-events" }
-dependencies = [
-    { name = "pydantic" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "pydantic", specifier = ">=2.12,<3" }]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "adb-testing", editable = "../../lib/adb-testing" },
-    { name = "duckdb", specifier = ">=1.4,<2" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-xdist" },
-]
-
-[[package]]
-name = "adb-experiment-inspect-evals"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "adb-inspect" },
-    { name = "inspect-evals" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "adb-inspect", directory = "../../lib/adb-inspect" },
-    { name = "inspect-evals", specifier = "~=0.15.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8" }]
-
-[[package]]
-name = "adb-inspect"
-version = "0.1.0"
-source = { directory = "../../lib/adb-inspect" }
-dependencies = [
-    { name = "adb-events" },
-    { name = "adb-providers" },
-    { name = "aioboto3" },
-    { name = "anthropic" },
-    { name = "azure-ai-inference" },
-    { name = "google-genai" },
-    { name = "groq" },
-    { name = "inspect-ai" },
-    { name = "mistralai" },
-    { name = "openai" },
-    { name = "pydantic" },
-    { name = "xai-sdk" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "adb-events", editable = "../../lib/adb-events" },
-    { name = "adb-providers", directory = "../../lib/adb-providers" },
-    { name = "aioboto3", specifier = ">=13.0.0" },
-    { name = "anthropic", specifier = ">=0.115.0" },
-    { name = "azure-ai-inference", specifier = ">=1.0.0b4" },
-    { name = "google-genai", specifier = ">=1.69.0" },
-    { name = "groq", specifier = ">=0.28.0" },
-    { name = "inspect-ai", specifier = ">=0.3.184,<0.4" },
-    { name = "mistralai", specifier = ">=2.0.1" },
-    { name = "openai", specifier = ">=3.24.0" },
-    { name = "pydantic", specifier = ">=2" },
-    { name = "xai-sdk", specifier = ">=1.7.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "adb-testing", editable = "../../lib/adb-testing" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-xdist" },
-]
-
-[[package]]
-name = "adb-providers"
-version = "0.1.0"
-source = { directory = "../../lib/adb-providers" }
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-xdist" },
-]
-
-[[package]]
 name = "agent-client-protocol"
 version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2275,6 +2178,103 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2b/d7/01d31d5bdb09bc026fab77f59a371fdf8f9b292e4810546c56182ca70498/regex-2026.7.19-cp314-cp314t-win32.whl", hash = "sha256:2c4e61e2e1be56f63ec3cc618aa9e0de81ef6f43d177205451840022e24f5b78", size = 274526, upload-time = "2026-07-19T00:19:42.398Z" },
     { url = "https://files.pythonhosted.org/packages/52/0e/cea4ce73bc0a8247a0748228ae6669984c7e1f8134b6fa66e59c0572e0ea/regex-2026.7.19-cp314-cp314t-win_amd64.whl", hash = "sha256:c639ea314df70a7b2811e8020448c75af8c9445f5a60f8a4ced81c306a9380c2", size = 283763, upload-time = "2026-07-19T00:19:44.644Z" },
     { url = "https://files.pythonhosted.org/packages/6f/b6/26e41975febae63b7a6e3e02f32cff6cff2e4f10d19c929082f56aebf7c6/regex-2026.7.19-cp314-cp314t-win_arm64.whl", hash = "sha256:9a15e785f244f3e07847b984ce8773fc3da10a9f3c131cc49a4c5b4d672b4547", size = 283451, upload-time = "2026-07-19T00:19:46.639Z" },
+]
+
+[[package]]
+name = "reps-events"
+version = "0.1.0"
+source = { editable = "../../lib/reps-events" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.12,<3" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "duckdb", specifier = ">=1.4,<2" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
+    { name = "reps-testing", editable = "../../lib/reps-testing" },
+]
+
+[[package]]
+name = "reps-experiment-inspect-evals"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "inspect-evals" },
+    { name = "reps-inspect" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "inspect-evals", specifier = "~=0.15.0" },
+    { name = "reps-inspect", directory = "../../lib/reps-inspect" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8" }]
+
+[[package]]
+name = "reps-inspect"
+version = "0.1.0"
+source = { directory = "../../lib/reps-inspect" }
+dependencies = [
+    { name = "aioboto3" },
+    { name = "anthropic" },
+    { name = "azure-ai-inference" },
+    { name = "google-genai" },
+    { name = "groq" },
+    { name = "inspect-ai" },
+    { name = "mistralai" },
+    { name = "openai" },
+    { name = "pydantic" },
+    { name = "reps-events" },
+    { name = "reps-providers" },
+    { name = "xai-sdk" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aioboto3", specifier = ">=13.0.0" },
+    { name = "anthropic", specifier = ">=0.115.0" },
+    { name = "azure-ai-inference", specifier = ">=1.0.0b4" },
+    { name = "google-genai", specifier = ">=1.69.0" },
+    { name = "groq", specifier = ">=0.28.0" },
+    { name = "inspect-ai", specifier = ">=0.3.184,<0.4" },
+    { name = "mistralai", specifier = ">=2.0.1" },
+    { name = "openai", specifier = ">=3.24.0" },
+    { name = "pydantic", specifier = ">=2" },
+    { name = "reps-events", editable = "../../lib/reps-events" },
+    { name = "reps-providers", directory = "../../lib/reps-providers" },
+    { name = "xai-sdk", specifier = ">=1.7.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
+    { name = "reps-testing", editable = "../../lib/reps-testing" },
+]
+
+[[package]]
+name = "reps-providers"
+version = "0.1.0"
+source = { directory = "../../lib/reps-providers" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
 ]
 
 [[package]]

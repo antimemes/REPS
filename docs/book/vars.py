@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """mdbook preprocessor: expands {{repo}} in chapter content to the repo slug
 (owner/name), derived from output.html.git-repository-url — book.toml is the
-single place the repository is named. (theme/adb-commands.js necessarily
+single place the repository is named. (theme/reps-commands.js necessarily
 repeats it as its GITHUB/TARBALL constants; change both.)"""
 import json
 import sys

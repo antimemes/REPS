@@ -6,7 +6,7 @@ status: draft
 
 # RFC 0001: Event basics and model API instrumentation
 
-ADB records strict Pydantic payloads in a runner-owned JSONL stream. Experiments define their own typed custom observations alongside a small shared technical vocabulary. Analysis requires Pydantic, with no Inspect or OpenTelemetry runtime.
+REPS records strict Pydantic payloads in a runner-owned JSONL stream. Experiments define their own typed custom observations alongside a small shared technical vocabulary. Analysis requires Pydantic, with no Inspect or OpenTelemetry runtime.
 
 ## 0. Shared v0 vocabulary
 
@@ -25,15 +25,15 @@ The shared wire tags are exactly these ten:
 | `stderr` | A captured stderr line; stderr alone does not establish failure. |
 | `producer.python` | The producer's own toolchain, once, first: implementation, version, executable, platform, libc, locale, hash seed, flags. Per-language tags `producer.<language>` are owned by that language's events library. |
 
-Only the runner emits lifecycle records. Producers submit validated payloads through `adb_events.emit` or `adb-emit`. A valid partial transcript may lack `run.end`; absence alone establishes neither success nor continued execution. The [events reference](../book/src/reference/events.md) specifies the fields.
+Only the runner emits lifecycle records. Producers submit validated payloads through `reps_events.emit` or `reps-emit`. A valid partial transcript may lack `run.end`; absence alone establishes neither success nor continued execution. The [events reference](../book/src/reference/events.md) specifies the fields.
 
 `condition` is the single deliberate derived value in the stream, a hash of experiment, source and params on the same record, kept because it is the identity readers use to locate and pool runs; it is not precedent for other derived values.
 
 ## 1. Model calls
 
-`LLMCall` carries `model`, `input`, `tools`, `tool_choice`, `output`, `call`, `error`, `retries`, `completed`, `working_time`, `metadata`, and ADB's `agent` attribution. Chat, content, citation, tool, output and usage models come from Inspect AI 0.3.263, vendored in [inspect_chat.py](../../lib/adb-events/adb_events/inspect_chat.py).
+`LLMCall` carries `model`, `input`, `tools`, `tool_choice`, `output`, `call`, `error`, `retries`, `completed`, `working_time`, `metadata`, and REPS's `agent` attribution. Chat, content, citation, tool, output and usage models come from Inspect AI 0.3.263, vendored in [inspect_chat.py](../../lib/reps-events/reps_events/inspect_chat.py).
 
-**Boundary rule.** `llm.call` holds what crossed the model API, plus ADB timing and agent attribution. Harness-only facts are recorded raw by that harness's adapter. Fields earn a place as normalized projections (`tools`, `tool_choice`) or facts not derivable from raw payloads (`agent`). Read generation settings from `call.request`. Messages and calls are expanded.
+**Boundary rule.** `llm.call` holds what crossed the model API, plus REPS timing and agent attribution. Harness-only facts are recorded raw by that harness's adapter. Fields earn a place as normalized projections (`tools`, `tool_choice`) or facts not derivable from raw payloads (`agent`). Read generation settings from `call.request`. Messages and calls are expanded.
 
 `agent` is the backend's supplied attribution; Inspect uses the model role when set, otherwise caller attribution, never per-sample scope. Each Inspect event is recorded raw, immediately followed by `llm.call` for model events, including cached events. `ToolCall.parse_error` preserves parsing evidence; `ToolCallError.type` accepts API or harness error types.
 
@@ -41,7 +41,7 @@ Only the runner emits lifecycle records. Producers submit validated payloads thr
 
 Capture preserves all available choices, tools, multimodal content, detailed usage and provider metadata. `call.request` and `call.response` are serialized SDK objects, not HTTP bytes. Tool requests do not establish execution. `input_tokens` excludes cached tokens; add cache read/write counts for total input usage. Missing usage is unknown.
 
-Failed requests retain available input and error. The optional non-negative integer `retries` field records observed HTTP 429/5xx responses, including the final rejection on exhaustion. Zero means none; it defaults to `None` and is omitted from JSONL when unknown. Connection failures and timeouts are not counted. This promotes the former `adb_experiment.retries` metadata note to a typed field. The Python `retries` property prefers that field and falls back to the historical metadata note when absent or null, then to zero if the historical `adb_experiment.backend` key is present, without rewriting the stored record. Internal SDK attempts become separate calls only if observed individually. Completion-time capture cannot preserve an operation whose process dies awaiting a response. The first well-formed `<think>…</think>` block in assistant text is reasoning (Inspect's rule), provider `reasoning_content` is reasoning, and everything else is text, untrimmed. GovSim trims at its Pathfinder backend for parity with local generation and anchored parsing. `call.response` retains the original SDK response, including its unmodified content strings.
+Failed requests retain available input and error. The optional non-negative integer `retries` field records observed HTTP 429/5xx responses, including the final rejection on exhaustion. Zero means none; it defaults to `None` and is omitted from JSONL when unknown. Connection failures and timeouts are not counted. This promotes the former `reps_experiment.retries` metadata note to a typed field. The Python `retries` property prefers that field and falls back to the historical metadata note when absent or null, then to zero if the historical `reps_experiment.backend` key is present, without rewriting the stored record. Internal SDK attempts become separate calls only if observed individually. Completion-time capture cannot preserve an operation whose process dies awaiting a response. The first well-formed `<think>…</think>` block in assistant text is reasoning (Inspect's rule), provider `reasoning_content` is reasoning, and everything else is text, untrimmed. GovSim trims at its Pathfinder backend for parity with local generation and anchored parsing. `call.response` retains the original SDK response, including its unmodified content strings.
 
 ## 2. Results
 
@@ -57,6 +57,6 @@ The envelope, timestamps, compatibility and frozen-module rules are specified in
 
 ## 4. Deferrals
 
-A tag is shared when the runner or verifier acts on it; promoting a custom kind is a read-time projection declared in adb-events, never a rewrite; cross-experiment views over raw kinds are projections, not tags.
+A tag is shared when the runner or verifier acts on it; promoting a custom kind is a read-time projection declared in reps-events, never a rewrite; cross-experiment views over raw kinds are projections, not tags.
 
 Deferred names are `instance`, `artifact`, `agent.event`, `tool.call`, `span.begin`, `span.end`, `limit`, and raw harness records. Scientific concepts, including experiment-specific agent actions, remain typed custom events. Deferred concepts do not add tags to this v0 vocabulary.

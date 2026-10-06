@@ -4,8 +4,8 @@ import re
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from adb_events.identity import RunId
-from adb_runner import run_id
+from reps_events.identity import RunId
+from reps_runner import run_id
 
 
 def test_launch_clock_is_utc_and_random_suffix_is_independent(monkeypatch):

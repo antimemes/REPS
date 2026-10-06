@@ -21,18 +21,18 @@ let
     writeShellApplication = args: args.text;
     writeText = name: text: "/nix/store/fixture-manifest.json";
   };
-  adb = import (root + "/pkgs/build-support") {
+  reps = import (root + "/pkgs/build-support") {
     inherit pkgs origin rev narHash;
-    adb-runner = base.hello;
+    reps-runner = base.hello;
     pyproject-nix = null;
     uv2nix = null;
     pyproject-build-systems = null;
   };
-in (adb.mkExperiment {
+in (reps.mkExperiment {
   name = "fixture"; summary = "fixture"; params = {};
   results = builtins.fromJSON resultJson;
   program = "/nix/store/fixture-program/bin/run";
-  src = root + "/lib/adb-events/adb_events";
+  src = root + "/lib/reps-events/reps_events";
 }).app
 '''
 
@@ -58,8 +58,8 @@ def test_launcher_exports_tree_hash_independently_of_revision(tmp_path, rev, tre
     assert result.returncode == 0, result.stderr
     exports = dict(shlex.split(line)[1].split("=", 1)
                    for line in json.loads(result.stdout).splitlines() if line.strip().startswith("export "))
-    assert exports["ADB_TREE_HASH"] == (tree_hash or "")
-    assert exports["ADB_FETCH_REF"] == (f"github:owner/repo/{rev}?dir=packaging" if rev else "")
+    assert exports["REPS_TREE_HASH"] == (tree_hash or "")
+    assert exports["REPS_FETCH_REF"] == (f"github:owner/repo/{rev}?dir=packaging" if rev else "")
 
 
 @pytest.mark.parametrize("origin", [
@@ -80,15 +80,15 @@ def test_build_fails_when_schema_pointer_does_not_import(tmp_path):
       let
         root = builtins.toPath repo;
         packages = import (root + "/default.nix") {};
-        adb = import (root + "/pkgs/build-support") {
-          inherit (packages) pkgs adb-runner;
+        reps = import (root + "/pkgs/build-support") {
+          inherit (packages) pkgs reps-runner;
           origin = "github:test/repo";
           pyproject-nix = null; uv2nix = null; pyproject-build-systems = null;
         };
-      in (adb.mkExperiment {
+      in (reps.mkExperiment {
         name = "bad-schema-fixture"; summary = "fixture"; params = {};
-        program = "/unused"; src = root + "/lib/adb-events/adb_events";
-        schema = { version = 0; models = "adb_events:MissingPayload"; };
+        program = "/unused"; src = root + "/lib/reps-events/reps_events";
+        schema = { version = 0; models = "reps_events:MissingPayload"; };
       }).app
     ''')
     result = subprocess.run(
@@ -101,7 +101,7 @@ def test_build_fails_when_schema_pointer_does_not_import(tmp_path):
 
 def test_clean_and_dirty_flake_launches_preserve_provenance(tmp_path):
     """Exercise real Git sourceInfo, launcher exports, and persisted process facts."""
-    from adb_events import RunStart, read_events
+    from reps_events import RunStart, read_events
 
     checkout = tmp_path / "fixture"
     checkout.mkdir()
@@ -109,16 +109,16 @@ def test_clean_and_dirty_flake_launches_preserve_provenance(tmp_path):
       outputs = { self }: let
         packages = import (builtins.toPath @REPO@) {};
         inherit (packages) pkgs;
-        adb = import (builtins.toPath (@REPO@ + "/pkgs/build-support")) {
-          inherit pkgs; inherit (packages) adb-runner;
+        reps = import (builtins.toPath (@REPO@ + "/pkgs/build-support")) {
+          inherit pkgs; inherit (packages) reps-runner;
           origin = "github:fixture/provenance";
           rev = self.rev or null;
           narHash = self.narHash;
           pyproject-nix = null; uv2nix = null; pyproject-build-systems = null;
         };
-        experiment = adb.mkExperiment {
+        experiment = reps.mkExperiment {
           name = "provenance-fixture"; summary = "fixture";
-          params.model = { type = adb.types.llm; initial = "openai/fixture"; };
+          params.model = { type = reps.types.llm; initial = "openai/fixture"; };
           src = ./program.py;
           program = pkgs.writeShellApplication {
             name = "provenance-child";
@@ -132,7 +132,7 @@ def test_clean_and_dirty_flake_launches_preserve_provenance(tmp_path):
     (checkout / "flake.nix").write_text(flake.replace("@REPO@", json.dumps(str(REPO))))
     program = checkout / "program.py"
     program.write_text("""import json, os, sys
-print(json.dumps({"params": json.load(sys.stdin), "seed": int(os.environ["ADB_SEED"]),
+print(json.dumps({"params": json.load(sys.stdin), "seed": int(os.environ["REPS_SEED"]),
                   "endpoint": os.environ["OPENAI_BASE_URL"]}))
 """)
 
@@ -142,7 +142,7 @@ print(json.dumps({"params": json.load(sys.stdin), "seed": int(os.environ["ADB_SE
         assert result.returncode == 0, result.stderr
         return result.stdout.strip()
 
-    # Commits are confined to this disposable test fixture, never the ADB checkout.
+    # Commits are confined to this disposable test fixture, never the REPS checkout.
     command("git", "init", "-q")
     command("git", "add", "flake.nix", "program.py")
     command("git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
@@ -153,7 +153,7 @@ print(json.dumps({"params": json.load(sys.stdin), "seed": int(os.environ["ADB_SE
     credential_file.write_text('[openai.default]\nOPENAI_API_KEY="fixture-key"\n'
                                f'OPENAI_BASE_URL="{endpoint}"\n')
     credential_file.chmod(0o600)
-    env = {**os.environ, "ADB_CREDENTIALS_FILE": str(credential_file),
+    env = {**os.environ, "REPS_CREDENTIALS_FILE": str(credential_file),
            "XDG_CONFIG_HOME": str(tmp_path / "config")}
     starts = []
     for dirty in (False, True):

@@ -10,9 +10,9 @@ import sys
 
 import pytest
 
-from adb_events import VOCABULARY_VERSION
-from adb_runner.protocol import execute_run
-from adb_runner.store import RunStore
+from reps_events import VOCABULARY_VERSION
+from reps_runner.protocol import execute_run
+from reps_runner.store import RunStore
 
 MANIFEST = {
     "name": "t",
@@ -33,12 +33,12 @@ MANIFEST = {
 
 FIXTURE = r"""#!/bin/sh
 read -r params
-adb-emit status --detail "got $params"
+reps-emit status --detail "got $params"
 echo '{"type":"status","phase":"experiment-stage"}'
-adb-emit result --name m --value 42
-adb-emit result --name undeclared --value 1
-adb-emit custom --kind govsim.discussion --data '{"speaker":"a","text":"hi"}'
-adb-emit llm-call --agent a --model mock/x <<'EOF'
+reps-emit result --name m --value 42
+reps-emit result --name undeclared --value 1
+reps-emit custom --kind govsim.discussion --data '{"speaker":"a","text":"hi"}'
+reps-emit llm-call --agent a --model mock/x <<'EOF'
 {"input":[{"role":"user","content":"q"}],"output":{"choices":[{"message":{"role":"assistant","content":"r"}}],"usage":{"input_tokens":3,"output_tokens":5}}}
 EOF
 echo '{"type":"run.end","fake":"reserved"}'
@@ -54,11 +54,11 @@ exit 0
 def run_fixture(tmp_path, script=FIXTURE, params=None, manifest=None, on_event=None,
                 credential_env=None, fetch_ref=None, tree_hash=None):
     prog = tmp_path / "exp.sh"
-    # Mirror runtimeInputs: adb-emit is a PATH executable, not a shell function.
+    # Mirror runtimeInputs: reps-emit is a PATH executable, not a shell function.
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(exist_ok=True)
-    cli = bin_dir / "adb-emit"
-    cli.write_text(f'#!/bin/sh\nexec {shlex.quote(sys.executable)} -m adb_events.cli "$@"\n')
+    cli = bin_dir / "reps-emit"
+    cli.write_text(f'#!/bin/sh\nexec {shlex.quote(sys.executable)} -m reps_events.cli "$@"\n')
     cli.chmod(cli.stat().st_mode | stat.S_IEXEC)
     prog.write_text(script)
     prog.chmod(prog.stat().st_mode | stat.S_IEXEC)
@@ -136,7 +136,7 @@ def test_protocol_end_to_end(tmp_path):
     assert '{"type":"run.end","fake":"reserved"}' in stdout_lines
     assert '{"no_type":"opaque blob"}' in stdout_lines
     assert "[1, 2, 3]" in stdout_lines and "not json at all" in stdout_lines
-    from adb_events import read_events
+    from reps_events import read_events
 
     records = list(read_events(store.dir))
     assert [record.model_dump(mode="json", exclude_none=True) for record in records] == envelopes
@@ -185,10 +185,10 @@ def test_no_declarations_preserves_results_and_warns(tmp_path, results):
 
 def test_duplicate_and_undeclared_results_warn_without_folding_events(tmp_path):
     script = '''#!/bin/sh
-adb-emit result --name m --value 1
-adb-emit result --name m --value 2
-adb-emit result --name llm_calls --value 99
-adb-emit llm-call --model mock/model <<'EOF'
+reps-emit result --name m --value 1
+reps-emit result --name m --value 2
+reps-emit result --name llm_calls --value 99
+reps-emit llm-call --model mock/model <<'EOF'
 {"input":[],"output":{}}
 EOF
 '''
@@ -216,7 +216,7 @@ def test_declarations_are_snapshotted_and_do_not_validate_values(tmp_path):
             manifest["results"][0]["details"] = "Changed calculation explanation"
             manifest["results"].append({"name": "added", "type": {"kind": "bool"}})
 
-    script = "#!/bin/sh\nadb-emit result --name m --value unavailable\n"
+    script = "#!/bin/sh\nreps-emit result --name m --value unavailable\n"
     result, envelopes, store = run_fixture(
         tmp_path,
         script=script,
@@ -233,10 +233,10 @@ def test_declarations_are_snapshotted_and_do_not_validate_values(tmp_path):
 
 
 def test_provenance_is_saved_before_the_child_starts(tmp_path, monkeypatch):
-    from adb_events import RunStart, read_events
+    from reps_events import RunStart, read_events
 
-    monkeypatch.setenv("ADB_RUNNER_BIN", "/nix/store/fixture-runner/bin/adb-runner")
-    monkeypatch.setenv("ADB_NIX_SYSTEM", "x86_64-linux")
+    monkeypatch.setenv("REPS_RUNNER_BIN", "/nix/store/fixture-runner/bin/reps-runner")
+    monkeypatch.setenv("REPS_NIX_SYSTEM", "x86_64-linux")
     monkeypatch.setenv("UNRELATED_SECRET", "must-not-be-recorded")
     starts = []
 
@@ -259,7 +259,7 @@ def test_provenance_is_saved_before_the_child_starts(tmp_path, monkeypatch):
     start = next(read_events(store.dir)).event
     assert isinstance(start, RunStart)
     assert start.runtime.experiment_bin is None
-    assert start.runtime.runner_bin == "/nix/store/fixture-runner/bin/adb-runner"
+    assert start.runtime.runner_bin == "/nix/store/fixture-runner/bin/reps-runner"
     assert start.runtime.runner_python_version
     assert start.runtime.cpu_model
     assert start.runtime.cpu_count == (os.process_cpu_count() or 1)
@@ -271,7 +271,7 @@ def test_dev_launch_does_not_publish_home_paths(tmp_path, monkeypatch):
     directory = tmp_path / "home" / "developer"
     directory.mkdir(parents=True)
     monkeypatch.setattr(sys, "executable", "/home/developer/.venv/bin/python")
-    monkeypatch.setenv("ADB_RUNNER_BIN", "/home/developer/.venv/bin/adb-runner")
+    monkeypatch.setenv("REPS_RUNNER_BIN", "/home/developer/.venv/bin/reps-runner")
     _, envelopes, store = run_fixture(directory, script="#!/bin/sh\n")
     start = envelopes[0]["event"]
     assert "/home" not in json.dumps(start)
@@ -302,7 +302,7 @@ def test_tree_hash_is_independent_of_a_clean_fetch_reference(tmp_path, fetch_ref
     ("local-proxy", "openai-api/local-proxy/model", "LOCAL_PROXY_BASE_URL"),
 ])
 def test_runtime_records_only_endpoint_origins(tmp_path, monkeypatch, url, origin, provider, model, variable):
-    from adb_runner import protocol
+    from reps_runner import protocol
 
     manifest = {"v": VOCABULARY_VERSION, "name": "t", "params": {"model": {"type": {"kind": "llm"}}}}
     # Observe the real spawn: sanitizing capture must not change the child's URL.
@@ -335,7 +335,7 @@ def test_experiment_receives_params_and_env(tmp_path):
     # which is also the capture path a no-adapter wrapped tool exercises
     script = r"""#!/bin/sh
 read -r p
-echo "params=$p seed=$ADB_SEED run=$ADB_RUN_ID"
+echo "params=$p seed=$REPS_SEED run=$REPS_RUN_ID"
 """
     _, envelopes, _ = run_fixture(tmp_path, script=script, params={"x": 9})
     payloads = [e["event"] for e in envelopes]
@@ -379,7 +379,7 @@ def test_non_utf8_stdio_does_not_drop_subsequent_output(tmp_path, stream, fd):
 
 @pytest.mark.parametrize("stream, fd", [("stdout", 1), ("stderr", 2)])
 def test_output_reader_failure_is_reported(tmp_path, monkeypatch, stream, fd):
-    from adb_runner import protocol
+    from reps_runner import protocol
 
     def fail_capture(**kwargs):
         raise RuntimeError("capture failure fixture")
@@ -422,7 +422,7 @@ def test_orphaned_pipe_holders_do_not_hang_the_run(tmp_path):
 def test_child_env_is_constructed_not_inherited(monkeypatch):
     # the store is the ONLY way provider credentials reach a run: an ambient key or
     # base-url exported in the shell neither leaks in nor shadows the stored value
-    from adb_runner.protocol import child_env
+    from reps_runner.protocol import child_env
 
     monkeypatch.setenv("OPENAI_API_KEY", "sk-ambient")
     monkeypatch.setenv("OPENAI_BASE_URL", "http://ambient/v1")
@@ -433,7 +433,7 @@ def test_child_env_is_constructed_not_inherited(monkeypatch):
     assert "OPENAI_BASE_URL" not in env
     assert "AWS_SECRET_ACCESS_KEY" not in env
     assert env["DOCKER_HOST"] == "unix:///run/user/1000/docker.sock"  # allowlisted
-    assert env["ADB_RUN_ID"] == "rid" and env["ADB_SEED"] == "7"
+    assert env["REPS_RUN_ID"] == "rid" and env["REPS_SEED"] == "7"
     stored = {"AWS_ACCESS_KEY_ID": "stored-access", "AWS_SECRET_ACCESS_KEY": "stored-secret"}
     env = child_env("rid", "/run/dir", 7, stored)
     assert {key: env[key] for key in stored} == stored
@@ -450,11 +450,11 @@ def test_child_locale_is_pinned_regardless_of_parent(tmp_path, monkeypatch, loca
 
 
 def test_saved_run_deserializes_with_public_models(tmp_path):
-    from adb_events import CustomEvent, Result, RunEnd, RunStart, read_events
+    from reps_events import CustomEvent, Result, RunEnd, RunStart, read_events
 
     script = """#!/bin/sh
-adb-emit custom --kind t.observation --data '{"resource":42}'
-adb-emit result --name m --value 1
+reps-emit custom --kind t.observation --data '{"resource":42}'
+reps-emit result --name m --value 1
 """
     result, envelopes, store = run_fixture(tmp_path, script=script)
     records = list(read_events(store.dir))
@@ -468,10 +468,10 @@ adb-emit result --name m --value 1
 
 
 def test_invalid_metrics_and_usage_do_not_break_run_or_poison_totals(tmp_path):
-    from adb_events import read_events
+    from reps_events import read_events
 
     script = """#!/bin/sh
-adb-emit result --name m --value 42
+reps-emit result --name m --value 42
 echo '{"type":"result","name":"m","value":{"bad":1}}'
 echo '{"type":"llm.call","agent":"a","model":"x","usage":{"input_tokens":"bad"}}'
 """
@@ -483,12 +483,12 @@ echo '{"type":"llm.call","agent":"a","model":"x","usage":{"input_tokens":"bad"}}
 
 def test_concurrent_processes_record_large_events_and_cleanup_socket(tmp_path):
     from pathlib import Path
-    from adb_events import CustomEvent, read_events
+    from reps_events import CustomEvent, read_events
 
-    child_code = "from adb_events import CustomEvent,emit; import sys; i=int(sys.argv[1]); emit(CustomEvent(kind='parallel',data={'id':i,'text':str(i)*200000}))"
+    child_code = "from reps_events import CustomEvent,emit; import sys; i=int(sys.argv[1]); emit(CustomEvent(kind='parallel',data={'id':i,'text':str(i)*200000}))"
     script = f"""#!{sys.executable}
 import os, subprocess, sys
-print(os.environ["ADB_EVENT_SOCKET"], flush=True)
+print(os.environ["REPS_EVENT_SOCKET"], flush=True)
 children = [subprocess.Popen([sys.executable, "-c", {child_code!r}, str(i)]) for i in range(8)]
 assert all(child.wait() == 0 for child in children)
 """
@@ -506,17 +506,17 @@ assert all(child.wait() == 0 for child in children)
 
 
 def test_credential_env_reaches_child_without_entering_store(tmp_path):
-    from adb_events.secrets import assert_run_has_no_secrets
-    from adb_providers import PROVIDERS
+    from reps_events.secrets import assert_run_has_no_secrets
+    from reps_providers import PROVIDERS
 
     credentials = {
         provider.api_key.name: f"sk-{name}-" + "a" * 40
         for name, provider in PROVIDERS.items()
-    } | {"ADB_TEST_SECRET": "fixture-secret-" + "b" * 40}
+    } | {"REPS_TEST_SECRET": "fixture-secret-" + "b" * 40}
     # The child proves receipt without echoing the values into stdout or events.
     script = f"""#!{sys.executable}
 import os
-from adb_events import Status, emit
+from reps_events import Status, emit
 assert all(os.environ.get(key) == value for key, value in {credentials!r}.items())
 emit(Status(detail="credentials received"))
 """

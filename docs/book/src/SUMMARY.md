@@ -2,7 +2,7 @@
 
 # Start
 
-- [What is ADB?](introduction.md)
+- [What is REPS?](introduction.md)
 - [Run your first local experiment](running/getting-started.md)
 - [Roadmap](start/roadmap.md)
 

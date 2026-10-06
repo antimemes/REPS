@@ -6,19 +6,19 @@
 # family re-versions together. Regeneration prints upstream comparability-version
 # changes for review; it does not store advisories or pool runs.
 [project]
-name = "adb-experiment-inspect-evals"
+name = "reps-experiment-inspect-evals"
 version = "0.1.0"
-description = "Inspect eval tasks (inspect_evals catalog + the bundled keyless hello) as ADB experiments"
+description = "Inspect eval tasks (inspect_evals catalog + the bundled keyless hello) as REPS experiments"
 requires-python = ">=3.13"
 dependencies = [
-    "adb-inspect",
+    "reps-inspect",
     # bounded so a relock is a deliberate line-edit, not silent drift of the task
     # catalog; the resolved version is recorded per run as a provenance covariate
     "inspect-evals~=0.15.0",
 ]
 
 [tool.uv.sources]
-adb-inspect = { path = "../../lib/adb-inspect" }
+reps-inspect = { path = "../../lib/reps-inspect" }
 
 [dependency-groups]
 dev = ["pytest>=8"]

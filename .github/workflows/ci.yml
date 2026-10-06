@@ -71,4 +71,4 @@ jobs:
         run: |
           roots="$RUNNER_TEMP/gcroots"; mkdir -p "$roots"
           nix-instantiate shell.nix --add-root "$roots/shell" >/dev/null
-          nix-instantiate -A manifests -A exec.inspect-hello --add-root "$roots/adb" >/dev/null
+          nix-instantiate -A manifests -A exec.inspect-hello --add-root "$roots/reps" >/dev/null

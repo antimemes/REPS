@@ -1,0 +1,6 @@
+{
+  "typeCheckingMode": "strict",
+  "enableTypeIgnoreComments": false,
+  "reportUnnecessaryTypeIgnoreComment": "warning",
+  "include": ["reps_providers"]
+}

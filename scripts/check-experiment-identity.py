@@ -44,7 +44,7 @@ for lock in sorted((REPO / "experiments").glob("*/uv.lock")):
     print(f"{lock.relative_to(REPO)}: requires-dev format tripwire passed", flush=True)
 
 
-with tempfile.TemporaryDirectory(prefix="adb-identity-") as directory:
+with tempfile.TemporaryDirectory(prefix="reps-identity-") as directory:
     root = Path(directory)
     checkout = root / "checkout"
     checkout.mkdir()
@@ -58,12 +58,12 @@ let
   root = builtins.toPath repo;
   pkgs = (import (root + "/default.nix") {}).pkgs;
   sources = import (root + "/pkgs/locked-sources.nix") {};
-  adb = import (root + "/pkgs/top-level") {
+  reps = import (root + "/pkgs/top-level") {
     inherit pkgs;
     inherit (sources) pyproject-nix uv2nix pyproject-build-systems;
   };
 in builtins.mapAttrs (_: exp: exp.source) {
-  inherit (adb.experiments) govsim concordia inspect-hello impossiblebench-swebench;
+  inherit (reps.experiments) govsim concordia inspect-hello impossiblebench-swebench;
 }
 ''')
 
@@ -87,16 +87,16 @@ in builtins.mapAttrs (_: exp: exp.source) {
 
     before = hashes()
     probe("experiments/govsim/govsim_adapter/main.py", {"govsim"})
-    probe("lib/adb-events/adb_events/emit.py", set(before))
-    probe("lib/adb-inspect/adb_inspect/translate.py", {"inspect-hello", "impossiblebench-swebench"})
-    probe("lib/adb-events/tests/test_emit.py", set())
+    probe("lib/reps-events/reps_events/emit.py", set(before))
+    probe("lib/reps-inspect/reps_inspect/translate.py", {"inspect-hello", "impossiblebench-swebench"})
+    probe("lib/reps-events/tests/test_emit.py", set())
     probe("experiments/govsim/README.md", set())
     # Cover both explicit lock paths and locks inside a declared directory.
     for family, experiment in (("govsim", "govsim"), ("impossiblebench", "impossiblebench-swebench")):
         relative = f"experiments/{family}/uv.lock"
         project = tomllib.loads((checkout / "experiments" / family / "pyproject.toml").read_text())["project"]["name"]
         probe(relative, set(), label="dependency requires-dev entry",
-              transform=lambda text: add_dev_entry(text, "adb-events"))
+              transform=lambda text: add_dev_entry(text, "reps-events"))
         probe(relative, set(), label=f"own requires-dev entry ({project})",
               transform=lambda text: add_dev_entry(text, project))
         for label, pattern, replacement in [
@@ -117,7 +117,7 @@ in builtins.mapAttrs (_: exp: exp.source) {
                   transform=lambda text: replace_once(text, pattern, replacement))
         probe(relative, {experiment}, label="outside comment", transform=lambda text: "# Identity probe\n" + text)
         probe(relative, {experiment}, label="outside blank line", transform=lambda text: "\n" + text)
-    cache = checkout / "lib/adb-events/adb_events/__pycache__"
+    cache = checkout / "lib/reps-events/reps_events/__pycache__"
     cache.mkdir()
     (cache / "ignored.pyc").write_bytes(b"development artifact")
     assert hashes() == before, "Development artifacts changed source identity"

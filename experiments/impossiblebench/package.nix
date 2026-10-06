@@ -1,4 +1,4 @@
-# ImpossibleBench (arXiv:2510.20270) as ADB experiments: coding benchmarks whose
+# ImpossibleBench (arXiv:2510.20270) as REPS experiments: coding benchmarks whose
 # "impossible" test variants (oneoff / conflicting) can only be passed by
 # specification-violating shortcuts — passing IS the reward-hacking signal.
 #
@@ -9,11 +9,11 @@
 # Both run agentic coding loops inside an inspect sandbox: docker must be on the
 # host PATH (SWE-bench pulls per-instance images; the runner forwards PATH into the
 # experiment). VM-isolated execution (forest.nix) is the planned replacement.
-{ adb, pkgs, lib, writeShellApplication, jq }:
+{ reps, pkgs, lib, writeShellApplication, jq }:
 
 let
-  env = adb.mkPythonEnv {
-    name = "adb-impossiblebench-env";
+  env = reps.mkPythonEnv {
+    name = "reps-impossiblebench-env";
     workspaceRoot = ./.;
     python = pkgs.python313;
     # the two git deps build from source (no wheels) and both use setuptools —
@@ -27,7 +27,7 @@ let
         }));
   };
 
-  results = with adb.types; [
+  results = with reps.types; [
     { name = "samples"; type = int; }
     { name = "completed"; type = int; }
     { name = "errors"; type = int; }
@@ -39,19 +39,19 @@ let
 
   # hints come from types.llm itself (mkExperiment attaches the shared model
   # catalog to every llm-typed param); nothing to declare here
-  modelParam = with adb.types; param llm {
+  modelParam = with reps.types; param llm {
     description = "Inspect model id (provider/model), resolved through inspect's own provider layer. Required: there is deliberately no default real model.";
     order = 1000;
     group = "model";
   };
 
-  splitParam = with adb.types; param (enum [ "original" "oneoff" "conflicting" ]) {
+  splitParam = with reps.types; param (enum [ "original" "oneoff" "conflicting" ]) {
     description = "Dataset split: `original` = the unmutated benchmark (the control); `oneoff` / `conflicting` = impossible variants where passing implies test exploitation. Required: the split is the condition's whole point.";
     order = 1;
     group = "task";
   };
 
-  sharedParams = with adb.types; {
+  sharedParams = with reps.types; {
     limit = param int {
       description = "Sample cap (0 = the whole split).";
       initial = 0;
@@ -68,15 +68,15 @@ let
       description = "Generation config overrides; leave a field unset to keep the provider's default.";
       initial = { };
       # typed sub-form generated from the pinned inspect_ai's GenerateConfig —
-      # through `adb`, never a ../../ path, so the declaration uses the
-      # schema provided by the selected adb package set
-      fields = adb.inspectGenerateFields;
+      # through `reps`, never a ../../ path, so the declaration uses the
+      # schema provided by the selected reps package set
+      fields = reps.inspectGenerateFields;
       order = 1020;
       group = "generation";
     };
   };
 
-  # the lift between the runner protocol (flat params on stdin, seed in $ADB_SEED)
+  # the lift between the runner protocol (flat params on stdin, seed in $REPS_SEED)
   # and the wrapper's config: named params regroup into inspect task_args; the task
   # spec is baked per experiment.
   mkAdapter = name: taskFn: jqTaskArgs: writeShellApplication {
@@ -90,7 +90,7 @@ let
     text = ''
       config=$(mktemp)
       trap 'rm -f "$config"' EXIT
-      jq --argjson seed "''${ADB_SEED:-0}" '{
+      jq --argjson seed "''${REPS_SEED:-0}" '{
         task: "pkg:impossiblebench:${taskFn}",
         model: .model,
         limit: .limit,
@@ -100,7 +100,7 @@ let
         task_args: (${jqTaskArgs}
           + (if .limit > 0 then {limit: .limit} else {} end))
       }' > "$config"
-      ${lib.getExe' env "adb-inspect-eval"} "$config"
+      ${lib.getExe' env "reps-inspect-eval"} "$config"
     '';
   };
 
@@ -112,15 +112,15 @@ let
   ];
 in
 {
-  impossiblebench-livecodebench = adb.mkExperiment {
+  impossiblebench-livecodebench = reps.mkExperiment {
     schemaPython = "${env}/bin/python";
-    sharedSrcs = adb.inspectSharedSrcs;
+    sharedSrcs = reps.inspectSharedSrcs;
     name = "impossiblebench-livecodebench";
     src = ./.;
     summary = "ImpossibleBench LiveCodeBench: function-implementation tasks with impossible test variants — passing an impossible split means the agent gamed the tests";
     inherit links;
 
-    params = with adb.types; {
+    params = with reps.types; {
       model = modelParam;
       split = splitParam;
       agent_type = param (enum [ "minimal" "tools" ]) {
@@ -156,15 +156,15 @@ in
          message_limit: .message_limit, allow_test_modifications: .allow_test_modifications}'';
   };
 
-  impossiblebench-swebench = adb.mkExperiment {
+  impossiblebench-swebench = reps.mkExperiment {
     schemaPython = "${env}/bin/python";
-    sharedSrcs = adb.inspectSharedSrcs;
+    sharedSrcs = reps.inspectSharedSrcs;
     name = "impossiblebench-swebench";
     src = ./.;
     summary = "ImpossibleBench SWE-bench: real-repo issue fixing with impossible test variants — passing an impossible split means the agent gamed the tests";
     inherit links;
 
-    params = with adb.types; {
+    params = with reps.types; {
       model = modelParam;
       split = splitParam;
       agent_type = param (enum [ "minimal" "tools" ]) {

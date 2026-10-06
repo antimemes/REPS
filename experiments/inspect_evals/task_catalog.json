@@ -11108,7 +11108,7 @@
      },
      "description": "Path to a custom JSONL file, or default to the inbuilt dataset.",
      "order": 0,
-     "initial": "/workspace/agentdatabank/experiments/inspect_evals/.venv/lib/python3.13/site-packages/inspect_evals/persistbench/benchmark_samples/beneficial_samples.jsonl"
+     "initial": "/workspace/reps/experiments/inspect_evals/.venv/lib/python3.13/site-packages/inspect_evals/persistbench/benchmark_samples/beneficial_samples.jsonl"
     },
     "task_epochs": {
      "type": {
@@ -11154,7 +11154,7 @@
      },
      "description": "Path to a custom JSONL file, or default to the inbuilt dataset.",
      "order": 0,
-     "initial": "/workspace/agentdatabank/experiments/inspect_evals/.venv/lib/python3.13/site-packages/inspect_evals/persistbench/benchmark_samples/cross_domain.jsonl"
+     "initial": "/workspace/reps/experiments/inspect_evals/.venv/lib/python3.13/site-packages/inspect_evals/persistbench/benchmark_samples/cross_domain.jsonl"
     },
     "task_epochs": {
      "type": {
@@ -11200,7 +11200,7 @@
      },
      "description": "Path to a custom JSONL file, or default to the inbuilt dataset.",
      "order": 0,
-     "initial": "/workspace/agentdatabank/experiments/inspect_evals/.venv/lib/python3.13/site-packages/inspect_evals/persistbench/benchmark_samples/sycophancy.jsonl"
+     "initial": "/workspace/reps/experiments/inspect_evals/.venv/lib/python3.13/site-packages/inspect_evals/persistbench/benchmark_samples/sycophancy.jsonl"
     },
     "task_epochs": {
      "type": {

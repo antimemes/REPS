@@ -36,10 +36,10 @@ nix run .#inspect-hello -- \
 
 The generated launcher builds the pinned program and starts the runner with its manifest and source identity. Expect two completed samples, zero errors and score `1.0`. Each invocation creates one run. Ctrl-C interrupts execution while retaining the partial record.
 
-The terminal prints the run ID and **store** path. The default data directory is `~/.local/share/adb`, or `$XDG_DATA_HOME/adb` when set. `ADB_DATA_DIR` or `--data-dir DIR` selects another directory; see [run storage](../reference/local.md#choose-where-results-are-saved).
+The terminal prints the run ID and **store** path. The default data directory is `~/.local/share/reps`, or `$XDG_DATA_HOME/reps` when set. `REPS_DATA_DIR` or `--data-dir DIR` selects another directory; see [run storage](../reference/local.md#choose-where-results-are-saved).
 
 ## Inspect the result
 
 Open `run.json` in the printed run directory for inputs, provenance, state and derived results. `events.jsonl` contains the event envelopes, including each result and the final `run.end`. Follow the [terminal reading example](../reference/local.md#how-do-i-read-the-files-without-a-browser), or add `--json` to the experiment command to stream the events to standard output while they are saved.
 
-A completed process does not establish that every evaluation item succeeded; check the recorded results and errors too. Before collecting real-model results, [audit the first run](model.md#how-do-i-audit-the-first-real-run) with `adb-runner verify`.
+A completed process does not establish that every evaluation item succeeded; check the recorded results and errors too. Before collecting real-model results, [audit the first run](model.md#how-do-i-audit-the-first-real-run) with `reps-runner verify`.

@@ -1,0 +1,64 @@
+/* Command settings gear menu — see theme/reps-commands.js.
+   NOTE mdbook sets html { font-size: 62.5% }, so 1rem = 10px here; body text is
+   1.6rem. Components set their font-size in rem accordingly and space in em. */
+
+.reps-gear { font-size: 1.8rem; line-height: 1; }
+
+.reps-popup {
+  position: fixed;
+  top: 3.1rem;
+  left: 0.6rem;
+  z-index: 200;
+  width: min(38rem, 92vw);
+  padding: 0.75em 0.95em 0.85em;
+  border: 1px solid var(--quote-border, #cfcfcf);
+  border-radius: 8px;
+  background: var(--bg, #fff);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22);
+  font-size: 1.4rem;
+}
+
+.reps-pop-title { font-weight: 600; margin-bottom: 0.5em; }
+
+.reps-menu-preview {
+  display: block;
+  margin: 0 0 0.6em;
+  padding: 0.35em 0.5em;
+  border-radius: 5px;
+  background: var(--quote-bg, rgba(120, 120, 120, 0.08));
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.reps-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45em 0.9em;
+  margin: 0.5em 0;
+}
+.reps-row.reps-sub { margin-left: 1.4em; opacity: 0.95; }
+.reps-row-label { font-weight: 600; opacity: 0.85; }
+
+.reps-seg {
+  display: inline-flex;
+  border: 1px solid var(--quote-border, #cfcfcf);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.reps-seg input { display: none; }
+.reps-seg label { padding: 0.2em 0.65em; cursor: pointer; user-select: none; }
+.reps-seg input:checked + label { background: var(--links, #4183c4); color: #fff; }
+
+.reps-check { cursor: pointer; user-select: none; white-space: nowrap; }
+.reps-check input { margin-right: 0.2em; vertical-align: middle; }
+
+.reps-pop-note { margin: 0.55em 0 0; font-size: 0.88em; opacity: 0.7; }
+
+/* Palette-conditional prose (writing/): variants shown per the With tab.
+   Default (no JS) is the plain/flakeless variant, matching the palette's
+   nix-build default; reps-commands.js stamps html.reps-flakes on the flakes tab. */
+.reps-when-flakes { display: none; }
+html.reps-flakes .reps-when-flakes { display: block; }
+html.reps-flakes .reps-when-flakeless { display: none; }

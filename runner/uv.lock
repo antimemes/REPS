@@ -3,108 +3,6 @@ revision = 3
 requires-python = ">=3.13"
 
 [[package]]
-name = "adb-events"
-version = "0.1.0"
-source = { editable = "../lib/adb-events" }
-dependencies = [
-    { name = "pydantic" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "pydantic", specifier = ">=2.12,<3" }]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "adb-testing", editable = "../lib/adb-testing" },
-    { name = "duckdb", specifier = ">=1.4,<2" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-xdist" },
-]
-
-[[package]]
-name = "adb-providers"
-version = "0.1.0"
-source = { directory = "../lib/adb-providers" }
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-xdist" },
-]
-
-[[package]]
-name = "adb-runner"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "adb-events" },
-    { name = "adb-providers" },
-    { name = "rfc8785" },
-]
-
-[package.optional-dependencies]
-publish = [
-    { name = "boto3" },
-    { name = "pyyaml" },
-    { name = "zstandard" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "adb-runner", extra = ["publish"] },
-    { name = "adb-testing" },
-    { name = "boto3-stubs-lite" },
-    { name = "moto", extra = ["s3"] },
-    { name = "mypy-boto3-s3" },
-    { name = "pytest" },
-    { name = "pytest-xdist" },
-    { name = "types-pyyaml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "adb-events", editable = "../lib/adb-events" },
-    { name = "adb-providers", directory = "../lib/adb-providers" },
-    { name = "boto3", marker = "extra == 'publish'", specifier = ">=1.43.97" },
-    { name = "pyyaml", marker = "extra == 'publish'", specifier = ">=6" },
-    { name = "rfc8785", specifier = ">=0.1.4" },
-    { name = "zstandard", marker = "extra == 'publish'", specifier = ">=0.25.0" },
-]
-provides-extras = ["publish"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "adb-runner", extras = ["publish"] },
-    { name = "adb-testing", editable = "../lib/adb-testing" },
-    { name = "boto3-stubs-lite", specifier = ">=1.43.97" },
-    { name = "moto", extras = ["s3"], specifier = ">=5.2.3" },
-    { name = "mypy-boto3-s3", specifier = ">=1.43.93" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-xdist" },
-    { name = "types-pyyaml", specifier = ">=6" },
-]
-
-[[package]]
-name = "adb-testing"
-version = "0.1.0"
-source = { editable = "../lib/adb-testing" }
-dependencies = [
-    { name = "adb-events" },
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "adb-events", editable = "../lib/adb-events" },
-    { name = "pytest", specifier = ">=8" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest-xdist" }]
-
-[[package]]
 name = "annotated-types"
 version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -732,6 +630,108 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f0/7a/1c7270340330e575b92f397352af856a8c06f230aa3e76f86b39d01b416a/pyyaml-6.0.3-cp314-cp314t-win_amd64.whl", hash = "sha256:4ad1906908f2f5ae4e5a8ddfce73c320c2a1429ec52eafd27138b7f1cbe341c9", size = 174062, upload-time = "2025-09-25T21:32:55.767Z" },
     { url = "https://files.pythonhosted.org/packages/f1/12/de94a39c2ef588c7e6455cfbe7343d3b2dc9d6b6b2f40c4c6565744c873d/pyyaml-6.0.3-cp314-cp314t-win_arm64.whl", hash = "sha256:ebc55a14a21cb14062aa4162f906cd962b28e2e9ea38f9b4391244cd8de4ae0b", size = 149341, upload-time = "2025-09-25T21:32:56.828Z" },
 ]
+
+[[package]]
+name = "reps-events"
+version = "0.1.0"
+source = { editable = "../lib/reps-events" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.12,<3" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "duckdb", specifier = ">=1.4,<2" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
+    { name = "reps-testing", editable = "../lib/reps-testing" },
+]
+
+[[package]]
+name = "reps-providers"
+version = "0.1.0"
+source = { directory = "../lib/reps-providers" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
+]
+
+[[package]]
+name = "reps-runner"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "reps-events" },
+    { name = "reps-providers" },
+    { name = "rfc8785" },
+]
+
+[package.optional-dependencies]
+publish = [
+    { name = "boto3" },
+    { name = "pyyaml" },
+    { name = "zstandard" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "boto3-stubs-lite" },
+    { name = "moto", extra = ["s3"] },
+    { name = "mypy-boto3-s3" },
+    { name = "pytest" },
+    { name = "pytest-xdist" },
+    { name = "reps-runner", extra = ["publish"] },
+    { name = "reps-testing" },
+    { name = "types-pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "boto3", marker = "extra == 'publish'", specifier = ">=1.43.97" },
+    { name = "pyyaml", marker = "extra == 'publish'", specifier = ">=6" },
+    { name = "reps-events", editable = "../lib/reps-events" },
+    { name = "reps-providers", directory = "../lib/reps-providers" },
+    { name = "rfc8785", specifier = ">=0.1.4" },
+    { name = "zstandard", marker = "extra == 'publish'", specifier = ">=0.25.0" },
+]
+provides-extras = ["publish"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "boto3-stubs-lite", specifier = ">=1.43.97" },
+    { name = "moto", extras = ["s3"], specifier = ">=5.2.3" },
+    { name = "mypy-boto3-s3", specifier = ">=1.43.93" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist" },
+    { name = "reps-runner", extras = ["publish"] },
+    { name = "reps-testing", editable = "../lib/reps-testing" },
+    { name = "types-pyyaml", specifier = ">=6" },
+]
+
+[[package]]
+name = "reps-testing"
+version = "0.1.0"
+source = { editable = "../lib/reps-testing" }
+dependencies = [
+    { name = "pytest" },
+    { name = "reps-events" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "reps-events", editable = "../lib/reps-events" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest-xdist" }]
 
 [[package]]
 name = "requests"

@@ -45,7 +45,7 @@ Each `events.jsonl.zst` is one level-19 zstd frame, preserving the original JSON
 
 Publication requires a terminal state, a pinned clean `fetch_ref`, and a passing `verify` audit, including model identity checks. Failures are reported per run without aborting other publications. An upload is refused if either destination run key exists. The stream is uploaded first, then the card; partial uploads are never overwritten. Publication errors do not change run state or exit code.
 
-Storage uses the caller's boto3 configuration: no endpoint, region or client configuration overrides, host presets, remote registry or target environment variable belong in ADB. Ambient AWS variables do not enter the experiment environment; explicitly supplied experiment credential sets are preserved.
+Storage uses the caller's boto3 configuration: no endpoint, region or client configuration overrides, host presets, remote registry or target environment variable belong in REPS. Ambient AWS variables do not enter the experiment environment; explicitly supplied experiment credential sets are preserved.
 
 ## 6. Deferred
 
@@ -53,7 +53,7 @@ Chunked objects for live runs are deferred because record identity is independen
 
 ## 7. Indexes
 
-Indexes are derived from complete card/stream pairs, rebuilt in full, never authoritative, and live outside experiment buckets. Original objects retain their bytes. A user-written YAML or JSON store list selects sources; ADB never infers public URLs from S3:
+Indexes are derived from complete card/stream pairs, rebuilt in full, never authoritative, and live outside experiment buckets. Original objects retain their bytes. A user-written YAML or JSON store list selects sources; REPS never infers public URLs from S3:
 
 ```yaml
 v: 0

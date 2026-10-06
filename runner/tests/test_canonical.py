@@ -3,7 +3,7 @@
 Changing it requires an explicit identity-format decision.
 """
 
-from adb_runner.canonical import abbrev, condition_id
+from reps_runner.canonical import abbrev, condition_id
 
 GOLDEN_PARAMS = {
     "players": {"~zip": {"model": ["mock/a", "mock/b", "mock/c", "mock/d"],
@@ -12,6 +12,8 @@ GOLDEN_PARAMS = {
     "max_message_tokens": 300,
     "max_days": 10,
 }
+# This source is fixed test data, not a live repository reference. Keep it and
+# GOLDEN_HASH unchanged across project or repository renames.
 GOLDEN_SOURCE = "github:antimemetics-institute/adb/0000000000000000000000000000000000000000"
 GOLDEN_HASH = "ae70d6ab71a10b0ff1b21fee0aa14d5bffbfe685"
 

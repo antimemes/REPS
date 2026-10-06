@@ -4,7 +4,7 @@ One class implementing Concordia's `LanguageModel` interface (`sample_text` /
 `sample_choice`) by delegating to Concordia's own ``BaseGPTModel``
 (concordia.contrib), which owns all prompt-shaping (the continuation system message
 + few-shot examples) and the multiple-choice retry loop. Underneath it sits
-:class:`adb_experiment.llm.ChatClient` — the ADB-instrumented OpenAI-compat client:
+:class:`reps_experiment.llm.ChatClient` — the REPS-instrumented OpenAI-compat client:
 provider routing from the model id's prefix, one ``llm.call`` event per call with
 usage and latency, reasoning-tag stripping, and the keyless ``mock/`` backend.
 
@@ -26,8 +26,8 @@ from concordia.contrib.language_models.openai.base_gpt_model import BaseGPTModel
 from concordia.language_model import language_model
 from concordia.prefabs.simulation import generic as generic_simulation
 
-from adb_events import Log, emit
-from adb_experiment.llm import ChatClient, deterministic_pick
+from reps_events import Log, emit
+from reps_experiment.llm import ChatClient, deterministic_pick
 
 # a small bank of neutral, conversation-shaped replies for the mock backend; picking
 # by hash keeps the mock deterministic while varying enough that Concordia's
@@ -60,8 +60,8 @@ def _wants_action_spec(prompt: str) -> bool:
     return "action spec" in low or "output_type" in low
 
 
-class AdbLanguageModel(language_model.LanguageModel):
-    """A Concordia LanguageModel that emits ADB llm.call events on every call.
+class RepsLanguageModel(language_model.LanguageModel):
+    """A Concordia LanguageModel that emits REPS llm.call events on every call.
 
     One instance per calling entity: `model` overrides the run's default model id
     (the per-agent `model` field in the roster), and `agent` names the entity in
@@ -150,18 +150,18 @@ class PerEntitySimulation(generic_simulation.Simulation):
     """Upstream's Simulation is multi-model at three grains — default,
     `override_agent_model` (all entities), `override_game_master_model` — but
     `add_entity` builds every entity with the one shared `_agent_model`. We need
-    per-entity grain for two ADB reasons upstream doesn't have: llm.call attribution
+    per-entity grain for two REPS reasons upstream doesn't have: llm.call attribution
     requires one client per entity (Concordia gives the model no calling-entity
     context), and the roster's per-agent model override is a treatment axis riding
     the same seam. add_entity is the narrowest seam: swap the model in for the one
     entity being built, restore it after, delegate everything else.
 
-    `clients` maps entity name -> AdbLanguageModel; names not in the map build with
+    `clients` maps entity name -> RepsLanguageModel; names not in the map build with
     the shared model as upstream would.
     """
 
     def __init__(self, *, config, model, embedder,
-                 clients: dict[str, AdbLanguageModel]) -> None:
+                 clients: dict[str, RepsLanguageModel]) -> None:
         self._clients = dict(clients)  # before super().__init__ — it builds entities
         super().__init__(config=config, model=model, embedder=embedder)
 

@@ -2,7 +2,7 @@
 
 import pytest
 
-from adb_runner.shorthand import ShorthandError, parse_value
+from reps_runner.shorthand import ShorthandError, parse_value
 
 
 def test_json_and_bare_values():

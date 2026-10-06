@@ -1,11 +1,11 @@
-{ experiment, adb }: {
-  pytest = adb.testers.pytest {
+{ experiment, reps }: {
+  pytest = reps.testers.pytest {
     inherit experiment;
     tests = ./.;
     env = { HF_HUB_OFFLINE = "1"; TRANSFORMERS_OFFLINE = "1"; };
     preCheck = "unset SSL_CERT_FILE"; # httpx initializes TLS even in offline tests
   };
-  smoke = adb.testers.smoke {
+  smoke = reps.testers.smoke {
     inherit experiment;
     params = {
       experiment = "fish_baseline_concurrent";

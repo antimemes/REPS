@@ -1,0 +1,8 @@
+{
+  "typeCheckingMode": "strict",
+  "enableTypeIgnoreComments": false,
+  "reportUnnecessaryTypeIgnoreComment": "warning",
+  "venvPath": ".",
+  "venv": ".venv",
+  "include": ["reps_experiment"]
+}
