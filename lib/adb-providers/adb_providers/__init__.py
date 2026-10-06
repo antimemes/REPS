@@ -89,10 +89,36 @@ def requested_model_name(model_id: str) -> str:
     return model_id.partition("/")[2] if "/" in model_id else model_id
 
 
+_SNAPSHOT_SUFFIX = re.compile(
+    r"^(?P<stem>.+?)(?:-(?:[0-9]{4}-[0-9]{2}(?:-[0-9]{2})?|[0-9]{8}|latest)|@[0-9]{8})$",
+    re.IGNORECASE,
+)
+_MISTRAL_SUFFIX = re.compile(r"^(?P<stem>.+?)-[0-9]{4}$")
+
+
+def snapshot_stem(provider: str | None, name: str) -> str:
+    """Remove at most one trailing snapshot qualifier, preserving name casing.
+
+    All providers allow -YYYY-MM-DD, -YYYYMMDD, @YYYYMMDD, -YYYY-MM,
+    and -latest. Only mistral allows the ambiguous four-digit -YYMM form.
+    Names here have already had their routing prefixes removed.
+    """
+    if match := _SNAPSHOT_SUFFIX.fullmatch(name):
+        return match["stem"]
+    if provider is not None and provider.casefold() == "mistral":
+        if match := _MISTRAL_SUFFIX.fullmatch(name):
+            return match["stem"]
+    return name
+
+
 def served_model_matches(requested: str, served: str) -> bool:
-    """Allow case differences and a snapshot suffix when resolving an alias."""
+    """Resolve aliases by stem; require the exact snapshot for dated requests."""
     name = requested_model_name(requested)
-    return bool(name) and served.casefold().startswith(name.casefold())
+    provider = requested.partition("/")[0] if "/" in requested else None
+    stem = snapshot_stem(provider, name)
+    if stem != name and not name.casefold().endswith("-latest"):
+        return name.casefold() == served.casefold()
+    return bool(name) and stem.casefold() == snapshot_stem(provider, served).casefold()
 
 
 def model_family(served_model: str) -> str | None:

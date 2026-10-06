@@ -424,7 +424,7 @@ def _reply(text):
             "id": "test",
             "object": "chat.completion",
             "created": 0,
-            "model": "model-test-snapshot",
+            "model": "model",
             "choices": [
                 {
                     "index": 0,

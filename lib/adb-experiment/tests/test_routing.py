@@ -28,33 +28,81 @@ def test_azure_resolution_requires_both_credentials():
 @pytest.mark.parametrize("requested,served,matches", [
     ("azure/gpt-5-nano", "gpt-5-nano-2025-08-07", True),
     ("azure/DeepSeek-V4-Pro", "deepSEEK-v4-PRO-2026-09", True),
+    ("openai/gpt-4o", "gpt-4o-2024-11-20", True),
+    ("anthropic/claude-opus-4-5", "claude-opus-4-5-20251101", True),
+    ("google/gemini-model", "gemini-model@20251101", True),
+    ("mistral/mistral-small", "mistral-small-2603", True),
+    ("mistral/mistral-large", "mistral-large-latest", True),
+    ("openai/model", "MODEL-LATEST", True),
+    ("openai/gpt-4o-2024-11-20", "gpt-4o", False),
+    ("openai/gpt-4o-2024-11-20", "gpt-4o-2024-08-06", False),
+    ("openai/gpt-4o-2024-11-20", "GPT-4O-2024-11-20", True),
+    ("openai/gpt-4o-2024-11-20", "gpt-4o-latest", False),
+    ("anthropic/claude-opus-4-5-20251101", "claude-opus-4-5", False),
+    ("anthropic/claude-opus-4-5-20251101", "claude-opus-4-5-20251102", False),
+    ("google/gemini-model@20251101", "gemini-model", False),
+    ("google/gemini-model@20251101", "gemini-model@20251102", False),
+    ("azure/deepseek-v4-pro-2026-09", "deepseek-v4-pro", False),
+    ("azure/deepseek-v4-pro-2026-09", "deepseek-v4-pro-2026-08", False),
+    ("mistral/mistral-small-2603", "mistral-small", False),
+    ("mistral/mistral-small-2603", "mistral-small-2604", False),
+    ("mistral/mistral-small-2603", "MISTRAL-SMALL-2603", True),
+    ("mistral/mistral-small-latest", "mistral-small-2603", True),
+    ("anthropic/claude-fable-5", "claude-fable-5-1", False),
+    ("google/gemini-2.5-flash", "gemini-2.5-flash-lite", False),
+    ("openai/gpt-4o", "gpt-4o-2", False),
+    ("openai/gpt-4", "gpt-4o-2024-05-13", False),
+    ("openai/gpt-4", "gpt-4.1-mini-2025-04-14", False),
+    ("groq/groq/compound", "groq/compound-mini", False),
+    ("moonshotai/kimi-k2.7-code", "kimi-k2.7-code-highspeed", False),
+    ("hf/Qwen/Qwen2.5-7B", "Qwen/Qwen2.5-7B-Instruct", False),
+    ("hf/Qwen/Qwen2.5-7B", "Qwen/Qwen2.5-7B-Instruct-AWQ", False),
+    ("hf/Qwen/Qwen2.5-7B", "Qwen/Qwen2.5-7B", True),
+    ("openrouter/org/model", "org/model:batch", False),
+    ("openrouter/org/model", "org/model:free", False),
+    ("openai/mistral-small", "mistral-small-2603", False),
+    ("mistral-small", "mistral-small-2603", False),
+    ("openai/model", "model-2026-09-latest", False),
+    ("openai/model-2026-09", "model-2026-09-latest", False),
+    ("openai/model", "model@2026-09-03", False),
+    ("openai/model", "model-202609-03", False),
+    ("openai/model", "model-001", False),
     ("openai/gpt-5-nano", "gpt-5-mini", False),
-    ("openai-api/local/org/model", "org/model-snapshot", True),
+    ("openai-api/local/org/model", "org/model-snapshot", False),
+    ("openai-api/local/org/model", "org/model-2026-09-03", True),
     ("openrouter/org/model", "org/model", True),
     ("model", "model", True),
     ("azure/", "anything", False),
+    ("", "", False),
+    ("openai/model", "", False),
 ])
 def test_served_model_identity(requested, served, matches):
     assert served_model_matches(requested, served) is matches
 
 
-def test_first_success_records_mismatch_then_fails_without_harness_fallback(event_capture):
+@pytest.mark.parametrize("requested,served", [
+    ("alias", "wrong-model"),
+    ("gpt-4o-2024-11-20", "gpt-4o-2024-08-06"),
+    ("gpt-4o-2024-11-20", "gpt-4o"),
+])
+def test_first_success_records_mismatch_then_fails_without_harness_fallback(event_capture, requested, served):
     client, reply = client_and_reply()
-    reply.model = "wrong-model"
+    client.model_id = f"mock/{requested}"
+    reply.model = served
     client._request = lambda kw: reply
     original = reply.model_dump(mode="json")
-    with pytest.raises(ServedModelMismatch, match="mock/alias.*wrong-model"):
+    with pytest.raises(ServedModelMismatch, match=f"mock/{requested}.*{served}"):
         # A harness may recover ordinary API failures, but not a misrouted model.
         try:
-            client.chat.completions.create(model="alias", messages=[])
+            client.chat.completions.create(model=requested, messages=[])
         except Exception:
             pytest.fail("model mismatch was swallowed by a harness fallback")
     call, log = event_capture.read()
-    assert call["type"] == "llm.call" and call["output"]["model"] == "wrong-model"
+    assert call["type"] == "llm.call" and call["output"]["model"] == served
     assert call["call"]["response"] == original
     assert call.get("error") is None
     assert log["type"] == "log" and log["level"] == "error"
-    assert "mock/alias" in log["message"] and "wrong-model" in log["message"]
+    assert f"mock/{requested}" in log["message"] and served in log["message"]
 
 
 def sdk_client(monkeypatch, handler):

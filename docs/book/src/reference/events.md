@@ -211,6 +211,10 @@ missing, retaining all reported partial usage in `call.response`.
 `output.model` records the returned model; the SDK's requested model
 remains in `call.request` when available.
 
+The served name must equal the requested name ignoring case, except that an
+unqualified or `-latest` request also accepts the same name plus one date suffix
+(`-YYYY-MM-DD`, `-YYYYMMDD`, `@YYYYMMDD`, `-YYYY-MM`; `-YYMM` for `mistral/` only).
+
 A response with an empty model ID and a nonempty set of entirely content-filtered
 choices is exempt from the identity check. Verification warns once per run that
 model identity could not be checked on content-filtered calls. The client keeps

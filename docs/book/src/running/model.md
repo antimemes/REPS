@@ -65,8 +65,8 @@ fails verification rather than falling back to untyped custom records.
 Verification also checks every `llm.call`'s served model against its requested
 name and each request seed when present against `run.start.seed`. It warns once
 per distinct model mismatch and exits non-zero on either kind of mismatch.
-Comparison ignores case and allows snapshot suffixes: `gpt-5-nano-2025-08-07` matches
-`azure/gpt-5-nano`. The shared client checks its first successful response and
+Comparison uses the [snapshot stem rule](#what-does-a-matching-condition-tell-me).
+The shared client checks its first successful response and
 stops a misrouted run after recording the response and an error log. The audit
 reports how many calls stopped with `max_tokens` or `content_filter`, counting
 calls rather than completion choices; those counts are informational, so inspect
@@ -163,7 +163,11 @@ For a clean, public revision built with its default Nix inputs, that revision al
 
 The experiment name, declared source content and parameter values match. It does not establish equal model behavior or complete equivalence of the execution environment.
 
-The condition hash excludes seeds, credential profiles, endpoints, the shared runner, platform and fetch reference. An experiment author chooses the source paths included in identity. A model ID is included as an input string, but a provider can change what a moving model alias resolves to. A model-call event may record the provider-returned model ID separately when the adapter can obtain it.
+The condition hash excludes seeds, credential profiles, endpoints, the shared runner, platform and fetch reference. An experiment author chooses the source paths included in identity. A model ID is included as an input string, but a provider can change what a moving model alias resolves to.
+
+The served name must equal the requested name ignoring case, except that an
+unqualified or `-latest` request also accepts the same name plus one date suffix
+(`-YYYY-MM-DD`, `-YYYYMMDD`, `@YYYYMMDD`, `-YYYY-MM`; `-YYMM` for `mistral/` only).
 
 Source identity includes the experiment's declared files plus the source directories
 of the shared Python packages it uses. `mkExperiment` includes `adb_events` and
