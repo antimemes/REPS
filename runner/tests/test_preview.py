@@ -10,6 +10,7 @@ from importlib import resources
 
 import pytest
 
+from reps_events import VOCABULARY_VERSION
 from reps_runner import cli, preview
 
 RUN_A = "20260916t120000z-0123456789ab"   # older, completed
@@ -106,6 +107,28 @@ def test_events_from_a_sequence_number_and_204_when_nothing_is_new(server):
     assert status == 204 and body == b""
     status, _, _ = get(server, f"/api/runs/{COND_A}/{RUN_A}/events?from=-1")
     assert status == 400
+
+
+def test_events_are_migrated_to_the_current_vocabulary_on_read(server):
+    run = "20260915t000000z-cccccccccccc"
+    run_dir = server.home / "runs" / COND_A / run
+    run_dir.mkdir()
+    v0_call = {"v": 0, "ts": "2026-09-15T00:00:00Z", "run": run, "experiment": "fixture", "schema": 0, "seq": 0,
+               "event": {"type": "llm.call", "model": "mock/model", "agent": "a", "input": [],
+                         "output": {"model": "model", "choices": []}}}
+    current = json.loads(_line(run, 1, {"type": "status", "detail": "now"}))
+    future = {**current, "v": VOCABULARY_VERSION + 1, "seq": 2}
+    written = "".join(json.dumps(r) + "\n" for r in (v0_call, current, future))
+    (run_dir / "events.jsonl").write_text(written)
+    status, _, body = get(server, f"/api/runs/{COND_A}/{run}/events?from=0")
+    assert status == 200
+    served = [json.loads(line) for line in body.decode().splitlines()]
+    assert [r["seq"] for r in served] == [0, 1, 2]
+    assert served[0]["v"] == VOCABULARY_VERSION                       # the v0 step ran…
+    assert served[0]["event"]["error"].startswith("Empty choices")   # …and flagged the empty reply
+    assert served[1] == {**current, "v": VOCABULARY_VERSION}          # current records pass through
+    assert served[2] == future                                        # unmigratable: sent as written
+    assert (run_dir / "events.jsonl").read_text() == written          # the file is evidence, untouched
 
 
 def test_events_of_a_live_run_wait_for_the_partial_line(server):

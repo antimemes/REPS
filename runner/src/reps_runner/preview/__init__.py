@@ -13,7 +13,11 @@ straight from `/data/`; the embeddable `<reps-events>` element renders the strea
                  ndjson; 204 when there are none, so a poll of a quiet run costs
                  nothing. A trailing line without its newline is still being
                  written and waits for the next poll; a complete line that is not
-                 a JSON object with an integer seq is skipped.
+                 a JSON object with an integer seq is skipped. Each record is
+                 migrated to the current vocabulary before it is sent, as every
+                 reader of the stream does (reps_events.read); the file on disk
+                 is untouched, and a record that cannot be migrated is sent as
+                 written, its `v` showing which version it still speaks.
 
 Path handling is the standard library's: `..` segments never leave the two roots.
 """
@@ -32,6 +36,8 @@ from importlib.resources import as_file, files
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
+
+from reps_events.migrate import MigrationError, migrate_record
 
 from ..store import resolve_data_dir
 
@@ -54,7 +60,8 @@ def list_runs(home: Path) -> list[dict[str, Any]]:
 
 
 def read_events_from(run_dir: Path, start: int) -> bytes:
-    """The stream's complete lines with `seq >= start`, as written."""
+    """The stream's complete lines with `seq >= start`, migrated to the current
+    vocabulary (a line that cannot be migrated goes out as written)."""
     try:
         data = (run_dir / "events.jsonl").read_bytes()
     except OSError:
@@ -72,6 +79,10 @@ def read_events_from(run_dir: Path, start: int) -> bytes:
             continue
         seq = record.get("seq") if isinstance(record, dict) else None
         if isinstance(seq, int) and seq >= start:
+            try:
+                line = json.dumps(migrate_record(record)).encode()
+            except MigrationError:
+                pass
             out.append(line + b"\n")
     return b"".join(out)
 
