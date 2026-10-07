@@ -33,8 +33,19 @@ body {
   overflow: auto;
   padding: 0.75em;
 }
-#runs h1 { font-size: 1em; margin: 0.25em 0 0.75em; color: var(--muted); font-weight: 600; }
-#run-list { list-style: none; margin: 0; padding: 0; }
+#tabs { display: flex; gap: 0.25em; margin: 0 0 0.75em; border-bottom: 1px solid var(--line); }
+#tabs button {
+  font: inherit; font-weight: 600; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent;
+  padding: 0.4em 0.6em; margin-bottom: -1px; cursor: pointer;
+}
+#tabs button:hover { color: var(--fg); }
+#tabs button.active { color: var(--fg); border-bottom-color: var(--accent); }
+#run-list, #experiment-list { list-style: none; margin: 0; padding: 0; }
+#experiment-list li a {
+  display: block; padding: 0.35em 0.6em; border-radius: 6px; color: inherit; text-decoration: none; font-weight: 600;
+}
+#experiment-list li a:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+#experiment-list li.selected a { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 #run-list li a {
   display: grid;
   gap: 0.15em;
@@ -59,8 +70,46 @@ body {
   padding: 0.6em 1em; border-bottom: 1px solid var(--line); background: var(--panel);
 }
 #run-experiment { font-weight: 600; }
+#experiment { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 0.75em 1.25em 2em; }
+#experiment.pane { flex: 0 0 auto; max-height: 45%; border-top: 1px solid var(--line); background: var(--panel); }
+#experiment.pane:not([open]) { padding-bottom: 0.75em; }
+#experiment summary { cursor: pointer; list-style: none; margin-bottom: 0.5em; }
+#experiment summary::-webkit-details-marker { display: none; }
+#experiment summary::before { content: "▸ "; color: var(--muted); }
+#experiment[open] summary::before { content: "▾ "; }
+#experiment-name { font-weight: 600; font-size: 1.1em; }
+#experiment .summary { color: var(--muted); }
+#experiment .links a { margin-right: 1em; color: var(--accent); }
+#experiment h3 { font-size: 1em; color: var(--muted); margin: 1.5em 0 0.5em; }
+#experiment table { border-collapse: collapse; width: 100%; max-width: 90em; font-size: 0.92em; table-layout: fixed; }
+#experiment th:nth-child(1) { width: 14%; }
+#experiment th:nth-child(2) { width: 9%; }
+#experiment th:nth-child(4) { width: 22%; }
+#experiment td { overflow-wrap: anywhere; }
+#experiment th, #experiment td { text-align: left; vertical-align: top; padding: 0.35em 0.6em; border-bottom: 1px solid var(--line); }
+#experiment th { color: var(--muted); font-weight: 600; }
+#experiment td.name, #experiment code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+#experiment td.type { color: var(--muted); white-space: nowrap; }
+#experiment td.description { max-width: 40em; }
+#experiment td.description .details { color: var(--muted); display: block; margin-top: 0.2em; }
+#form input, #form select, #form textarea {
+  font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0.25em 0.4em; min-width: 14em;
+}
+#form textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; min-height: 3em; width: 100%; }
+#form .from-run { color: var(--muted); font-size: 0.9em; margin: 0 0 0.5em; }
+#seed-row { margin: 0 0 0.5em; color: var(--muted); }
+#seed-row input { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0.2em 0.4em; margin-left: 0.4em; }
+#command {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 0.75em 1em;
+  white-space: pre-wrap; word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em;
+}
+#copy { font: inherit; margin-top: 0.5em; padding: 0.3em 0.8em; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: inherit; cursor: pointer; }
+#copy:hover { border-color: var(--accent); }
 #run-id { color: var(--muted); }
 #run-started { color: var(--muted); font-size: 0.9em; }
+/* the element's own :host { display: block } outranks the browser's [hidden] rule;
+   this document-level rule wins over both */
+#events[hidden] { display: none; }
 #events {
   flex: 1 1 auto;
   min-height: 0;

@@ -16,6 +16,11 @@ tasks:
     cmds:
       - nix run .#inspect-hello -- --set model=mockllm/model --set limit=0 --set epochs=1 --set 'generate_args={}'
 
+  preview:
+    desc: open the local run viewer with the experiment catalog (params, results, a command constructor); the catalog build is cached after the first run. Flags pass through, e.g. `task preview -- --no-open --port 8765`
+    cmds:
+      - nix run .#reps-runner -- preview --manifests "$(nix-build --no-out-link -A manifests)" {{.CLI_ARGS}}
+
   describe:
     desc: print the impossiblebench-livecodebench schema JSON
     cmds:

@@ -52,8 +52,23 @@ def home(tmp_path):
 
 
 @pytest.fixture
-def server(home):
-    srv = preview.PreviewServer(home, 0)
+def catalog(tmp_path):
+    """A built manifests directory: <name>.json files, the assets tree, one damaged file."""
+    root = tmp_path / "manifests"
+    (root / "assets" / "zeta").mkdir(parents=True)
+    (root / "assets" / "zeta" / "figure.png").write_bytes(b"not a manifest")
+    (root / "zeta.json").write_text(json.dumps({"name": "zeta", "params": {}, "results": []}))
+    (root / "alpha.json").write_text(json.dumps({"name": "alpha", "summary": "first", "params": {
+        "model": {"type": {"kind": "llm"}, "initial": "mock/model", "suggestions": [{"value": "mock/model", "description": "keyless"}]},
+        "n": {"type": {"kind": "int"}, "initial": 3, "order": 1}}, "results": []}))
+    (root / "broken.json").write_text("{not json")
+    (root / "nameless.json").write_text(json.dumps({"params": {}}))
+    return root
+
+
+@pytest.fixture
+def server(home, catalog):
+    srv = preview.PreviewServer(home, 0, catalog)
     thread = threading.Thread(target=srv.serve_forever, daemon=True)
     thread.start()
     yield srv
@@ -88,6 +103,25 @@ def test_run_list_survives_a_card_with_a_malformed_lifecycle(server):
     status, _, body = get(server, "/api/runs")
     assert status == 200
     assert [c["run_id"] for c in json.loads(body)] == [RUN_B, RUN_A, "20260920t000000z-bbbbbbbbbbbb"]
+
+
+def test_manifests_are_served_as_written_by_name(server, catalog):
+    status, headers, body = get(server, "/api/manifests")
+    assert status == 200 and headers["Content-Type"] == "application/json"
+    manifests = json.loads(body)
+    assert [m["name"] for m in manifests] == ["alpha", "zeta"]       # the damaged and nameless files skipped
+    assert manifests[0] == json.loads((catalog / "alpha.json").read_text())
+    assert get(server, "/api/manifests/../alpha.json")[0] == 404
+    assert get(server, "/manifests/alpha.json")[0] == 404           # only the JSON list, never the directory
+
+
+def test_manifests_are_empty_without_a_catalog(home):
+    assert preview.list_manifests(None) == []
+    srv = preview.PreviewServer(home, 0)
+    try:
+        assert srv.manifests is None
+    finally:
+        srv.server_close()
 
 
 def test_run_card_is_served_as_written(server):
@@ -216,6 +250,22 @@ def test_cli_no_open_and_port(home, monkeypatch, capsys):
     assert f"serving on http://127.0.0.1:{port['bound']}/" in capsys.readouterr().out
 
 
+def test_cli_manifests_flag(home, catalog, monkeypatch, capsys):
+    monkeypatch.setattr(preview.webbrowser, "open", lambda url: pytest.fail("browser opened"))
+    seen = {}
+
+    def serve_forever(self):
+        seen["manifests"] = self.manifests
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(preview.PreviewServer, "serve_forever", serve_forever)
+    assert preview.preview_cli(["--no-open", "--data-dir", str(home), "--manifests", str(catalog)]) == 0
+    assert seen == {"manifests": catalog}
+    assert f"manifests {catalog}" in capsys.readouterr().out
+    assert preview.preview_cli(["--no-open", "--data-dir", str(home), "--manifests", str(catalog / "alpha.json")]) == 2
+    assert "not a directory" in capsys.readouterr().err
+
+
 def test_cli_reports_a_port_in_use(home, capsys):
     taken = preview.PreviewServer(home, 0)
     try:
@@ -231,6 +281,8 @@ def test_shell_references_the_element_and_the_element_defines_its_surface():
     shell = (static / "index.html").read_text()
     assert "/static/reps-events.js" in shell and "<reps-events" in shell
     assert "/events?from=" in shell and "204" in shell     # the shell polls incrementally
+    assert "/api/manifests" in shell                          # the experiment view reads the catalog
+    assert "$(nix-build --no-out-link -A exec." in shell     # and renders the CLI's own command shape
     element = (static / "reps-events.js").read_text()
     assert 'customElements.define("reps-events"' in element
     for method in ("append(records)", "replace(seq, record)", "clear()"):
@@ -243,6 +295,11 @@ def test_shell_references_the_element_and_the_element_defines_its_surface():
 def test_package_data_ships_the_static_files():
     static = resources.files("reps_runner.preview") / "static"
     assert sorted(p.name for p in static.iterdir() if p.is_file()) == ["index.html", "preview.css", "reps-events.js"]
+
+
+def test_suggested_oneliner_is_the_plain_nix_shape():
+    from test_protocol import MANIFEST
+    assert cli.suggested_oneliner(MANIFEST) == "$(nix-build --no-out-link -A exec.t) --set 'x=<x>'"
 
 
 def test_run_command_prints_the_preview_hint(tmp_path, monkeypatch, capsys):

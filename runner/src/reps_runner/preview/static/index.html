@@ -9,9 +9,13 @@
 </head>
 <body>
 <aside id="runs">
-  <h1>REPS runs</h1>
+  <nav id="tabs">
+    <button type="button" data-tab="runs" class="active">Runs</button>
+    <button type="button" data-tab="experiments" hidden>Experiments</button>
+  </nav>
   <ol id="run-list"></ol>
   <p id="run-list-empty" hidden>no runs in the data directory yet</p>
+  <ol id="experiment-list" hidden></ol>
 </aside>
 <main id="run">
   <header id="run-head" hidden>
@@ -22,15 +26,34 @@
   </header>
   <p id="run-none">select a run</p>
   <reps-events id="events" hidden></reps-events>
+  <details id="experiment" open hidden>
+    <summary><span id="experiment-name"></span> <span class="summary" id="experiment-summary"></span></summary>
+    <p class="links" id="experiment-links"></p>
+    <h3>Parameters</h3>
+    <table><thead><tr><th>name</th><th>type</th><th>description</th><th>value</th></tr></thead><tbody id="form"></tbody></table>
+    <p class="from-run" id="from-run" hidden></p>
+    <h3>Command</h3>
+    <p id="seed-row"><label>seed <input id="seed" placeholder="random" size="12"></label></p>
+    <pre id="command"></pre>
+    <button id="copy" type="button">copy</button>
+    <h3>Results</h3>
+    <table><thead><tr><th>result</th><th>type</th><th>description</th></tr></thead><tbody id="results"></tbody></table>
+  </details>
 </main>
 <script type="module">
 // The shell is the transport: it reads the served files and feeds <reps-events>.
-// It stays thin on purpose; the element is the piece adb-site adopts.
+// It stays thin on purpose; the element is the piece adb-site adopts. The
+// experiment view reads the manifests the server hands over and renders a run
+// command for one condition; nothing here runs anything.
 const ENDED = new Set(["completed", "failed", "interrupted"]);
 const $ = (id) => document.getElementById(id);
 const events = $("events");
-let cards = new Map();  // run_id -> card from /api/runs (for its condition_dir)
-let current = null;
+let cards = new Map();      // run_id -> card from /api/runs (for its condition_dir)
+let manifests = new Map();  // experiment name -> manifest from /api/manifests
+let current = null;         // selected run id
+let shownExperiment = null; // selected experiment name
+let shownManifest = null;   // the manifest the experiment section renders (or one derived from a card)
+let shownValues = null;     // read-only mode (a run's pane): [name, text] as recorded, else null (the form is the source)
 let lastSeq = -1;   // highest seq handed to the element; the next poll asks from lastSeq + 1
 let timer = null;
 
@@ -45,34 +68,55 @@ const startedOf = (card) => {
   const ts = (card.lifecycle || {}).started_at;
   return ts ? new Date(ts).toLocaleString() : "";
 };
+const experimentOf = (card) => (card.identity ? card.identity.experiment : card.condition_dir);
 const runPath = (card) => `/data/runs/${card.condition_dir}/${card.run_id}`;
 
-function line(className, text) {
-  const span = document.createElement("span");
-  span.className = className;
-  span.textContent = text ?? "";
-  return span;
+function el(tag, props = {}, ...children) {
+  const node = document.createElement(tag);
+  Object.assign(node, props);
+  node.append(...children);
+  return node;
 }
+const line = (className, text) => el("span", { className, textContent: text ?? "" });
 
 function renderList(list) {
   $("run-list").replaceChildren(...list.map((card) => {
-    const item = document.createElement("li");
+    const item = el("li");
     item.classList.toggle("selected", card.run_id === current);
-    const a = document.createElement("a");
-    a.href = `#${card.run_id}`;
-    a.append(line("experiment", card.identity ? card.identity.experiment : card.condition_dir),
-             line("run-id", card.run_id), line(`state ${stateOf(card)}`, stateOf(card)),
-             line("started", startedOf(card)));
-    item.appendChild(a);
+    item.append(el("a", { href: `#${card.run_id}` },
+      line("experiment", experimentOf(card)), line("run-id", card.run_id),
+      line(`state ${stateOf(card)}`, stateOf(card)), line("started", startedOf(card))));
     return item;
   }));
   $("run-list-empty").hidden = list.length > 0;
 }
 
+function showTab(tab) {
+  for (const button of $("tabs").children) button.classList.toggle("active", button.dataset.tab === tab);
+  $("run-list").hidden = $("run-list-empty").hidden = tab !== "runs";
+  if (tab === "runs") $("run-list-empty").hidden = cards.size > 0;
+  $("experiment-list").hidden = tab !== "experiments";
+}
+$("tabs").addEventListener("click", (e) => { if (e.target.dataset.tab) showTab(e.target.dataset.tab); });
+
+function renderExperimentList() {
+  const names = [...manifests.keys()];
+  $("tabs").querySelector('[data-tab="experiments"]').hidden = names.length === 0;
+  $("experiment-list").replaceChildren(...names.map((name) => {
+    const item = el("li");
+    item.classList.toggle("selected", name === shownExperiment);
+    // a click, not a hash: a reload always comes back to the runs (the last run stays in the hash)
+    const a = el("a", { href: "#", textContent: name });
+    a.addEventListener("click", (e) => { e.preventDefault(); showExperiment(name); });
+    item.append(a);
+    return item;
+  }));
+}
+
 function renderHead(card) {
   $("run-head").hidden = false;
   $("run-none").hidden = true;
-  $("run-experiment").textContent = card.identity ? card.identity.experiment : "";
+  $("run-experiment").textContent = experimentOf(card);
   $("run-id").textContent = card.run_id;
   $("run-state").textContent = stateOf(card);
   $("run-state").className = `state ${stateOf(card)}`;
@@ -80,12 +124,139 @@ function renderHead(card) {
   events.hidden = false;
 }
 
+// -- the experiment view: params, results, and a command for one condition ----
+
+// the kind only; an enum's values are the select's job on the Experiments tab, and
+// a run's pane shows the one it ran with
+const typeName = (type) => type.kind === "list" ? `list of ${typeName(type.of)}` : type.kind;
+
+// what goes after `name=` on the command line: a string param verbatim, anything else
+// as compact JSON (the runner's shorthand parses JSON first, then a bare string)
+const textOf = (param, value) => value === undefined ? ""
+  : typeof value === "string" ? value : JSON.stringify(value);
+
+// shlex.quote: safe characters stay bare, anything else is single-quoted
+const quote = (s) => /^[\w@%+=:,./-]+$/.test(s) ? s : `'${s.replace(/'/g, `'"'"'`)}'`;
+
+function control(name, param, value) {
+  const kind = param.type.kind;
+  const text = textOf(param, value);
+  if (kind === "enum" || kind === "bool") {
+    const options = kind === "bool" ? ["true", "false"] : param.type.values;
+    const select = el("select", { name });
+    if (param.nullable) select.append(el("option", { value: "null", textContent: "null" }));
+    select.append(...options.map((v) => el("option", { value: v, textContent: v })));
+    select.value = text || (param.nullable ? "null" : options[0]);
+    return select;
+  }
+  if (kind === "object" || kind === "list") {
+    return el("textarea", { name, value: text, placeholder: "JSON" });
+  }
+  const input = el("input", { name, value: text, placeholder: param.nullable ? "null" : `<${name}>` });
+  const suggestions = (param.suggestions || []).map((s) => (typeof s === "object" ? s : { value: s }));
+  if (suggestions.length) {
+    const list = el("datalist", { id: `suggest-${name}` });
+    list.append(...suggestions.map((s) => el("option", { value: s.value, label: s.description || "" })));
+    input.setAttribute("list", list.id);
+    return el("span", {}, input, list);
+  }
+  return input;
+}
+
+function renderCommand() {
+  const manifest = shownManifest;
+  if (!manifest) return;
+  const values = shownValues || [...$("form").querySelectorAll("[name]")].map((f) => [f.name, f.value.trim()]);
+  const sets = values.map(([name, text]) => `--set ${quote(`${name}=${text || `<${name}>`}`)}`);
+  const seed = $("seed").value.trim();
+  $("command").textContent = `$(nix-build --no-out-link -A exec.${manifest.name}) ${sets.join(" ")}`
+    + (seed ? ` --seed ${quote(seed)}` : "");
+}
+
+const byOrder = (params) => Object.entries(params).sort(([a, pa], [b, pb]) =>
+  ((pa.order ?? 100) - (pb.order ?? 100)) || a.localeCompare(b));
+
+// Fill the experiment section: the manifest's params with controls, the results it
+// declares, and the command. Values come from the run's bound inputs when a card is
+// given (the section is then the bottom pane under that run's stream), else from
+// each param's initial.
+// A run whose experiment is not in the catalog still gets a pane: its params as
+// recorded on the card, typed from their values, without descriptions.
+const kindOf = (v) => typeof v === "string" ? "str" : typeof v === "boolean" ? "bool"
+  : typeof v === "number" ? (Number.isInteger(v) ? "int" : "float") : v === null ? "str" : "object";
+function manifestFromCard(card) {
+  const params = {};
+  for (const [name, value] of Object.entries((card.inputs || {}).params || {})) params[name] = { type: { kind: kindOf(value) } };
+  return { name: experimentOf(card), summary: "not in the catalog served to the preview: params as recorded, without descriptions",
+           params, results: (card.definitions || {}).results || [] };
+}
+
+function renderExperiment(manifest, card) {
+  shownManifest = manifest;
+  const bound = card && card.inputs ? card.inputs.params || {} : {};
+  $("experiment").hidden = false;
+  $("experiment-name").textContent = manifest.name;
+  $("experiment-summary").textContent = manifest.summary || "";
+  $("experiment-links").replaceChildren(...(manifest.links || []).map((l) =>
+    el("a", { href: l.url, target: "_blank", rel: "noopener", textContent: l.label })));
+  $("from-run").hidden = !card;
+  $("from-run").textContent = card ? `values from run ${card.run_id} (seed ${card.inputs.seed})` : "";
+  // a run's pane shows what it ran against and nothing editable; the Experiments tab has the form
+  const params = byOrder(manifest.params);
+  shownValues = card ? params.map(([pname, param]) => [pname, textOf(param, bound[pname])]) : null;
+  const valueCell = (pname, param) => card
+    ? el("code", { textContent: textOf(param, bound[pname]) || "—" })
+    : control(pname, param, param.initial);
+  $("form").replaceChildren(...params.map(([pname, param]) =>
+    el("tr", {},
+      el("td", { className: "name", textContent: pname }),
+      el("td", { className: "type", textContent: typeName(param.type) + (param.nullable ? " | null" : "") }),
+      el("td", { className: "description", textContent: param.description || "" }),
+      el("td", {}, valueCell(pname, param)))));
+  $("seed").value = card ? String(card.inputs.seed) : "";
+  $("seed-row").hidden = Boolean(card);
+  $("results").replaceChildren(...(manifest.results || []).map((r) =>
+    el("tr", {},
+      el("td", { className: "name" }, el("strong", { textContent: r.label || r.name }), el("br"), el("code", { textContent: r.name })),
+      el("td", { className: "type", textContent: typeName(r.type) + (r.unit ? ` (${r.unit})` : "") }),
+      el("td", { className: "description" }, r.description || "", el("span", { className: "details", textContent: r.details || "" })))));
+  renderCommand();
+}
+
+// the Experiments tab: the section alone, with initial values
+function showExperiment(name) {
+  const manifest = manifests.get(name);
+  if (!manifest) return;
+  stop();
+  current = null;
+  shownExperiment = name;
+  showTab("experiments");
+  renderExperimentList();
+  for (const item of $("run-list").children) item.classList.remove("selected");
+  $("run-head").hidden = true;
+  $("run-none").hidden = true;
+  events.hidden = true;
+  $("experiment").classList.remove("pane");
+  document.title = `${name} · REPS preview`;
+  renderExperiment(manifest, null);
+}
+
+$("form").addEventListener("input", renderCommand);
+$("seed").addEventListener("input", renderCommand);
+$("copy").addEventListener("click", async () => {
+  await navigator.clipboard.writeText($("command").textContent);
+  $("copy").textContent = "copied";
+  setTimeout(() => { $("copy").textContent = "copy"; }, 1200);
+});
+
+// -- the run view ---------------------------------------------------------------
+
 async function refreshList() {
   try {
     const list = await fetchJson("/api/runs");
     cards = new Map(list.map((card) => [card.run_id, card]));
     renderList(list);
-    if (current === null && location.hash.length > 1) select(location.hash.slice(1));
+    if (current === null && shownExperiment === null && location.hash.length > 1) route();
   } catch (err) {
     console.warn(err);
   }
@@ -128,6 +299,13 @@ function select(runId) {
   if (!card || runId === current) return;
   stop();
   current = runId;
+  showTab("runs");
+  // the bottom pane: this run's experiment, its params as bound, a command to run it again
+  const manifest = manifests.get(experimentOf(card)) || manifestFromCard(card);
+  shownExperiment = manifests.has(manifest.name) ? manifest.name : null;
+  renderExperimentList();
+  $("experiment").classList.add("pane");
+  renderExperiment(manifest, card);
   lastSeq = -1;
   events.clear();
   for (const item of $("run-list").children) {
@@ -139,7 +317,19 @@ function select(runId) {
   timer = setInterval(tick, 1000);
 }
 
-window.addEventListener("hashchange", () => select(location.hash.slice(1)));
+// #<run_id> selects a run
+function route() {
+  select(location.hash.slice(1));
+}
+
+window.addEventListener("hashchange", route);
+try {
+  manifests = new Map((await fetchJson("/api/manifests")).map((m) => [m.name, m]));
+} catch (err) {
+  console.warn(err);
+}
+renderExperimentList();
+showTab("runs");
 await refreshList();
 setInterval(refreshList, 5000);
 </script>

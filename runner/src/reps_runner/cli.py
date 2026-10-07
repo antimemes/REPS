@@ -120,7 +120,9 @@ def suggested_oneliner(manifest: Manifest) -> str:
         rendered = value if isinstance(value, str) else json.dumps(
             value, separators=(",", ":"))
         sets.append(f"--set {shlex.quote(f'{name}={rendered}')}")
-    return f"nix run .#{manifest['name']} -- " + " ".join(sets)
+    # the README's plain-Nix shape, run from a checkout; the preview's command
+    # constructor renders the same shape
+    return f"$(nix-build --no-out-link -A exec.{manifest['name']}) " + " ".join(sets)
 
 
 class ResolvedCondition(TypedDict):

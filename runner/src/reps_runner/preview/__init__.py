@@ -3,11 +3,15 @@
 Serves two directories on loopback and opens the browser on the shell in `static/`.
 The shell lists runs from `/api/runs` and reads a run's `run.json` and `events.jsonl`
 straight from `/data/`; the embeddable `<reps-events>` element renders the stream.
+With `--manifests DIR` (the built catalog, `nix-build --no-out-link -A manifests`) the
+shell also lists the experiments, shows each one's params and results, and renders a
+command line for a condition; the server only hands the manifests over.
 
-    /            static/index.html
-    /static/…    this package's static/ directory
-    /data/…      the data directory (files only; directories are 404)
-    /api/runs    every runs/*/*/run.json card, newest first
+    /              static/index.html
+    /static/…      this package's static/ directory
+    /data/…        the data directory (files only; directories are 404)
+    /api/runs      every runs/*/*/run.json card, newest first
+    /api/manifests every <name>.json in the manifests directory, by name ([] without one)
     /api/runs/<condition_dir>/<run_id>/events?from=N
                  the complete lines of that run's events.jsonl with seq >= N, as
                  ndjson; 204 when there are none, so a poll of a quiet run costs
@@ -59,6 +63,23 @@ def list_runs(home: Path) -> list[dict[str, Any]]:
     return cards
 
 
+def list_manifests(catalog: Path | None) -> list[dict[str, Any]]:
+    """Every readable manifest in the catalog directory as written, by name."""
+    if catalog is None:
+        return []
+    manifests: list[dict[str, Any]] = []
+    for path in sorted(catalog.glob("*.json")):
+        try:
+            manifest = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if isinstance(manifest, dict):
+            typed: dict[str, Any] = {**manifest}
+            if isinstance(typed.get("name"), str):
+                manifests.append(typed)
+    return manifests
+
+
 def read_events_from(run_dir: Path, start: int) -> bytes:
     """The stream's complete lines with `seq >= start`, migrated to the current
     vocabulary (a line that cannot be migrated goes out as written)."""
@@ -96,8 +117,9 @@ def _started(card: dict[str, Any]) -> tuple[str, str]:
 class PreviewServer(ThreadingHTTPServer):
     daemon_threads = True
 
-    def __init__(self, home: Path, port: int = 0):
+    def __init__(self, home: Path, port: int = 0, manifests: Path | None = None):
         self.home = home
+        self.manifests = manifests
         self._resources = ExitStack()
         self.static = self._resources.enter_context(as_file(files(__package__) / "static"))
         super().__init__(("127.0.0.1", port), PreviewHandler)
@@ -126,6 +148,8 @@ class PreviewHandler(SimpleHTTPRequestHandler):
         path = url.path
         if path == "/api/runs":
             self._send(json.dumps(list_runs(self.server.home)).encode(), "application/json")
+        elif path == "/api/manifests":
+            self._send(json.dumps(list_manifests(self.server.manifests)).encode(), "application/json")
         elif match := _EVENTS_ROUTE.match(path):
             condition_dir, run_id = match.groups()
             if not (_SEGMENT.match(condition_dir) and _SEGMENT.match(run_id)):
@@ -174,15 +198,23 @@ def preview_cli(argv: list[str]) -> int:
     parser.add_argument("--port", type=int, default=0, metavar="N",
                         help="port to bind on 127.0.0.1 (default: any free port)")
     parser.add_argument("--no-open", action="store_true", help="print the URL without opening a browser")
+    parser.add_argument("--manifests", metavar="DIR",
+                        help="the built manifest catalog (nix-build --no-out-link -A manifests): lists the "
+                             "experiments, their params and results, and renders run commands")
     args = parser.parse_args(argv)
     home = resolve_data_dir(args.data_dir)
+    manifests = Path(args.manifests) if args.manifests else None
+    if manifests is not None and not manifests.is_dir():
+        print(f"preview: --manifests {args.manifests}: not a directory", file=sys.stderr)
+        return 2
     try:
-        server = PreviewServer(home, args.port)
+        server = PreviewServer(home, args.port, manifests)
     except OSError as exc:
         print(f"preview: cannot bind 127.0.0.1:{args.port}: {exc.strerror or exc}", file=sys.stderr)
         return 2
     with server:
-        print(f"preview: {home}\npreview: serving on {server.url}  (Ctrl-C to stop)", flush=True)
+        print(f"preview: {home}" + (f"\npreview: manifests {manifests}" if manifests else "")
+              + f"\npreview: serving on {server.url}  (Ctrl-C to stop)", flush=True)
         if not args.no_open:
             webbrowser.open(server.url)
         try:
