@@ -73,7 +73,7 @@ nix-shell -p nix-run --run 'nix-run . -A experiment-inspect-hello -- --describe'
 Register `reps` once if you prefer it to the full repository reference:
 
 ```sh
-nix registry add reps github:antimemetics-institute/reps \
+nix registry add reps github:antimemes/REPS \
   --extra-experimental-features 'nix-command flakes'
 ```
 
@@ -84,7 +84,7 @@ Select **reps registry added** in command settings. The alias is a convenience f
 For flakes, a GitHub reference accepts a commit after the repository name. Replace `REV` below with the recorded commit:
 
 ```sh
-nix run github:antimemetics-institute/reps/REV#inspect-hello \
+nix run github:antimemes/REPS/REV#inspect-hello \
   --extra-experimental-features 'nix-command flakes' -- --describe
 ```
 
@@ -92,7 +92,7 @@ For classic Nix, use the archive for that commit:
 
 ```sh
 $(nix-build --no-out-link \
-  https://github.com/antimemetics-institute/reps/archive/REV.tar.gz \
+  https://github.com/antimemes/REPS/archive/REV.tar.gz \
   -A exec.inspect-hello) --describe
 ```
 

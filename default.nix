@@ -3,7 +3,7 @@
 # to the SAME revision by reading the authoritative flake.lock.
 #
 #   nix-build -A experiment-inspect-hello && ./result/bin/reps-inspect-hello …
-#   nix-build https://github.com/antimemetics-institute/reps/archive/main.tar.gz \
+#   nix-build https://github.com/antimemes/REPS/archive/main.tar.gz \
 #     -A experiment-inspect-hello
 #
 # Provenance: git stamps the commit hash into .git-revision when generating an

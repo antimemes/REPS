@@ -18,7 +18,7 @@
 let
   inherit (pkgs) lib;
 
-  origin = "github:antimemetics-institute/reps";
+  origin = "github:antimemes/REPS";
 
   experimentsDir = ../../experiments;
 

@@ -9,7 +9,7 @@ To add an experiment, follow the small keyless example below and check the compl
 Clone the repository and enter its development shell:
 
 ```sh
-git clone https://github.com/antimemetics-institute/reps.git
+git clone https://github.com/antimemes/REPS.git
 cd reps
 nix-shell
 ```

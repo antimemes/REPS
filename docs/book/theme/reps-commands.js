@@ -11,8 +11,8 @@
   "use strict";
 
   var KEY = "reps-cmd-prefs";
-  var GITHUB = "github:antimemetics-institute/reps";
-  var TARBALL = "https://github.com/antimemetics-institute/reps/archive/main.tar.gz";
+  var GITHUB = "github:antimemes/REPS";
+  var TARBALL = "https://github.com/antimemes/REPS/archive/main.tar.gz";
   // mode:"nix-build" by default — commands must work on a stock Nix install with
   // zero configuration, and the exec one-liner is the only form that does.
   // flakes:false likewise (armor flag until the reader enables them globally);
