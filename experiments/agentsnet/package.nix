@@ -1,17 +1,18 @@
 # AgentsNet ("Coordination and Collaborative Reasoning in Multi-Agent LLMs",
 # Grötschla, Müller, Tönshoff, Galkin & Perozzi, arXiv:2507.08616) as a REPS
 # experiment: the authors' released code (github.com/floriangroetschla/AgentsNet,
-# MIT, pinned by revision in upstream.json) copied verbatim into each run and
+# MIT, pinned by revision in upstream.json) copied into each run (verbatim unless a fix switch is on) and
 # driven by a thin adapter in ./agentsnet_adapter, the way prompt-infection wraps
 # its authors' tree. One run is one cell of the authors' sweep: one task on one
 # graph instance from their published dataset (Hugging Face disco-eth/AgentsNet,
 # pinned by content in dataset.json), with every node's model calls routed
 # through REPS and recorded.
 #
-# Upstream is not patched on disk. The adapter swaps the LangChain model
-# construction for a REPS-instrumented chat model, points the dataset loader at
-# the pinned file, and reads the authors' own results JSON. patch.py lists
-# every touch.
+# The adapter swaps the LangChain model construction for a REPS-instrumented
+# chat model, points the dataset loader at the pinned file, and reads the
+# authors' own results JSON; monkeypatches.py lists every touch. The authors' files are
+# edited only by the fixes in ./patches, each applied to the run's copy when its
+# param is true.
 { reps, pkgs, lib }:
 let
   # The authors' code, pinned by revision. upstream.json stays out of src so
@@ -38,6 +39,8 @@ let
   } ''
     mkdir -p $out/bin
     makeWrapper ${env}/bin/agentsnet $out/bin/agentsnet \
+      --prefix PATH : ${lib.makeBinPath [ pkgs.gnupatch ]} \
+      --set AGENTSNET_PATCHES ${./patches} \
       --set AGENTSNET_UPSTREAM ${upstream} \
       --set AGENTSNET_UPSTREAM_REV ${pin.rev} \
       --set AGENTSNET_DATASET ${dataset}
@@ -47,6 +50,7 @@ let
     override = env.override;
     inherit upstream dataset;
     upstreamRev = pin.rev;
+    patches = ./patches;
   };
 
   mockSuggestion = {
@@ -58,7 +62,7 @@ in
   agentsnet = reps.mkExperiment {
     name = "agentsnet";
     # identity = declaration + locks + adapter + the authors' tree + the graphs; README/docs/sidecars stay out
-    src = [ ./package.nix ./pyproject.toml ./uv.lock ./agentsnet_adapter upstream dataset ];
+    src = [ ./package.nix ./pyproject.toml ./uv.lock ./agentsnet_adapter ./patches upstream dataset ];
     schema = { version = 0; models = "agentsnet_adapter.models:Payload"; };
     schemaPython = "${env}/bin/python";
     summary = "AgentsNet (Grötschla et al. 2025), the authors' code: a network of LLM agents, one per graph node, solves a distributed-computing problem (coloring, matching, vertex cover, consensus or leader election) by synchronous message passing with its neighbours.";
@@ -104,6 +108,18 @@ in
         order = 6;
         group = "cell";
       };
+      patch_crash_on_all_no = param bool {
+        description = "Score a vertex-cover run 0 when every agent answers No, instead of letting the authors' scoring code crash.";
+        initial = true;
+        order = 7;
+        group = "fixes";
+      };
+      better_reprompting = param bool {
+        description = "When an agent's reply can't be read, repeat the exact format it should use instead of just asking it to check its reply.";
+        initial = true;
+        order = 8;
+        group = "fixes";
+      };
       model = param llm {
         description = "provider/model for every agent. Upstream's own model table is bypassed: any model the provider serves can be named. mock/model runs keyless.";
         initial = "openai/gpt-4o-mini";
@@ -139,7 +155,7 @@ in
         type = bool;
         label = "Upstream crashed";
         description = "Whether upstream's vertex-cover scorer divided by zero because no agent answered Yes; the run is recorded with score 0.";
-        details = "Upstream does not catch this ZeroDivisionError: its process dies and writes no results file, and its recovery tooling (--start_from_sample, --missing_run_file) reruns the instance, so the paper's numbers cannot include such runs. The adapter records score 0 (coverage 0 times an undefined minimality share; an empty cover covers no edge) and sets this flag. Drop runs with this flag to approximate the authors' procedure; keep them to count what the models did. Always false for other tasks.";
+        details = "Upstream does not catch this ZeroDivisionError: its process dies and writes no results file, and its recovery tooling (--start_from_sample, --missing_run_file) reruns the instance, so the paper's numbers cannot include such runs. The adapter records score 0 (coverage 0 times an undefined minimality share; an empty cover covers no edge) and sets this flag. Drop runs with this flag to approximate the authors' procedure; keep them to count what the models did. Always false for other tasks, and when patch_crash_on_all_no is on.";
       }
       {
         name = "rounds_run";

@@ -8,9 +8,10 @@ launcher names it with AGENTSNET_UPSTREAM (its revision with
 AGENTSNET_UPSTREAM_REV) and the dataset file with AGENTSNET_DATASET; a developer
 points the same variables at a checkout and a downloaded parquet. Each run
 copies the tree into the run directory and works from there, so the layout the
-authors ran from is reproduced and nothing in the store is written to. Nothing
-in the copy is edited; the adapter only swaps module attributes at import time
-(patch.py).
+authors ran from is reproduced and nothing in the store is written to. The
+copy is edited only by the fix patches a run switches on (AGENTSNET_PATCHES
+names their directory, one `<param>.patch` per switch); otherwise the adapter
+only swaps module attributes at import time (monkeypatches.py).
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -30,6 +32,7 @@ from .models import AgentsNetUpstreamRecord, UpstreamRecordData
 ENV_TREE = "AGENTSNET_UPSTREAM"          # the authors' tree: the pinned store path, or a checkout
 ENV_REV = "AGENTSNET_UPSTREAM_REV"       # its git revision, when the launcher knows it
 ENV_DATASET = "AGENTSNET_DATASET"        # the parquet file of graph instances (dataset.json)
+ENV_PATCHES = "AGENTSNET_PATCHES"        # the fix patches, one <param>.patch per switch
 ARTIFACT_KIND = "agentsnet.artifact"
 UPSTREAM_MODULES = ("main", "LiteralMessagePassing", "utils", "generate_graphs", "chat_tool")
 # left out of the copy: caches, anything a previous run wrote, the README image
@@ -70,10 +73,10 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
-def stage(run_dir: Path) -> Path:
-    """Copy the tree to `run_dir/upstream_work`, make it importable the way the
-    authors ran it, and chdir into it (results/ is written relative to the cwd).
-    Returns the work root."""
+def stage(run_dir: Path, *, better_reprompting: bool, patch_crash_on_all_no: bool) -> Path:
+    """Copy the tree to `run_dir/upstream_work`, apply the switched-on fix
+    patches, make it importable the way the authors ran it, and chdir into it
+    (results/ is written relative to the cwd). Returns the work root."""
     work = run_dir / "upstream_work"
     if work.exists():
         shutil.rmtree(work)
@@ -84,12 +87,22 @@ def stage(run_dir: Path) -> Path:
         os.chmod(directory, 0o755)
         for filename in filenames:
             os.chmod(os.path.join(directory, filename), 0o644)
+    if better_reprompting:               # name order, as tests/default.nix checks every combination
+        _apply_patch(work, "better_reprompting")
+    if patch_crash_on_all_no:
+        _apply_patch(work, "patch_crash_on_all_no")
     for name in UPSTREAM_MODULES:        # a fresh import against this copy
         sys.modules.pop(name, None)
     if str(work) not in sys.path:
         sys.path.insert(0, str(work))
     os.chdir(work)
     return work
+
+
+def _apply_patch(work: Path, name: str) -> None:
+    """Exact context or the run fails; never a partially patched tree."""
+    subprocess.run(["patch", "-d", str(work), "-p1", "--fuzz=0", "--batch", "--forward", "--quiet",
+                    "-i", str(Path(os.environ[ENV_PATCHES]) / f"{name}.patch")], check=True)
 
 
 def ingest_record(work: Path) -> dict:

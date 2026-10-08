@@ -14,7 +14,38 @@ from agentsnet_adapter.main import Params, run
 from agentsnet_adapter.models import Payload
 
 CELL = dict(model="mock/model", task="coloring", graph_generator="ws", graph_size=4, graph_index=0, rounds=2,
-            chain_of_thought=True)
+            chain_of_thought=True, patch_crash_on_all_no=False, better_reprompting=False)
+
+
+def _last_prompts(events, agent):
+    """The final message of every request one agent received, as text."""
+    def text(message):
+        content = message.get("content")
+        return content if isinstance(content, str) else json.dumps(content)
+    return [text(c["input"][-1]) for c in events_of(events, "llm.call") if c["agent"] == agent]
+
+
+def _garbling(name):
+    """The mock, except `name` never writes JSON messages or a parseable answer."""
+    from agentsnet_adapter.mock import mock_responder
+
+    def make(seed):
+        respond = mock_responder(seed)
+        def reply(messages):
+            system = "\n".join(str(m.get("content")) for m in messages if m.get("role") == "system")
+            return "I would rather not say." if f"Your name is {name}." in system else respond(messages)
+        return reply
+    return make
+
+
+def _all_no(seed):
+    """The mock, except every final answer is No."""
+    from agentsnet_adapter.mock import mock_responder
+    respond = mock_responder(seed)
+    def reply(messages):
+        text = respond(messages)
+        return text.split("### Final Answer ###")[0] + "### Final Answer ###\nNo" if "### Final Answer ###" in text else text
+    return reply
 
 
 def _typed(events):
@@ -131,15 +162,7 @@ def test_unparseable_agent_still_scores(run_dir, event_capture, monkeypatch):
     """One agent never writes JSON messages or a parseable final answer: upstream
     re-prompts it, silences it, scores its answer as None, and the run completes."""
     import agentsnet_adapter.main as adapter
-    from agentsnet_adapter.mock import mock_responder
-
-    def garbling(seed):
-        respond = mock_responder(seed)
-        def reply(messages):
-            system = "\n".join(str(m.get("content")) for m in messages if m.get("role") == "system")
-            return "I would rather not say." if "Your name is Jason." in system else respond(messages)
-        return reply
-    monkeypatch.setattr(adapter, "mock_responder", garbling)
+    monkeypatch.setattr(adapter, "mock_responder", _garbling("Jason"))
     run(Params(**CELL))
     events = event_capture.read()
     r = results_of(events)
@@ -153,21 +176,16 @@ def test_unparseable_agent_still_scores(run_dir, event_capture, monkeypatch):
     assert typed["Jason"].answer is None
     record = json.loads((run_dir / "artifacts" / "upstream_record.json").read_text())
     assert record["answers"].count(None) == 1 and record["score"] == 0.0
+    prompts = _last_prompts(events, "Jason")
+    assert "Your messages could not be parsed into JSON. Please check your response and try again." in prompts
+    assert "Your answer could not be parsed. Please check your answer and try again." in prompts
 
 
 def test_empty_vertex_cover_records_score_zero(run_dir, event_capture, monkeypatch):
     """Every agent answers No: upstream's scorer divides by the empty cover's size
     and raises. The run completes with score 0 and upstream_crashed set."""
     import agentsnet_adapter.main as adapter
-    from agentsnet_adapter.mock import mock_responder
-
-    def all_no(seed):
-        respond = mock_responder(seed)
-        def reply(messages):
-            text = respond(messages)
-            return text.split("### Final Answer ###")[0] + "### Final Answer ###\nNo" if "### Final Answer ###" in text else text
-        return reply
-    monkeypatch.setattr(adapter, "mock_responder", all_no)
+    monkeypatch.setattr(adapter, "mock_responder", _all_no)
     run(Params(**CELL | dict(task="vertex_cover", graph_generator="ba", graph_size=4, graph_index=0, rounds=1)))
     events = event_capture.read()
     r = results_of(events)
@@ -180,4 +198,38 @@ def test_empty_vertex_cover_records_score_zero(run_dir, event_capture, monkeypat
     assert any("ZeroDivisionError" in m and "upstream_crashed" in m for m in warnings)
     record = json.loads((run_dir / "artifacts" / "upstream_record.json").read_text())
     assert record["score"] == 0.0 and "ZeroDivisionError" in record["error_message"]
+    _typed(events)
+
+
+def test_patch_crash_on_all_no(run_dir, event_capture, monkeypatch):
+    """With the fix on, the empty cover scores 0 without upstream raising."""
+    import agentsnet_adapter.main as adapter
+    monkeypatch.setattr(adapter, "mock_responder", _all_no)
+    run(Params(**CELL | dict(task="vertex_cover", graph_generator="ba", graph_size=4, graph_index=0, rounds=1,
+                             patch_crash_on_all_no=True)))
+    events = event_capture.read()
+    r = results_of(events)
+    assert r["score"] == 0.0 and r["solved"] is False and r["successful"] is True and r["upstream_crashed"] is False
+    assert not [e for e in events_of(events, "log") if "ZeroDivisionError" in e.get("message", "")]
+    record = json.loads((run_dir / "artifacts" / "upstream_record.json").read_text())
+    assert record["score"] == 0.0 and record["error_message"] is None
+    _typed(events)
+
+
+def test_better_reprompting(run_dir, event_capture, monkeypatch):
+    """With the fix on, both re-prompts restate the format; counting is upstream's."""
+    import agentsnet_adapter.main as adapter
+    monkeypatch.setattr(adapter, "mock_responder", _garbling("Jason"))
+    run(Params(**CELL | dict(better_reprompting=True)))
+    events = event_capture.read()
+    r = results_of(events)
+    assert r["unparsed_answers"] == 1 and r["unparsed_messages"] == 2 and r["fallbacks"] == 3
+    prompts = _last_prompts(events, "Jason")
+    assert ("Your messages could not be parsed into JSON. Output one JSON object that maps each neighbor's name "
+            "(Sara, Marilyn, Samantha) to the message for that neighbor, as specified earlier. "
+            "Write each message on a single line.") in prompts
+    assert ("Your answer could not be parsed. Format your answer as follows: '### Final Answer ###', followed by your "
+            "final answer. Don't use any text for your final answer except one of these valid options: "
+            "Group 1, Group 2, Group 3, Group 4") in prompts
+    assert not any("Please check" in p for p in prompts)
     _typed(events)

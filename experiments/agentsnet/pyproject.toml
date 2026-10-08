@@ -13,7 +13,7 @@ requires-python = ">=3.13"
 # 3.13 wheel (the REPS libraries need 3.13) and floats to 2.x; the code uses
 # numpy only through networkx and scipy. langchain-google-genai and
 # langchain-anthropic are not installed: upstream reaches them only through
-# init_chat_model, which the adapter replaces (patch.py). langchain-ollama is
+# init_chat_model, which the adapter replaces (monkeypatches.py). langchain-ollama is
 # imported at module level and stays.
 dependencies = [
     "reps-events",

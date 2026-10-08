@@ -15,13 +15,20 @@ SYSTEM = ("You are an agent that is connected with other agents (your neighbors)
 
 
 def test_staged_tree_is_the_authors_code(run_dir):
-    work = upstream.stage(run_dir)
+    work = upstream.stage(run_dir, better_reprompting=False, patch_crash_on_all_no=False)
     for entry in ("main.py", "LiteralMessagePassing.py", "utils.py", "LICENSE"):
-        assert (work / entry).is_file()
+        assert (work / entry).read_bytes() == (upstream.upstream_tree() / entry).read_bytes()
     assert not list(work.rglob("__pycache__")) and not (work / "results").exists()
     rev = upstream.upstream_rev()
     assert rev is None or re.fullmatch(r"[0-9a-f]{40}", rev)
     assert re.fullmatch(r"[0-9a-f]{64}", upstream.sha256_of(upstream.dataset_path()))
+
+
+def test_fixes_patch_the_staged_copy(run_dir):
+    work = upstream.stage(run_dir, better_reprompting=True, patch_crash_on_all_no=True)
+    code = (work / "LiteralMessagePassing.py").read_text()
+    assert "except ZeroDivisionError:" in code and "Please check" not in code
+    assert "Please check" in (upstream.upstream_tree() / "LiteralMessagePassing.py").read_text()
 
 
 def test_mock_messages_every_neighbour():

@@ -9,12 +9,13 @@ sweep (`main.py --task T --graph_size N` loops graph families and instances;
 published dataset. The adapter stages the tree, loads the instance with
 upstream's own `main.get_graph` (pointed at the pinned parquet), fixes the round
 count with upstream's `determine_rounds`, swaps the model construction for a
-REPS-instrumented chat model (patch.py, llm.py), drives the task class exactly
-as upstream's `run()` does (bootstrap, pass_messages, get_score, with the same
-error handling, plus upstream's one known uncaught crash, see `_drive`), has upstream write its results JSON with `save_results`,
-ingests that file, and reports the paper's score and upstream's parsing counters
-from it. Upstream's prompts, parsing, scoring and bugs are untouched; patch.py
-lists what the adapter replaces.
+REPS-instrumented chat model (monkeypatches.py, llm.py), drives the task class
+exactly as upstream's `run()` does (bootstrap, pass_messages, get_score, with the
+same error handling, plus upstream's one known uncaught crash, see `_drive`), has
+upstream write its results JSON with `save_results`, ingests that file, and
+reports the paper's score and upstream's parsing counters from it. Upstream's
+prompts, parsing, scoring and bugs are untouched unless a fix switch is on
+(patches/); monkeypatches.py lists what the adapter replaces.
 
 The program speaks the runner protocol (reps-experiment packages it): params
 arrive as JSON on stdin (or a config path on argv for hand-runs), events leave
@@ -34,7 +35,7 @@ from pydantic import BaseModel, Field
 from reps_events import Log, Result, Status, emit
 from reps_experiment.scaffold import experiment_main
 
-from . import llm, patch, results, upstream
+from . import llm, monkeypatches, results, upstream
 from .mock import mock_responder
 from .models import (AgentsNetAnswer, AgentsNetConfig, AgentsNetGraph, AgentsNetMessage, AnswerData, ConfigData,
                      GraphData, GraphEdge, GraphNode, MessageData)
@@ -53,6 +54,8 @@ class Params(BaseModel):
     graph_index: int = Field(ge=0)              # the instance (upstream loops start_from_sample..samples_per_graph_model)
     rounds: int = Field(ge=1)                   # upstream --rounds (overridden by determine_rounds for some cells)
     chain_of_thought: bool                      # upstream: not --disable_chain_of_thought
+    patch_crash_on_all_no: bool                 # fix: patches/patch_crash_on_all_no.patch
+    better_reprompting: bool                    # fix: patches/better_reprompting.patch
 
 
 def _seed() -> int:
@@ -131,20 +134,21 @@ def run(params: Params) -> None:
     run_dir = Path(os.environ.get("REPS_RUN_DIR", "."))
     run_dir.mkdir(parents=True, exist_ok=True)
     llm.reset_models()
-    work = upstream.stage(run_dir)
+    work = upstream.stage(run_dir, better_reprompting=params.better_reprompting,
+                          patch_crash_on_all_no=params.patch_crash_on_all_no)
     up_main = importlib.import_module("main")
     lmp = importlib.import_module("LiteralMessagePassing")
 
     # the instance, selected by upstream's own code from the pinned dataset;
     # a size or index that is not in the dataset raises here, before any model call
-    patch.apply_dataset()
+    monkeypatches.apply_dataset()
     graph = up_main.get_graph(params.graph_generator, params.graph_size, params.graph_index)
     rounds = int(up_main.determine_rounds(params.task, graph, params.graph_index, 0, params.rounds))
     agent_names = {str(v): str(graph.nodes[v]["name"]) for v in graph.nodes}
 
     provider, _, served = params.model.partition("/")
     responder = mock_responder(seed) if provider == "mock" else None
-    patch.apply(params.model, seed, agent_names, mock_responder=responder)
+    monkeypatches.apply(model_id=params.model, seed=seed, agent_names=agent_names, mock_responder=responder)
 
     task_class = up_main.TASKS[params.task]
     emit(AgentsNetConfig(data=ConfigData(

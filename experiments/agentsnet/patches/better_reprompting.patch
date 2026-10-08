@@ -1,0 +1,27 @@
+diff --git a/LiteralMessagePassing.py b/LiteralMessagePassing.py
+index ff7ae2e..3535a76 100644
+--- a/LiteralMessagePassing.py
++++ b/LiteralMessagePassing.py
+@@ -225,9 +225,10 @@ It is not mandatory to send a message to every neighbor in every round. If you d
+         self.format_instructions = PromptTemplate.from_template("{question} Format your answer as follows: '### Final Answer ###', followed by your final answer. Don't use any text for your final answer except one of these valid options: {valid_answers}")
+ 
+     async def fallback_json_request(self, node_id):
+         self.num_fallbacks[node_id] += 1
+-        user_message = HumanMessage(content="Your messages could not be parsed into JSON. Please check your response and try again.")
++        neighbors = self.get_bootstrap_parameters(node_id)["neighbors"]
++        user_message = HumanMessage(content=f"Your messages could not be parsed into JSON. Output one JSON object that maps each neighbor's name ({neighbors}) to the message for that neighbor, as specified earlier. Write each message on a single line.")
+         config = {"configurable": {"thread_id": str(node_id)}}
+         response = await self.app.ainvoke({'messages': [user_message]}, config=config)
+         self.chat_history[node_id] = messages_to_dict(response['messages'])
+         last_message = self.chat_history[node_id][-1]['data']['content']
+@@ -238,9 +239,9 @@ It is not mandatory to send a message to every neighbor in every round. If you d
+         return messages_sent
+     
+     async def fallback_answer_request(self, node_id):
+         self.num_fallbacks[node_id] += 1
+-        user_message = HumanMessage(content="Your answer could not be parsed. Please check your answer and try again.")
++        user_message = HumanMessage(content=self.format_instructions.format(question="Your answer could not be parsed.", valid_answers=", ".join(self.get_valid_answers(node_id))))
+         config = {"configurable": {"thread_id": str(node_id)}}
+         response = await self.app.ainvoke({'messages': [user_message]}, config=config)
+         self.chat_history[node_id] = messages_to_dict(response['messages'])
+         last_message = self.chat_history[node_id][-1]['data']['content']

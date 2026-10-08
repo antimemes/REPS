@@ -27,6 +27,9 @@ tree on disk stays verbatim.
                      dataset; only retry back-off timing uses `random`).
   seed-forwarded     every completion request carries the run seed (the REPS
                      client adds it); upstream sent none.
+
+The fixes behind the patch_crash_on_all_no and better_reprompting params are
+source patches in ../patches, applied to the run's copy (upstream.py).
 """
 
 from __future__ import annotations
@@ -63,8 +66,8 @@ def apply_dataset() -> None:
     main.load_dataset = load_dataset
 
 
-def apply(model_id: str, seed: int, agent_names: dict[str, str],
-          mock_responder: Optional[Callable[[list[dict[str, Any]]], str]] = None) -> None:
+def apply(*, model_id: str, seed: int, agent_names: dict[str, str],
+          mock_responder: Optional[Callable[[list[dict[str, Any]]], str]]) -> None:
     lmp = importlib.import_module("LiteralMessagePassing")
 
     # env-ollama
@@ -97,3 +100,4 @@ def apply(model_id: str, seed: int, agent_names: dict[str, str],
     # no-throttle
     lmp.RATE_LIMITER_KWARGS = _NoLimits()
     lmp.InMemoryRateLimiter = lambda **_kwargs: None
+

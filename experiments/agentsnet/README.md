@@ -18,8 +18,12 @@ in `upstream.json`) on the **authors' own graph instances**
 MIT, pinned by content in `dataset.json`). A thin adapter routes every model
 call through REPS so it is recorded, runs one cell of the authors' sweep per
 run, and reads the score from the results file the authors' code writes.
-Nothing in their code is edited; what the adapter replaces at import time is
-listed in `agentsnet_adapter/patch.py`.
+The adapter changes their code in two ways. At import time it swaps a few
+names in their modules (the model construction, the rate limiter, the dataset
+loader), listed in `agentsnet_adapter/monkeypatches.py`; their files are not touched.
+The two fixes below are patch files in `patches/`, applied to the run's copy of
+their files when the run starts (`agentsnet_adapter/upstream.py`), each only
+when its switch is on; with both off, the authors' files run unchanged.
 
 ## One run
 
@@ -34,6 +38,8 @@ of the five tasks: 135 runs per model.
 | `graph_generator`, `graph_size`, `graph_index` | Which dataset instance: a family (ws = Watts-Strogatz, ba = Barabási-Albert, dt = Delaunay triangulation), a node count (4, 8, 16 for the benchmark; 20 to 100 in steps of 10 for the paper's scaling study) and an instance number (0 to 3 for the three small sizes, 0 to 2 above). |
 | `rounds` | Message-passing rounds. Upstream ignores it for consensus and leader election and for graphs over 16 nodes, which get 2 x diameter + 1. |
 | `chain_of_thought` | Whether agents are asked to reason step by step before each message and the final answer (on in the paper). |
+| `patch_crash_on_all_no` | Score a vertex-cover run 0 when every agent answers No, instead of letting the authors' scoring code crash. On by default. |
+| `better_reprompting` | When an agent's reply can't be read, repeat the exact format it should use instead of asking it to check its reply. On by default. |
 | `model` | `provider/model` for every agent. |
 
 Every agent is first told the rules, its name, its neighbours, the number of

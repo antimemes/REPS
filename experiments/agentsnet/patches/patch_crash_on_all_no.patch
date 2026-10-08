@@ -1,0 +1,18 @@
+diff --git a/LiteralMessagePassing.py b/LiteralMessagePassing.py
+index ff7ae2e..1286078 100644
+--- a/LiteralMessagePassing.py
++++ b/LiteralMessagePassing.py
+@@ -520,9 +520,12 @@ def score_vertex_cover(results, graph):
+                 _results[u] = "No"
+                 if vertex_cover(_results) < 1.0:
+                     minimality += 1
+ 
+-    return coverage * minimality / cover_size
++    try:
++        return coverage * minimality / cover_size
++    except ZeroDivisionError:
++        return 0.0
+ 
+ 
+ class VertexCover(LiteralMessagePassing):
+     def __init__(self, graph, rounds, model_name="gpt-4o-mini", model_provider="openai", chain_of_thought=True):
