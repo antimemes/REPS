@@ -36,11 +36,12 @@
         # `nix run .#reps-runner -- credentials …` to manage local model credentials
         # (endpoints + keys), which the runner injects into experiments so they never
         # land in params or on the command line.
-        // {
+        // rec {
           reps-runner = {
             type = "app";
             program = "${repsPkgs.reps-runner}/bin/reps-runner";
           };
+          default = reps-runner;
         });
 
 
