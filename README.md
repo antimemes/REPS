@@ -1,6 +1,6 @@
 # REPS
 
-[![docs](https://img.shields.io/badge/docs-book-blue)](https://antimemetics-institute.github.io/reps/)
+[![docs](https://img.shields.io/badge/docs-book-blue)](https://antimemetics-institute.github.io/reps/) [![databank](https://img.shields.io/badge/databank-databank.antimemetics.institute-blue)](https://databank.antimemetics.institute)
 
 REPS packages replications of multi-agent safety experiments, runs them on your machine, and saves their inputs, results and execution records together. This repository contains the experiments, runner, Nix library and data-format documentation.
 
