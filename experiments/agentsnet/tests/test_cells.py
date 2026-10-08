@@ -29,6 +29,7 @@ def test_coloring_ws4(run_dir, event_capture):
     assert r["successful"] is True and r["rounds_run"] == 2
     assert 0.0 <= r["score"] <= 1.0 and r["solved"] == (r["score"] == 1.0)
     assert r["fallbacks"] == 0 and r["unparsed_messages"] == 0 and r["unparsed_answers"] == 0
+    assert r["upstream_crashed"] is False
     # ws/4/0 is the complete graph on 4 nodes: every agent messages 3 neighbours in each of 2 rounds
     assert r["messages_sent"] == 4 * 3 * 2
     calls = events_of(events, "llm.call")
@@ -102,7 +103,7 @@ def test_vertex_cover(run_dir, event_capture):
     # seed 7: at least one agent picks "Yes", so upstream's scorer does not divide by zero
     run(Params(**CELL | dict(task="vertex_cover", graph_generator="ba", graph_size=4, graph_index=0, rounds=1)))
     r = results_of(event_capture.read())
-    assert r["successful"] is True and 0.0 <= r["score"] <= 1.0
+    assert r["successful"] is True and 0.0 <= r["score"] <= 1.0 and r["upstream_crashed"] is False
 
 
 def test_missing_instance_fails_before_any_call(run_dir, event_capture):
@@ -152,3 +153,31 @@ def test_unparseable_agent_still_scores(run_dir, event_capture, monkeypatch):
     assert typed["Jason"].answer is None
     record = json.loads((run_dir / "artifacts" / "upstream_record.json").read_text())
     assert record["answers"].count(None) == 1 and record["score"] == 0.0
+
+
+def test_empty_vertex_cover_records_score_zero(run_dir, event_capture, monkeypatch):
+    """Every agent answers No: upstream's scorer divides by the empty cover's size
+    and raises. The run completes with score 0 and upstream_crashed set."""
+    import agentsnet_adapter.main as adapter
+    from agentsnet_adapter.mock import mock_responder
+
+    def all_no(seed):
+        respond = mock_responder(seed)
+        def reply(messages):
+            text = respond(messages)
+            return text.split("### Final Answer ###")[0] + "### Final Answer ###\nNo" if "### Final Answer ###" in text else text
+        return reply
+    monkeypatch.setattr(adapter, "mock_responder", all_no)
+    run(Params(**CELL | dict(task="vertex_cover", graph_generator="ba", graph_size=4, graph_index=0, rounds=1)))
+    events = event_capture.read()
+    r = results_of(events)
+    assert r["upstream_crashed"] is True and r["successful"] is True
+    assert r["score"] == 0.0 and r["solved"] is False
+    assert r["unparsed_answers"] == 0 and r["messages_sent"] > 0
+    answers = [a["data"] for a in events_of(events, "custom", "agentsnet.answer")]
+    assert len(answers) == 4 and all(a["answer"] == "No" and a["valid"] for a in answers)
+    warnings = [e["message"] for e in events_of(events, "log") if e.get("level") == "warn"]
+    assert any("ZeroDivisionError" in m and "upstream_crashed" in m for m in warnings)
+    record = json.loads((run_dir / "artifacts" / "upstream_record.json").read_text())
+    assert record["score"] == 0.0 and "ZeroDivisionError" in record["error_message"]
+    _typed(events)

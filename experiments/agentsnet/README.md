@@ -57,6 +57,12 @@ of `None`.
   fraction of solved instances; the soft score is the paper's Appendix B measure.
 - **successful** is upstream's flag that message passing and scoring finished.
   An unsuccessful run has no score.
+- **upstream_crashed** marks a vertex-cover run in which no agent answered Yes.
+  Upstream's scorer divides by zero there and its process dies without a results
+  file; its recovery tooling then reruns the instance, so the paper cannot count
+  such runs. Here the run is kept with score 0, the score an empty cover earns.
+  Drop flagged runs to approximate the authors' numbers; keep them to see what
+  the models did.
 - **rounds_run** is the round count upstream actually used.
 - **fallbacks**, **unparsed_messages** and **unparsed_answers** are upstream's
   own counters of re-prompts and of agents whose output stayed unparseable. Read

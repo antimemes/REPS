@@ -15,7 +15,8 @@
     inherit experiment;
     # coloring: its scorer divides by the edge count, so no answer pattern can
     # raise under the mock's seed-dependent picks (vertex cover's divides by the
-    # cover size, which an all-"No" pick makes zero: upstream's own crash)
+    # cover size, which an all-"No" pick makes zero: upstream's own crash, which
+    # the adapter records as score 0 with upstream_crashed)
     params = {
       model = "mock/model"; task = "coloring"; graph_generator = "ws"; graph_size = 4; graph_index = 0;
       rounds = 2; chain_of_thought = true;

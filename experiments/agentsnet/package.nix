@@ -118,7 +118,7 @@ in
         type = float;
         label = "Task score";
         description = "The authors' score for the agents' final answers, 0 to 1.";
-        details = "Upstream get_score of the task class. Coloring: share of edges whose endpoints chose different groups, 0 if any answer is not a group. Matching: share of agents whose answer is consistent (named a neighbour who named them back, or None with no neighbour also answering None). Vertex cover: edge coverage times the share of coordinators that are necessary. Consensus and leader election: 1 or 0. Absent when the run was not successful (upstream records score null).";
+        details = "Upstream get_score of the task class. Coloring: share of edges whose endpoints chose different groups, 0 if any answer is not a group. Matching: share of agents whose answer is consistent (named a neighbour who named them back, or None with no neighbour also answering None). Vertex cover: edge coverage times the share of coordinators that are necessary; 0 when no agent answered Yes (upstream raises there; see upstream_crashed). Consensus and leader election: 1 or 0. Absent when the run was not successful (upstream records score null).";
       }
       {
         name = "solved";
@@ -132,7 +132,14 @@ in
         type = bool;
         label = "Run completed";
         description = "Whether message passing and scoring finished without one of the errors upstream catches.";
-        details = "Upstream's successful flag: false when pass_messages or get_score raised ValueError or KeyError (for example an answer that could not be parsed where the scorer needs one); the error text is in the authors' record. Other exceptions are not caught by upstream and fail the run.";
+        details = "Upstream's successful flag: false when pass_messages or get_score raised ValueError or KeyError (for example an answer that could not be parsed where the scorer needs one); the error text is in the authors' record. Other exceptions are not caught by upstream: the empty-vertex-cover ZeroDivisionError is recorded with upstream_crashed (successful stays true); any other fails the run.";
+      }
+      {
+        name = "upstream_crashed";
+        type = bool;
+        label = "Upstream crashed";
+        description = "Whether upstream's vertex-cover scorer divided by zero because no agent answered Yes; the run is recorded with score 0.";
+        details = "Upstream does not catch this ZeroDivisionError: its process dies and writes no results file, and its recovery tooling (--start_from_sample, --missing_run_file) reruns the instance, so the paper's numbers cannot include such runs. The adapter records score 0 (coverage 0 times an undefined minimality share; an empty cover covers no edge) and sets this flag. Drop runs with this flag to approximate the authors' procedure; keep them to count what the models did. Always false for other tasks.";
       }
       {
         name = "rounds_run";

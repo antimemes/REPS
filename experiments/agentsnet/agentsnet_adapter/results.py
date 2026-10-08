@@ -46,11 +46,13 @@ def round_messages(history: list[dict], parse: Callable[[str], Optional[dict]]) 
     return rounds
 
 
-def summary(record: dict, model, rounds: int) -> dict:
+def summary(record: dict, model, rounds: int, *, crashed: bool = False) -> dict:
     """The results from upstream's record and task object. `score` is left out
-    when upstream recorded null (an unsuccessful run)."""
+    when upstream recorded null (an unsuccessful run). `crashed` marks upstream's
+    empty-vertex-cover ZeroDivisionError, recorded with score 0."""
     out: dict = {
         "successful": bool(record["successful"]),
+        "upstream_crashed": crashed,
         "rounds_run": rounds,
         "fallbacks": sum(model.num_fallbacks),
         "unparsed_messages": sum(model.num_failed_json_parsings_after_retry),

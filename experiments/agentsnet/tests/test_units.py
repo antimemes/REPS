@@ -78,7 +78,8 @@ def test_summary_drops_null_score():
         num_failed_json_parsings_after_retry = [0, 0]
         num_failed_answer_parsings_after_retry = [0, 1]
     assert results.summary({"successful": False, "score": None}, Model(), 3) == {
-        "successful": False, "rounds_run": 3, "fallbacks": 1, "unparsed_messages": 0, "unparsed_answers": 1}
+        "successful": False, "upstream_crashed": False, "rounds_run": 3, "fallbacks": 1, "unparsed_messages": 0,
+        "unparsed_answers": 1}
     half = results.summary({"successful": True, "score": 0.5}, Model(), 3)
     assert half["score"] == 0.5 and half["solved"] is False
     assert results.summary({"successful": True, "score": 1.0}, Model(), 3)["solved"] is True
@@ -114,3 +115,30 @@ def test_real_replies_carry_langchain_metadata(monkeypatch):
     assert result.llm_output["token_usage"] == completion.usage.model_dump()
     assert (result.llm_output["model_name"], result.llm_output["system_fingerprint"], result.llm_output["id"]) == (
         "gpt-4.1-mini-2025-04-14", "fp_1", "chatcmpl-x")
+
+
+def test_only_the_empty_vertex_cover_crash_qualifies():
+    from agentsnet_adapter.main import _empty_vertex_cover
+
+    class VertexCover:
+        pass
+
+    class Coloring:
+        pass
+
+    def score_vertex_cover():
+        return 0 / 0
+
+    def elsewhere():
+        return 0 / 0
+
+    def raised(function):
+        try:
+            function()
+        except ZeroDivisionError as error:
+            return error
+    no_yes = ["No", None, "No"]
+    assert _empty_vertex_cover(VertexCover(), no_yes, raised(score_vertex_cover))
+    assert not _empty_vertex_cover(VertexCover(), ["No", "Yes"], raised(score_vertex_cover))   # a cover exists
+    assert not _empty_vertex_cover(VertexCover(), no_yes, raised(elsewhere))                   # another function
+    assert not _empty_vertex_cover(Coloring(), no_yes, raised(score_vertex_cover))             # another task

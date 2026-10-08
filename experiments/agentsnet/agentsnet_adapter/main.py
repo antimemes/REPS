@@ -11,7 +11,7 @@ upstream's own `main.get_graph` (pointed at the pinned parquet), fixes the round
 count with upstream's `determine_rounds`, swaps the model construction for a
 REPS-instrumented chat model (patch.py, llm.py), drives the task class exactly
 as upstream's `run()` does (bootstrap, pass_messages, get_score, with the same
-error handling), has upstream write its results JSON with `save_results`,
+error handling, plus upstream's one known uncaught crash, see `_drive`), has upstream write its results JSON with `save_results`,
 ingests that file, and reports the paper's score and upstream's parsing counters
 from it. Upstream's prompts, parsing, scoring and bugs are untouched; patch.py
 lists what the adapter replaces.
@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field
-from reps_events import Result, Status, emit
+from reps_events import Log, Result, Status, emit
 from reps_experiment.scaffold import experiment_main
 
 from . import llm, patch, results, upstream
@@ -88,15 +88,42 @@ def _dataset_graph_seed(params: Params) -> int | None:
     return int(seed) if seed is not None else None
 
 
+def _empty_vertex_cover(model, answers, error: ZeroDivisionError) -> bool:
+    """Upstream's vertex-cover scorer divides by the cover size, which is zero when
+    no agent answered "Yes" (all "No", or unparseable). Only that case, raised in
+    that function, qualifies; any other ZeroDivisionError is not upstream's known
+    crash and must fail the run."""
+    frame = error.__traceback__
+    while frame is not None and frame.tb_next is not None:
+        frame = frame.tb_next
+    return (type(model).__name__ == "VertexCover" and frame is not None
+            and frame.tb_frame.f_code.co_name == "score_vertex_cover"
+            and not any(answer == "Yes" for answer in answers))
+
+
 async def _drive(model):
-    """Upstream run()'s inner loop body for one instance, with its error handling."""
+    """Upstream run()'s inner loop body for one instance, with its error handling,
+    plus upstream's one known uncaught crash. Returns (answers, score, successful,
+    error_message, crashed).
+
+    Upstream does not catch the empty-cover ZeroDivisionError: its process dies and
+    no results file is written, so its own recovery tooling (--start_from_sample,
+    --missing_run_file) would rerun the instance. Here the run completes with score
+    0, which is what upstream's formula means (coverage 0 times an undefined
+    minimality share) and what the paper's definition gives for an empty cover, and
+    `crashed` marks it so analyses can drop it as the authors' reruns would."""
     await model.bootstrap()
+    answers = None
     try:
         answers = await model.pass_messages()
         score = model.get_score(answers)
-        return answers, score, True, None
+        return answers, score, True, None, False
     except (ValueError, KeyError) as e:
-        return [None for _ in range(model.graph.order())], None, False, repr(e)
+        return [None for _ in range(model.graph.order())], None, False, repr(e), False
+    except ZeroDivisionError as e:
+        if answers is None or not _empty_vertex_cover(model, answers, e):
+            raise
+        return answers, 0.0, True, repr(e), True
 
 
 def run(params: Params) -> None:
@@ -131,7 +158,10 @@ def run(params: Params) -> None:
     # upstream run(): task_class(graph, rounds, model_name, model_provider, chain_of_thought)
     model = task_class(graph=graph, rounds=rounds, model_name=served, model_provider=provider,
                        chain_of_thought=params.chain_of_thought)
-    answers, score, successful, error_message = asyncio.run(_drive(model))
+    answers, score, successful, error_message, crashed = asyncio.run(_drive(model))
+    if crashed:
+        emit(Log(level="warn", message=f"agentsnet: upstream's vertex-cover scorer raised {error_message} "
+                                       "(no agent answered Yes); recorded as score 0, upstream_crashed true"))
 
     # upstream's own record, then its ingestion
     up_main.save_results(
@@ -159,7 +189,7 @@ def run(params: Params) -> None:
         emit(AgentsNetAnswer(data=AnswerData(agent=name, answer=answer,
                                              valid=answer in model.get_valid_answers(node))))
 
-    values = results.summary(record, model, rounds)
+    values = results.summary(record, model, rounds, crashed=crashed)
     values["messages_sent"] = delivered
     for name, value in values.items():
         emit(Result(name=name, value=value))
