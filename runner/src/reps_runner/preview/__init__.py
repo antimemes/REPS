@@ -37,6 +37,7 @@ from contextlib import ExitStack
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from importlib.resources import as_file, files
+from os import PathLike
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
@@ -70,13 +71,13 @@ def list_manifests(catalog: Path | None) -> list[dict[str, Any]]:
     manifests: list[dict[str, Any]] = []
     for path in sorted(catalog.glob("*.json")):
         try:
-            manifest = json.loads(path.read_text())
+            value = json.loads(path.read_text())
         except (OSError, ValueError):
             continue
-        if isinstance(manifest, dict):
-            typed: dict[str, Any] = {**manifest}
-            if isinstance(typed.get("name"), str):
-                manifests.append(typed)
+        if isinstance(value, dict):
+            manifest: dict[str, Any] = {**value}
+            if isinstance(manifest.get("name"), str):
+                manifests.append(manifest)
     return manifests
 
 
@@ -95,10 +96,13 @@ def read_events_from(run_dir: Path, start: int) -> bytes:
         if not line:
             continue
         try:
-            record = json.loads(line)
+            value = json.loads(line)
         except ValueError:
             continue
-        seq = record.get("seq") if isinstance(record, dict) else None
+        if not isinstance(value, dict):
+            continue
+        record: dict[str, Any] = {**value}
+        seq = record.get("seq")
         if isinstance(seq, int) and seq >= start:
             try:
                 line = json.dumps(migrate_record(record)).encode()
@@ -109,8 +113,11 @@ def read_events_from(run_dir: Path, start: int) -> bytes:
 
 
 def _started(card: dict[str, Any]) -> tuple[str, str]:
-    lifecycle = card.get("lifecycle")
-    started = lifecycle.get("started_at") if isinstance(lifecycle, dict) else None
+    value = card.get("lifecycle")
+    if not isinstance(value, dict):
+        return ("", card["run_id"])
+    lifecycle: dict[str, Any] = {**value}
+    started = lifecycle.get("started_at")
     return (started if isinstance(started, str) else "", card["run_id"])
 
 
@@ -134,7 +141,10 @@ class PreviewServer(ThreadingHTTPServer):
 
 
 class PreviewHandler(SimpleHTTPRequestHandler):
-    server: PreviewServer  # type: ignore[assignment]
+    @property
+    def preview_server(self) -> PreviewServer:
+        assert isinstance(self.server, PreviewServer)
+        return self.server
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A002 - stdlib signature
         pass
@@ -147,14 +157,14 @@ class PreviewHandler(SimpleHTTPRequestHandler):
         url = urlsplit(self.path)
         path = url.path
         if path == "/api/runs":
-            self._send(json.dumps(list_runs(self.server.home)).encode(), "application/json")
+            self._send(json.dumps(list_runs(self.preview_server.home)).encode(), "application/json")
         elif path == "/api/manifests":
-            self._send(json.dumps(list_manifests(self.server.manifests)).encode(), "application/json")
+            self._send(json.dumps(list_manifests(self.preview_server.manifests)).encode(), "application/json")
         elif match := _EVENTS_ROUTE.match(path):
             condition_dir, run_id = match.groups()
             if not (_SEGMENT.match(condition_dir) and _SEGMENT.match(run_id)):
                 return self.send_error(HTTPStatus.NOT_FOUND)
-            run_dir = self.server.home / "runs" / condition_dir / run_id
+            run_dir = self.preview_server.home / "runs" / condition_dir / run_id
             if not (run_dir / "events.jsonl").is_file():
                 return self.send_error(HTTPStatus.NOT_FOUND)
             raw = parse_qs(url.query).get("from", ["0"])[-1]
@@ -182,10 +192,10 @@ class PreviewHandler(SimpleHTTPRequestHandler):
         if urlsplit(path).path == "/":
             path = "/static/index.html"
         root, _, rest = path.lstrip("/").partition("/")
-        self.directory = str(self.server.home if root == "data" else self.server.static)
+        self.directory = str(self.preview_server.home if root == "data" else self.preview_server.static)
         return super().translate_path("/" + rest)
 
-    def list_directory(self, path: str) -> None:  # type: ignore[override]
+    def list_directory(self, path: str | PathLike[str]) -> None:
         self.send_error(HTTPStatus.NOT_FOUND)
         return None
 
