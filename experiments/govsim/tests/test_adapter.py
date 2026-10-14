@@ -275,6 +275,19 @@ def test_backend_explicit_null_omits_upstream_sampling_defaults(
     assert captured["max_completion_tokens"] == 64
 
 
+@pytest.mark.parametrize("max_tokens", [None, 64])
+def test_mock_run_max_tokens_null_omits_and_int_caps(tmp_path, event_capture, warmed_run, max_tokens):
+    proc = _run_mock_pipeline(tmp_path, warmed_run, max_tokens=max_tokens)
+    assert proc.returncode == 0, proc.stderr
+    requests = [e["call"]["request"] for e in event_capture.read() if e["type"] == "llm.call"]
+    assert requests
+    assert not any("max_tokens" in request for request in requests)
+    if max_tokens is None:
+        assert not any("max_completion_tokens" in request for request in requests)
+    else:
+        assert all(request["max_completion_tokens"] == max_tokens for request in requests)
+
+
 @pytest.mark.parametrize("experiment", EXPERIMENTS)
 def test_upstream_mock_pipeline(tmp_path, experiment, event_capture, warmed_run):
     proc = _run_mock_pipeline(tmp_path, warmed_run, experiment=experiment, temperature=None,

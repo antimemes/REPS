@@ -126,8 +126,9 @@ in
         group = "generation";
       };
       max_tokens = param int {
-        description = "Per-call completion budget (upstream Gen default 8000); enforced as a cap on every request.";
-        initial = 8000;
+        nullable = true;
+        description = "Per-call completion budget sent as a cap on every request; null sends none, so the server applies its own limit (upstream asked for 8000, which never bound in practice).";
+        initial = null;
         order = 1022;
         group = "generation";
       };

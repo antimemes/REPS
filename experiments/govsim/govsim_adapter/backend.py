@@ -54,6 +54,7 @@ class ChatClientBackend(ModelAPI):
         # fixed sampling values). Honor explicit run-level omission here.
         self.omit_temperature = temperature is None
         self.omit_top_p = top_p is None
+        self.omit_max_tokens = max_tokens is None
         self.reasoning_effort = reasoning_effort
         self.client = ChatClient(
             model_id,
@@ -74,13 +75,14 @@ class ChatClientBackend(ModelAPI):
             generation["top_p"] = top_p
         if self.reasoning_effort is not None:
             generation["reasoning_effort"] = self.reasoning_effort
+        if not self.omit_max_tokens:
+            generation["max_tokens"] = max_tokens
         out = self.client.chat.completions.create(
             # real backends must see the served name (concordia rule); the mock
             # ignores it
             model=self.client.served_model,
             messages=_strip_prefill_ws(list(chat)),
             **generation,
-            max_tokens=max_tokens,
             seed=self.seed,
         )
         # Pathfinder anchors prefix removal and stop-pattern matches at position 0;

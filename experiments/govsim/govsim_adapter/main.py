@@ -65,7 +65,7 @@ class Params(BaseModel):
     threads: int = Field(default=2, ge=1, strict=True)
     temperature: float | None = Field(ge=0, allow_inf_nan=False)
     top_p: float | None = Field(gt=0, le=1, allow_inf_nan=False)
-    max_tokens: int = Field(gt=0)
+    max_tokens: int | None = Field(gt=0)
     reasoning_effort: Literal["low", "medium", "high", "xhigh", "max"] | None = None
 
     @field_validator("experiment")
