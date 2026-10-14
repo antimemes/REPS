@@ -379,6 +379,56 @@ def test_mistral_prefill_flag_on_wire_and_mock(monkeypatch, event_capture, model
     assert event["call"]["request"]["messages"] == expected
 
 
+@pytest.mark.parametrize("model_id", [
+    "vllm/Qwen/Qwen2.5-7B-Instruct",
+    "vllm/mistralai/Mistral-7B-Instruct-v0.2",
+    "mistral/mistral-medium",
+])
+@pytest.mark.parametrize("last_role", ["assistant", "user"])
+@pytest.mark.parametrize("extra_body", [None, {"top_k": 20}])
+def test_vllm_prefill_continues_final_message(monkeypatch, event_capture, model_id, last_role, extra_body):
+    provider_name, served_model = model_id.split("/", 1)
+    provider = PROVIDERS[provider_name]
+    monkeypatch.setenv(provider.api_key.name, "test-key")
+    monkeypatch.setenv(provider.base_url.name, "https://example.invalid/v1")
+    captured = []
+    def transport(request):
+        body = json.loads(request.content)
+        captured.append(body)
+        _, reply = client_and_reply()
+        reply.model = body["model"]
+        reply.choices[0].message.content = "Answer: 5"
+        return httpx.Response(200, json=reply.model_dump(mode="json"))
+
+    http_client = openai.DefaultHttpxClient
+    monkeypatch.setattr(openai, "DefaultHttpxClient", lambda **kw: http_client(
+        transport=httpx.MockTransport(transport), **kw,
+    ))
+    client = ChatClient(model_id, seed=42, max_tokens=64)
+    chat = [{"role": "user", "content": "Choose a number"}]
+    if last_role == "assistant":
+        chat.append({"role": "assistant", "content": "Answer:"})
+    original = deepcopy(chat)
+    original_extra = deepcopy(extra_body)
+    extra = {} if extra_body is None else {"extra_body": extra_body}
+    client.chat.completions.create(model=served_model, messages=chat, **extra)
+    [body] = captured
+    continued = last_role == "assistant" and provider_name == "vllm"
+    expected_extra = dict(extra_body or {})
+    if continued:
+        expected_extra |= {"add_generation_prompt": False, "continue_final_message": True}
+    expected = deepcopy(original)
+    if last_role == "assistant" and provider_name == "mistral":
+        expected[-1]["prefix"] = True
+    assert body["messages"] == expected
+    assert {k: body[k] for k in body.keys() - {"model", "messages", "seed", "max_completion_tokens"}} == expected_extra
+    assert chat == original
+    assert extra_body == original_extra
+    [event] = event_capture.read()
+    assert event["call"]["request"]["messages"] == expected
+    assert event["call"]["request"].get("extra_body") == (expected_extra or None)
+
+
 @pytest.mark.parametrize("content", [None, [{"type": "text", "text": "Answer: "}]])
 def test_prefill_keeps_non_string_content(event_capture, content):
     client = ChatClient("mock/mistral-medium-3-5", mock_responder=lambda _: "5")

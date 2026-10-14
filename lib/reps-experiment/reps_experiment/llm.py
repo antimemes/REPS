@@ -23,7 +23,9 @@ frameworks actually use, ``.chat.completions.create``. In exchange:
 A trailing assistant message is a prefill to continue. Mistral's serving API
 only accepts one flagged ``prefix: True`` (message-level, not a generation
 parameter), so the client adds the flag for the Mistral family before recording
-and sending; other providers receive the message as given.
+and sending. vLLM instead takes ``continue_final_message`` plus
+``add_generation_prompt=false`` in the request body, whatever the family; other
+providers receive the message as given.
 
 Needs the ``openai`` SDK — depend on ``reps-experiment[llm]``. Import stays inside this
 module so the base package adds no requirement.
@@ -179,6 +181,7 @@ class ChatClient:
         if self.is_mock:
             self.served_model = model_id.split("/", 1)[1]
             self.base_url = ""
+            self.provider: str | None = None
             self._request = self._mock_create  # unreached (_create short-circuits)
         else:
             import openai  # the [llm] extra; only this module needs it
@@ -187,6 +190,7 @@ class ChatClient:
             endpoint = resolve(model_id)  # ValueError with the fix in the message
             self.served_model = endpoint.served_model
             self.base_url = endpoint.base_url
+            self.provider = endpoint.provider
             def count_retry(response: httpx.Response) -> None:
                 if response.status_code == 429 or 500 <= response.status_code < 600:
                     self._retry_count.set(self._retry_count.get() + 1)
@@ -215,9 +219,12 @@ class ChatClient:
 
     def _create(self, **kw: Any) -> Any:
         messages = kw.get("messages")
-        if (messages and messages[-1]["role"] == "assistant"
-                and model_family(self.served_model) == "mistral"):
-            kw["messages"] = [*messages[:-1], {**messages[-1], "prefix": True}]
+        if messages and messages[-1]["role"] == "assistant":
+            if self.provider == "vllm":
+                kw["extra_body"] = {**(kw.get("extra_body") or {}),
+                                    "add_generation_prompt": False, "continue_final_message": True}
+            elif model_family(self.served_model) == "mistral":
+                kw["messages"] = [*messages[:-1], {**messages[-1], "prefix": True}]
         # the run's declared generation params, applied uniformly
         if self._temperature is not None:
             kw["temperature"] = self._temperature

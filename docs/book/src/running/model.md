@@ -173,7 +173,8 @@ convention for vLLM is to serve under the upstream repo id without renaming it
 or quantizing at load time; choose a repo or tag that names the intended
 quantization. The venue (laptop, cluster or Vast) belongs in a
 [credential profile](secrets.md), so moving the same model and engine between
-venues does not change the model ID.
+venues does not change the model ID. On vLLM a trailing assistant message is
+continued as a prefill rather than answered in a new turn.
 
 The served name must equal the requested name ignoring case, except that an
 unqualified or `-latest` request also accepts the same name plus one date suffix
