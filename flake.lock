@@ -1,5 +1,26 @@
 {
   "nodes": {
+    "memelint": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792170207,
+        "narHash": "sha256-dFmh02Sh1NyO7RMs/xrA0XvehtfSnIccqudL9cw1Esk=",
+        "owner": "antimemes",
+        "repo": "memelint",
+        "rev": "593932dc66a7ddd5bf8598197aa1a7e141103aeb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "antimemes",
+        "ref": "latest",
+        "repo": "memelint",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1784856561,
@@ -47,6 +68,7 @@
     },
     "root": {
       "inputs": {
+        "memelint": "memelint",
         "nixpkgs": "nixpkgs",
         "pyproject-build-systems": "pyproject-build-systems",
         "pyproject-nix": "pyproject-nix",

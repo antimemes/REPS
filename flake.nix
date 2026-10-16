@@ -11,7 +11,12 @@
   inputs.uv2nix = { url = "github:pyproject-nix/uv2nix"; flake = false; };
   inputs.pyproject-build-systems = { url = "github:pyproject-nix/build-system-pkgs"; flake = false; };
 
-  outputs = { self, nixpkgs, pyproject-nix, uv2nix, pyproject-build-systems }:
+  # prose lint for comments/docstrings/docs. Pinned to the `latest` tag, which
+  # upstream moves on each release (`nix flake update memelint` to bump); follows
+  # our nixpkgs so the build shares this toolchain. Source build, no cache.
+  inputs.memelint = { url = "github:antimemes/memelint/latest"; inputs.nixpkgs.follows = "nixpkgs"; };
+
+  outputs = { self, nixpkgs, pyproject-nix, uv2nix, pyproject-build-systems, memelint }:
     let
       systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system:
@@ -78,7 +83,7 @@
         } // experimentChecks);
 
       devShells = forAllSystems (pkgs: {
-        default = import ./shell.nix { inherit pkgs; };
+        default = import ./shell.nix { inherit pkgs; memelintSrc = memelint; };
       });
     };
 }

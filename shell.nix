@@ -2,7 +2,13 @@
 # via legacy `nix-shell` (default.nix supplies the SAME flake.lock-pinned nixpkgs).
 # Toolchains only: per-project Python deps come from each project's pyproject/uv.lock
 # via `uv run`; the shell never duplicates dependency lists.
-{ pkgs ? (import ./. { }).pkgs }:
+{ pkgs ? (import ./. { }).pkgs
+, memelintSrc ? (import ./pkgs/locked-sources.nix { }).memelint
+}:
+
+let
+  memelint = (import "${memelintSrc}/nix/package.nix" { inherit pkgs; }).default;
+in
 
 pkgs.mkShell {
   packages = [
@@ -25,6 +31,9 @@ pkgs.mkShell {
     pkgs.pyright
 
     pkgs.mdbook
+
+    # prose lint (STE) for comments/docstrings/docs; flake input, see flake.nix
+    memelint
 
     # sandboxed experiments (inspect's docker sandbox) need a Docker daemon; the
     # devshell ships the whole engine (client + compose plugin + dockerd) and
