@@ -1,9 +1,4 @@
-agentic
-coding
-fn
-oneoff
-reward
-shortcuts
-swebench
-truncates
-virtual
+# Names of the impossiblebench experiment, for experiments/impossiblebench/ only. Each with its meaning.
+oneoff    # ImpossibleBench's split name: the impossible variant with one mutated test assertion
+reward    # in "reward hacking": the paper's term for passing tests by exploiting them
+swebench  # SWE-bench, the GitHub-issue coding benchmark; also its package and the ImpossibleBench split name

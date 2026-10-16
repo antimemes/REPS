@@ -1,100 +1,34 @@
-adaptation
-allocation
-backoff
-belt
-betting
-caching
-chains
-chart
-chartable
-checkpoint
-checkpoints
-coercing
-composition
-conf
-contention
-cooperate
-cosine
-cue
-dash
-degenerate
-descriptions
-determinism
-deviation
-divergence
-embed
-embedders
-embedding
-embeddings
-emitter
-emulates
-encoding
-fishery
-fork
-forking
-forks
-formulas
-gen
-govsim
-harvest
-harvester
-harvesters
-harvests
-home
-hydra
-initialize
-insights
-inspectable
-interaction
-lifelines
-mayor
-memorize
-month
-mxbai
-ndarrays
-negotiate
-neutralization
-notification
-outsider
-parent
-pasture
-pathfinder
-persona
-personas
-perturbation
-piatti
-planning
-pools
-positional
-prefills
-projecting
-pygtrie
-ranking
-ratings
-recency
-recomputable
-regrown
-regrows
-relevance
-reserialization
-resolver
-resource
-restaurant
-river
-robustness
-searchpath
-sentinel
-similarity
-startup
-stats
-statsmodels
-substring
-survival
-sustain
-sustainability
-threshold
-transformers
-treatments
-utterance
-wandb
-worker
+# Names of the govsim experiment, for experiments/govsim/ only. Each with its meaning.
+allocation      # the upstream step that splits a contended pool among harvesters' requests (stochastic or proportional)
+cosine          # the cosine-similarity measure GovSim's memory retrieval divides by
+dash            # the Dash web-app library, an upstream analysis dependency REPS drops
+embedding       # a vector an embedder makes from memory text, stored in embeddings.json; not an inflection of "embed" (doubled d); base of "embeddings"
+fishery         # the GovSim fishing scenario: a shared lake of fish
+formula         # the arithmetic rule for a metric, quoted from the paper or upstream plots.py; base of "formulas"
+govsim          # the GovSim experiment (Piatti et al., NeurIPS 2024) and its event-kind prefix
+harvest         # one persona's take from the shared pool in a round; the govsim.harvest event; base of "harvests"
+harvester       # a persona that logged a harvest in a round; the metric's per-round agent count; base of "harvesters"
+hydra           # the Hydra config framework upstream GovSim composes its config with
+lifelines       # the survival-analysis Python library, an upstream analysis dependency REPS drops
+mayor           # GovSim's templated framework speaker that opens the group meeting; no model call behind it
+month           # GovSim's round: one harvest, meeting and reflection cycle
+mxbai           # the `embedder=mxbai` option: mixedbread-ai/mxbai-embed-large-v1, pinned by revision
+ndarray         # a NumPy array; base of "ndarrays"
+outsider        # the GovSim treatment where a selfish newcomer joins after three months
+pasture         # the GovSim sheep-herding scenario: shared grassland
+pathfinder      # GovSim's prompt DSL library (gen/find/select over a chat backend)
+persona         # one of GovSim's five LLM agents; the `persona_N` ID; base of "personas"
+perturbation    # GovSim's mid-run change (e.g. no-language) applied at a set round; the upstream config key
+piatti          # Giorgio Piatti, first author of GovSim
+pygtrie         # a trie library that pathfinder depends on
+recency         # GovSim's memory-retrieval score that favors recent nodes (0.99^i)
+relevance       # GovSim's memory-retrieval score from embedding similarity (hash noise in REPS)
+resource        # GovSim's shared pool quantity (fish, grass, clean water); the `resource` field of govsim.state
+restaurant      # GovSim's group-discussion phase, which closes a round
+river           # the GovSim pollution scenario: shared clean water
+statsmodels     # the statistics Python library, an upstream analysis dependency REPS drops
+survival        # the GovSim metric: rounds before the pool collapses (below 5)
+sustainability  # the paper's sustainability threshold: the most each harvester can take without shrinking next round's pool
+transformers    # the Hugging Face transformers library (sentence-transformers runs on it)
+utterance       # one persona's group-chat message; the govsim.utterance event
+wandb           # the Weights & Biases logging library, disabled in REPS runs

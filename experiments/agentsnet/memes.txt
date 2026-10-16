@@ -1,60 +1,24 @@
-agentsnet
-analyses
-bugs
-builder
-cells
-checkpointer
-collaborative
-coloring
-consensus
-converter
-converters
-cooperative
-coordination
-copytree
-crash
-crashed
-developer
-diameter
-factory
-fetched
-fuzz
-galkin
-grötschla
-hub
-hugging
-jason
-langchain
-langgraph
-limiter
-metric
-minimality
-müller
-neighbour
-neighbours
-networkx
-pace
-pacing
-parquet
-parseable
-perozzi
-pytest
-recipient
-reconstructed
-replayed
-reproduced
-reruns
-scipy
-scoring
-sidecar
-src
-staging
-subset
-tester
-throttle
-throttling
-timing
-transcripts
-tönshoff
-uncaught
-unparseable
+# Names of the agentsnet experiment, for experiments/agentsnet/ only. Each with its meaning.
+agentsnet     # the AgentsNet benchmark (Grötschla et al. 2025) and this experiment: LLM agents, one per graph node, solve a distributed graph problem; also the event prefix `agentsnet.*`
+checkpointer  # langgraph's per-thread conversation store (MemorySaver) that upstream replays into every agent's call
+coloring      # the AgentsNet graph-coloring task (`task=coloring`); -ing form of STE "color" drops the e, so it needs listing
+consensus     # the AgentsNet task where every agent must settle on the same value (`task=consensus`)
+diameter      # the graph's diameter (longest shortest path); fixes upstream's round count for large graphs and is a recorded instance field
+fuzz          # patch(1)'s tolerance for shifted context lines; the fix patches must apply with none (`--fuzz=0`)
+galkin        # Mikhail Galkin, an AgentsNet author
+grötschla     # Florian Grötschla, first author of AgentsNet
+hub           # the Hugging Face Hub, where the graph dataset is published; always after "Hugging Face"
+hugging       # Hugging Face, the dataset host (always "Hugging Face")
+langchain     # the LLM framework upstream builds its chat models with (langchain-openai, langchain-google-genai)
+langgraph     # the agent-graph library upstream runs each node's message-passing conversation in
+limiter       # upstream's rate limiter (langchain's InMemoryRateLimiter), always "rate limiter"; stubbed out here
+minimality    # the vertex-cover score's share of cover nodes that cannot be removed (upstream's term; coverage x minimality / cover size)
+müller        # Luis Müller, an AgentsNet author
+neighbour     # an agent adjacent to another in the graph, the only ones it may message (British spelling, as the README and code write it; networkx's `neighbors` is an identifier)
+networkx      # the Python graph library upstream builds and measures graph instances with
+parquet       # the Apache Parquet file format; the pinned graph dataset is one parquet file
+perozzi       # Bryan Perozzi, an AgentsNet author
+recipient     # the agent a message is addressed to; the `recipient` field of `agentsnet.message`, paired with `sender`
+scipy         # the Python scientific library upstream imports (scipy.spatial)
+scoring       # upstream's score computation step, named alongside parsing; -ing form of "score" (root list) drops the e, like "parsing" in the root list
+tönshoff      # Jan Tönshoff, an AgentsNet author

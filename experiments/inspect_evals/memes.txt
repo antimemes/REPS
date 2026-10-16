@@ -1,19 +1,6 @@
-alphabetized
-arxiv
-browsable
-candidate
-collision
-huggingface
-instruct
-integration
-kwarg
-kwargs
-pinning
-placeholders
-pooling
-regen
-regenerates
-regeneration
-selectors
-tiktoken
-unannotated
+# Names of the inspect_evals experiment, for experiments/inspect_evals/ only. Each with its meaning.
+arxiv        # arXiv, the preprint server; also upstream's paper-link field name
+huggingface  # Hugging Face, the dataset and model hub
+instruct     # the chat-tuned variant of a model, as in "instruct model"
+pooling      # read-time merging of comparable runs across pin versions; base "pool" is bundled but dropped-e "pooling" is not accepted
+tiktoken     # OpenAI's tokenizer library

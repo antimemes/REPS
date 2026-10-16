@@ -1,46 +1,16 @@
-alice
-auditable
-bob
-budget
-cafe
-cards
-character
-delegate
-delegating
-detector
-dialogic
-dynamics
-entities
-entity
-game
-generative
-grain
-grains
-knob
-master
-modeling
-multi
-narrates
-narration
-narrator
-notebook
-observation
-perception
-perceptions
-prefab
-prefabs
-premise
-qwen
-rails
-replicates
-scene
-sim
-simulations
-social
-specs
-suite
-tutorial
-unseeded
-webui
-window
-world
+# Names of the concordia experiment, for experiments/concordia/ only. Each with its meaning.
+alice        # name of the first agent in the default two-friends-at-a-cafe scenario roster
+bob          # name of the second agent in the default two-friends-at-a-cafe scenario roster
+cafe         # the default Concordia scenario (two friends at a cafe); also the concordia-cafe card name
+dialogic     # the Concordia game-master prefab that runs a pure conversation; the experiment's default game_master value
+entity       # Concordia's term for one simulated agent (concordia.prefabs.entity); one model client per entity
+game         # as in "game master": the Concordia controller entity that narrates the scene and sequences turns (concordia.prefabs.game_master)
+master       # as in "game master": the Concordia controller entity (concordia.prefabs.game_master)
+narrator     # the data field on the concordia.scene event naming the game master that speaks the opening premise
+observation  # Concordia's term for a text written to an agent's memory; the concordia.observation custom event
+perception   # the concordia.perception custom event: an agent's current read of itself and the scene each turn
+prefab       # Concordia's term for a reusable entity or game-master configuration (concordia.prefabs)
+premise      # the opening situation the game master narrates; the scenario's `premise` parameter and the text of the concordia.scene event
+qwen         # Qwen, the Alibaba family of open-weight models (vllm/Qwen/..., openrouter/qwen/...)
+scene        # Concordia's unit of play: the opening premise plus the turns that follow; the concordia.scene custom event
+sim          # the concordia-sim program (the experiment's entry point) and the Simulation object it drives

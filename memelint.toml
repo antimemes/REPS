@@ -1,102 +1,185 @@
 #:schema https://raw.githubusercontent.com/antimemes/memelint/main/crates/memelint/memelint.schema.json
 
-# Technical names of REPS. A word goes here when it is a technical name in this
-# domain, not when it is only easier English. An experiment's own words live in
-# its memes.txt and apply to that directory only.
+# The glossary of REPS: the technical names of this project, each with its meaning.
+# A word goes here when it names one definite item in this repository and the
+# bundled lists of memelint do not have it; a vague word is prose work, not list
+# work. An experiment's own names live in its memes.txt and apply to its directory.
 subtree-word-lists = ["experiments/*/memes.txt"]
 ignore = [".cache/"]
 
 words = [
-  # REPS vocabulary
-  "attribution", "bookkeeping", "boundaries", "boundary", "call", "card", "comparability",
-  "concordia", "emit", "envelope", "envelopes", "experiment", "experiments", "families",
-  "family", "fetchable", "fingerprints", "hello", "identity", "impossiblebench", "inspect",
-  "keyless", "ladder", "manifest", "manifests", "mockllm", "oneliner", "prompt", "provenance",
-  "registry", "relock", "reproducibility", "reps", "responder", "roster", "round", "run",
-  "runner", "scaffold", "store", "tier",
-  # generic software: candidates for memelint's bundled software list
-  "actor", "adapter", "adapters", "alias", "allowlist", "allowlisted", "answer", "archive",
-  "arg", "args", "argv", "artifact", "artifacts", "assets", "assistant", "attribute",
-  "attributes", "attrs", "auth", "author", "bearer", "body", "bug", "callable", "caller",
-  "callers", "canonical", "capture", "captured", "capturing", "catalog", "cell", "chain",
-  "chat", "checkout", "child", "classic", "cmd", "collisions", "compat", "configured",
-  "console", "consume", "consumer", "consumers", "consumes", "content", "context", "contract",
-  "conversation", "counters", "covariates", "coverage", "custom", "cwd", "dataset", "datasets",
-  "declare", "declared", "declares", "dep", "deps", "derived", "deterministic",
-  "deterministically", "dev", "devshell", "dir", "docs", "document", "edit", "editable",
-  "editing", "emission", "emitted", "emitting", "engine", "entrypoint", "env", "eval", "exec",
-  "executable", "execution", "fallback", "fetch", "field", "fields", "flake", "flakeless",
-  "flakes", "framework", "generation", "global", "handlers", "harness", "hidden", "hint",
-  "hints", "id", "ids", "image", "images", "immutable", "inferred", "infra", "ingestion",
-  "instance", "instances", "instrumented", "int", "interpreter", "invocation", "invoke",
-  "language", "launch", "launched", "launcher", "lazily", "lazy", "legacy", "lib", "line",
-  "lines", "llm", "loader", "logger", "machine", "malformed", "marker", "markers", "menu",
-  "message", "messages", "metrics", "migrated", "mirror", "mirrors", "model", "models",
-  "mutable", "naming", "native", "nested", "network", "non", "nonzero", "normalized",
-  "nullable", "numbered", "numeric", "observations", "offline", "op", "packaging", "page",
-  "pages", "paper", "param", "params", "parsing", "passthrough", "phases", "pin", "pinned",
-  "pins", "placeholder", "platform", "policy", "pool", "pre", "prefix", "presentation",
-  "preview", "print", "printed", "prints", "project", "projections", "prose", "protocol",
-  "provider", "publish", "pure", "raw", "re", "reader", "readers", "receiver", "ref",
-  "regenerate", "repo", "resolution", "resolve", "resolved", "resolves", "rev", "revision",
-  "roles", "root", "roots", "rule", "rules", "runnable", "scalar", "scanner", "score",
-  "scorer", "scores", "secret", "secrets", "section", "seed", "seeds", "self", "semantic",
-  "semantics", "seq", "setup", "shared", "signature", "skip", "skipped", "skips", "snapshot",
-  "snapshots", "software", "spec", "standalone", "static", "stdlib", "storage", "str",
-  "strict", "sub", "subclass", "subclassing", "subprocess", "subst", "substrings", "subtree",
-  "suffix", "summary", "symlink", "targets", "text", "trailing", "transcript", "translate",
-  "translated", "tree", "trees", "typecheck", "typechecker", "undeclared", "union", "unions",
-  "untyped", "user", "users", "validate", "validated", "validates", "validation", "var",
-  "variant", "variants", "vars", "verbatim", "vertex", "viewer", "vocabulary", "wheel",
-  "wheels", "workspace", "wrapped", "wrapper",
-  # tools, projects, providers and models
-  "anthropic", "azureai", "compose", "dlopen", "docker", "dockerd", "fuse", "git", "github",
-  "google", "kernel", "linux", "litellm", "manylinux", "mistral", "nix", "npm", "numpy",
-  "ollama", "openai", "overlayfs", "pydantic", "pyproject", "pyright", "python", "setuptools",
-  "sudo", "torch", "unix", "upperdir", "uv", "venv", "virtiofs", "zlib",
-  # docs/
-  "backslash", "backslashes", "em", "font", "html", "mdbook", "rem", "sections", "slug",
-  "span", "tab", "tabs", "tarball", "target", "toggle", "toolbar",
-  # experiments/
-  "answers", "authors", "bootstrap", "chdir", "covariate", "embedder", "formula", "httpx",
-  "initializes", "knobs", "mirrored", "node", "nodes", "pandas", "phase", "pip", "prefilled",
-  "scenario", "scenarios", "seeded", "simulation", "summaries", "treatment", "wrapping",
-  # lib/
-  "aliases", "azure", "bodies", "dataclasses", "deployment", "harnesses", "helper", "kw",
-  "latest", "lifecycle", "openrouter", "org", "prefixes", "producer", "providers", "qualifier",
-  "role", "serializer", "serving", "tenant", "vendored", "vllm",
-  # lib/model-catalog/
-  "catalogs", "combobox", "moonshotai", "regens", "tripwire",
-  # lib/reps-events/
-  "argparse", "audio", "citation", "citations", "claude", "contracts", "counter", "deprecated",
-  "deserialization", "discriminated", "discriminator", "discriminators", "helpers", "iterable",
-  "jsonish", "logging", "lookup", "migrate", "migrates", "pathname", "producers", "registries",
-  "runners", "solvers", "subclasses", "subcommand", "tmp", "truncated", "typechecking",
-  "validator", "video", "viewers", "village",
-  # lib/reps-experiment/
-  "consumed", "def", "fallbacks", "frameworks", "grok", "groq", "infers", "instrumentation",
-  "mod", "noqa", "prefill",
-  # lib/reps-inspect/
-  "agentharm", "aggregate", "batch", "bedrock", "cloudflare", "contextvar", "derive",
-  "fingerprint", "fireworks", "getattr", "handler", "hf", "inference", "llama", "moonshot",
-  "multiagent", "normalizers", "perplexity", "provisioning", "retypes", "sagemaker", "sandbox",
-  "scorers", "sglang", "solver", "status", "telemetry", "temperature", "translates",
-  "translator", "validators",
-  # lib/reps-providers/
-  "cluster", "engines", "gemini", "infer", "quantization", "tenants", "vast", "venue",
-  # pkgs/
-  "app", "attr", "direnv", "dist", "dists", "editor", "entrypoints", "hatch", "pkgs",
-  "pycache", "regenerated",
-  # runner/
-  "adb", "asset", "atomic", "bool", "browser", "buckets", "candidates", "chmod", "diagram",
-  "fetches", "frame", "gate", "gated", "gcloud", "headless", "heartbeat", "hex",
-  "instantiation", "integrations", "interactive", "interactively", "invoked", "isinstance",
-  "ladder", "launchers", "launching", "loopback", "membership", "mtime", "ndjson",
-  "normalizes", "normpath", "oneliners", "papers", "picker", "players", "poll", "polls",
-  "prefs", "procfs", "projection", "publishable", "publishing", "resolving", "retype",
-  "sandboxed", "scalars", "scp", "shards", "shorthand", "spawn", "stdio", "symlinks", "ts",
-  "typeshed", "umask", "unconfigured", "unmigratable", "urllib", "vendor", "vocabularies",
-  "walker", "werewolf",
-  # scripts/
-  "bash", "databank", "exp", "signatures", "toggles", "typing",
+  # REPS terms
+  "actor",             # the agent or component an event is attributed to; the `actor` render-hint field and roster IDs
+  "adb",               # the former project name, kept in the adb-site repository name
+  "app",               # a Nix flake app: a runnable output started with `nix run .#name`
+  "argv",              # the command-line argument list of a process (secrets never go there)
+  "author",            # the person who wrote an experiment, or the upstream paper's code (the authors' tree)
+  "backslash",         # the `\` character, as in backslash-newline continuation
+  "batch",             # a set of runs launched together; the runner's batch command
+  "boundary",          # the model-API edge: what crossed the API goes in llm.call (boundary data, boundary producers)
+  "browser",           # a web browser; the runner's preview serves the data directory to one
+  "bucket",            # an S3-style storage bucket holding one experiment's `runs/`
+  "call",              # one request to a model or tool; the llm.call event
+  "card",              # run.json, the runner's index card for one run (lifecycle state plus cached stream facts)
+  "catalog",           # a curated list: the experiment manifest directory, or the model catalog under lib/model-catalog
+  "cell",              # one cell of an upstream sweep: one task on one instance and one model
+  "checkout",          # a local git working copy of the repository, as opposed to a store path or tarball
+  "citation",          # a model-output reference to a source; Inspect's vendored Citation models
+  "combobox",          # the type-to-filter model picker in the GUI
+  "covariate",         # a per-run recorded value (wrapper version, CPU) that is not part of the condition identity
+  "databank",          # the published run store and its site (databank.antimemetics.institute)
+  "deployment",        # an Azure OpenAI deployment: the named model endpoint on a resource
+  "discriminated",     # as in "discriminated union": a union whose member is chosen by a tag field (no base form in use)
+  "discriminator",     # the tag field that selects a member of a discriminated union (Pydantic's name)
+  "emit",              # write an event record to the run stream (emit(), reps-emit)
+  "envelope",          # the record wrapper around an event payload (type, run id, sequence, time); the Envelope model
+  "experiment",        # a packaged replication under experiments/; the unit a manifest describes and a run executes
+  "family",            # a group of experiment variants built from one code package (impossiblebench, inspect_evals)
+  "fetch",             # retrieve a pinned source or object over the network (Nix/git sense; fetch_ref)
+  "fingerprint",       # the hash of an experiment's declared source paths; part of the condition id
+  "headless",          # running with no terminal (non-interactive stdin); the runner never prompts
+  "heartbeat",         # the runner's periodic rewrite of run.json that shows a run is live
+  "hello",             # the keyless smoke task and app (inspect-hello, hello_task)
+  "identity",          # the facts that make runs poolable: experiment, source fingerprint and params (condition identity)
+  "instrument",        # add REPS event recording to a model client (base of "instrumented")
+  "instrumentation",   # the event-recording hooks built into the REPS chat client
+  "interactive",       # a run with a terminal where the runner can prompt (opposite of headless)
+  "keyless",           # a configuration that needs no API key (mock model, offline)
+  "knob",              # a parameter a user can change on an experiment; changing one changes the condition id
+  "ladder",            # the ordered credential-profile resolution steps (remembered choice, lone default, picker)
+  "loopback",          # the local-only network interface (127.0.0.1) the preview serves on
+  "manifest",          # the generated description of an experiment's parameters, results and metadata (manifest.json)
+  "metric",            # one declared, measured result of a run (the paper's headline metric); the base of the bundled plural
+  "mtime",             # a file's modification time (the card's heartbeat mtime)
+  "ndjson",            # newline-delimited JSON, the preview server's event stream format
+  "oneliner",          # the copy-paste command that runs one experiment condition
+  "page",              # one document of the book, or one run's view in the preview
+  "paper",             # the upstream publication an experiment replicates
+  "phase",             # a stage within an experiment round (GovSim harvest/restaurant, AgentsNet messages/final)
+  "picker",            # the runner's interactive credential-profile menu
+  "pin",               # fix a dependency or source to one exact version
+  "pkgs",              # the Nix package set argument and the pkgs/ directory
+  "platform",          # the OS/hardware description recorded in run provenance (`platform` field)
+  "poll",              # repeatedly request a resource to check for change (preview shell, Vast API)
+  "preview",           # `reps-runner preview`, the local read-only run viewer
+  "projection",        # a derived read-time view of the event stream (card, index); never a rewrite
+  "provenance",        # a run's recorded origin: source, fetch_ref, tree_hash, runtime
+  "publish",           # upload a verified run to the S3 store (`reps-runner publish`)
+  "receiver",          # the reference event-socket receiver (reps_testing) used by tests
+  "registry",          # the experiment package registry in pkgs/ that discovers experiments and their tests
+  "relock",            # regenerate a uv.lock after a pyproject edit (`task relock`)
+  "reproducibility",   # a run can be repeated from its recorded source and pins (distinct from identity)
+  "reps",              # REPS, this project: replications of multi-agent experiments
+  "resolution",        # credential resolution: choosing the env values to inject for a run
+  "responder",         # an experiment's keyless mock model that answers its prompts
+  "root",              # the top of a tree: repository root, data-dir root, root index.json
+  "roster",            # an experiment's declared list of actors with display labels
+  "round",             # one iteration of an experiment's loop (GovSim harvest round, AgentsNet message round)
+  "run",               # one execution of an experiment under a condition; the unit the store records
+  "runner",            # base of "runners": the REPS program that launches an experiment, envelopes its events and writes the store
+  "scaffold",          # reps_experiment.scaffold, the experiment-side protocol toolkit (emit, deposit_artifact)
+  "schema",            # the JSON Schema of a record kind (event schemas, the memelint.toml schema)
+  "scenario",          # an experiment's fixed world setup (GovSim fishery/pasture, a Concordia cafe); baked into the card, not a param
+  "score",             # the number an experiment's scoring code assigns to a run (0 to 1 in AgentsNet)
+  "scorer",            # the upstream or Inspect component that computes a sample's score
+  "shorthand",         # the runner's CLI value shorthand: JSON, @file, or a bare string
+  "simulation",        # one Concordia generative-agent simulation, the thing the concordia experiment runs
+  "slug",              # the owner/name form of the repository name (mdbook {{repo}})
+  "solver",            # an Inspect solver, the task's agent loop
+  "status",            # the REPS status event: experiment progress text that does not change the lifecycle state
+  "stdio",             # a child process's stdin, stdout and stderr pipes, captured by the runner
+  "subcommand",        # a named command under the reps or reps-emit CLI
+  "tab",               # a tab in the book theme and the run viewer: one labelled panel of a group
+  "tester",            # the Nix check that runs an experiment's test suite (pytest tester, smoke tester)
+  "toolbar",           # the mdbook top bar that holds the REPS command-settings gear
+  "transcript",        # the ordered record of a run's events, or Inspect's per-sample event log
+  "translate",         # convert an upstream log or engine output into REPS events (the translate.py modules)
+  "translator",        # the module that translates an upstream log into REPS events
+  "treatment",         # the experimental manipulation compared against baseline (GovSim treatments, a treatment axis)
+  "vendor",            # verb: copy a library's source into this repo (the vendored Inspect chat models); covers "vendored"
+  "venue",             # the place a self-hosted engine runs (laptop, cluster, Vast); lives in the profile, not the model ID
+  "vertex",            # a graph node (AgentsNet vertex cover); also Google Vertex AI as a provider prefix
+  "viewer",            # the local REPS run viewer served by the preview command
+  "vocabulary",        # the shared set of envelope and common event models, versioned by the v field
+
+  # models and the model API
+  "assistant",         # the model's role in a chat message list (`assistant` message, prefill)
+  "chat",              # the message-list model API (chat completions) and its messages
+  "embedder",          # the sentence-embedding model GovSim/Concordia agents use for memory retrieval (govsim.config data.embedder)
+  "generation",        # a model producing output; "generation params" are its sampling settings
+  "llm",               # a large language model; the llm.call event and the types.llm parameter type
+  "model",             # a language model, named by provider/model ID
+  "prefill",           # a trailing assistant message the model continues
+  "prompt",            # text sent to a model; also the runner's terminal question for a credential
+  "quantization",      # reduced weight precision; a serving-engine setting
+  "role",              # a chat message's speaker kind (system/user/assistant/tool); Inspect's model role
+  "temperature",       # the sampling temperature passed to a model
+
+  # tools, libraries, providers and model families
+  "agentharm",         # AgentHarm, an Inspect evals benchmark (its scorer joins names with '/')
+  "anthropic",         # the model provider behind Claude; the `anthropic/` provider prefix
+  "azure",             # Microsoft's cloud; Azure OpenAI endpoints and deployments
+  "azureai",           # the REPS provider prefix for an Azure AI deployment (`azureai/<deployment>`)
+  "bash",              # the Unix shell that runs the check scripts
+  "bedrock",           # AWS Bedrock, a model provider
+  "chmod",             # the Unix permission command, named in the leaky-store-file fix
+  "claude",            # Anthropic's model family (claude-haiku-4-5, claude-opus-4-6)
+  "cloudflare",        # Cloudflare Workers AI, an OpenAI-compatible model provider
+  "compose",           # Docker Compose, the multi-container tool Inspect sandboxes use
+  "concordia",         # Google DeepMind's generative agent-based modeling library, wrapped by the Concordia experiment
+  "direnv",            # a tool that loads a directory's environment on entry
+  "docker",            # the container engine; Inspect's docker sandbox
+  "dockerd",           # the Docker daemon
+  "fireworks",         # Fireworks AI, a hosted model provider
+  "gcloud",            # Google Cloud's command-line tool
+  "gemini",            # Google's Gemini model family (model id prefix)
+  "git",               # the version control tool
+  "github",            # GitHub, the code hosting service
+  "google",            # Google as a model provider (google/ model id prefix)
+  "grok",              # xAI's Grok model family (grok/ provider prefix)
+  "groq",              # Groq, a hosted inference provider
+  "httpx",             # the Python HTTP client library
+  "impossiblebench",   # ImpossibleBench, a benchmark whose tasks have impossible test variants (experiment family)
+  "inspect",           # Inspect, the inspect_ai evaluation framework; also the inspect-* apps
+  "kernel",            # the Linux kernel
+  "linux",             # the Linux operating system
+  "litellm",           # LiteLLM, the model catalog/pricing source used by model-catalog
+  "llama",             # Meta's Llama model family (model id stem)
+  "manylinux",         # the portable Linux wheel platform tag (PyPI)
+  "mdbook",            # mdBook, the docs site generator
+  "mistral",           # Mistral AI, a model provider and its models
+  "mockllm",           # Inspect's mock model provider (`mockllm/model`), the keyless path
+  "moonshotai",        # Moonshot AI, the provider prefix for Kimi models
+  "nix",               # the Nix package manager and language; the bundled nix list covers .nix files only
+  "npm",               # the Node.js package manager
+  "numpy",             # the NumPy array library
+  "ollama",            # a local model server
+  "openai",            # OpenAI, a model provider; also the OpenAI-compatible API shape
+  "openrouter",        # OpenRouter, a model-routing provider
+  "overlayfs",         # the Linux overlay filesystem, Docker's storage driver here
+  "perplexity",        # Perplexity, a model provider
+  "pydantic",          # the Pydantic validation library
+  "python",            # the Python language and interpreter
+  "sagemaker",         # AWS SageMaker, a hosted model service Inspect can call
+  "scp",               # the OpenSSH secure copy program (scp-style host:path references)
+  "sglang",            # SGLang, an open-weight model serving engine
+  "sudo",              # the Unix program that runs a command as root
+  "torch",             # PyTorch, the tensor library GovSim's upstream code imports
+  "umask",             # the Unix file-mode creation mask
+  "unix",              # the Unix family of operating systems; Unix stream sockets
+  "upperdir",          # the overlayfs upper directory that stores writes over the lower layers
+  "urllib",            # Python's standard HTTP client package
+  "vast",              # Vast.ai, the GPU rental service whose Serverless endpoints host open-weight models
+  "virtiofs",          # the virtio filesystem share between a VM and its host
+  "vllm",              # vLLM, an open-weight model inference server; the vllm/ model ID prefix
+  "werewolf",          # the Werewolf game, the example experiment used in tests and docs
+  "zlib",              # the zlib compression library
+
+  # forms the inflection check does not derive (drop after the upstream fix)
+  "packaging",         # Python build metadata that makes an upstream installable (packaging.patch); -ing of bundled "package", not derived
+  "parsing",           # reading text into structure; -ing of bundled "parse", not derived
+  "pinned",            # pin + -ned: the check does not double the consonant
+  "provisioning",      # the run state before running; Inspect's docker pull/build setup
+  "publishing",        # the publish step and its docs chapter; -ing of publish, not derived
+  "resolving",         # -ing of bundled "resolve", not derived
 ]
