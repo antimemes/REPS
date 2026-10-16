@@ -57,7 +57,7 @@ def build_simulation(params: Params):
     # the game master is any prefab under concordia.prefabs.game_master, imported by
     # name. dialogic is a pure conversation: it hands control back to itself and cannot
     # end the scene; fixed acting order keeps turn-taking deterministic. Params a GM
-    # doesn't use are ignored (prefabs read via .get), so this is safe across GMs.
+    # does not use are ignored (prefabs read via .get), so this is safe across GMs.
     gm_module = importlib.import_module(
         f"concordia.prefabs.game_master.{params.game_master}"
     )
@@ -105,7 +105,7 @@ def build_simulation(params: Params):
 
 def run(params: Params) -> None:
     # Concordia reaches for unseeded global RNG (numpy + random) in a few places; seed
-    # both so replicates don't share RNG state. (Full byte-reproducibility isn't
+    # both so replicates do not share RNG state. (Full byte-reproducibility is not
     # promised: the engine fans component calls over a thread pool, so memory-accrual
     # order — and with it prompt contents — can vary run to run.)
     random.seed(params.seed)

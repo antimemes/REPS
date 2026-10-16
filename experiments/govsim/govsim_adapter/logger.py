@@ -99,5 +99,5 @@ class RepsLogger(WandbLogger):
             self._flush(final=last_log)
         elif last_log and self._collected:
             # A bare terminal notification after an already flushed round is
-            # not another harvest. In particular, don't chart its regrown pool.
+            # not another harvest. In particular, do not chart its regrown pool.
             self._flush(final=True)

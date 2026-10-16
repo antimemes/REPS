@@ -73,7 +73,7 @@ class RepsLanguageModel(language_model.LanguageModel):
         # params: models.Params (avoid the import cycle)
         model_id = model or params.default_model
         self._seed = params.seed
-        # A model this client can't serve, or a missing/malformed endpoint, cannot
+        # A model this client cannot serve, or a missing/malformed endpoint, cannot
         # produce a single useful call — fail the run now, with the fix in the
         # message, instead of limping through max_steps of request_failed noise.
         try:
@@ -150,7 +150,7 @@ class PerEntitySimulation(generic_simulation.Simulation):
     """Upstream's Simulation is multi-model at three grains — default,
     `override_agent_model` (all entities), `override_game_master_model` — but
     `add_entity` builds every entity with the one shared `_agent_model`. We need
-    per-entity grain for two REPS reasons upstream doesn't have: llm.call attribution
+    per-entity grain for two REPS reasons upstream does not have: llm.call attribution
     requires one client per entity (Concordia gives the model no calling-entity
     context), and the roster's per-agent model override is a treatment axis riding
     the same seam. add_entity is the narrowest seam: swap the model in for the one

@@ -209,7 +209,7 @@ def _run(params: Params) -> int:
 
     log_obj = logs[0]
     emit_provenance(log_obj, agent)
-    # fallback: emit any sample the hook didn't stream (hook disabled / raced)
+    # fallback: emit any sample the hook did not stream (hook disabled / raced)
     for sample in log_obj.samples or []:
         if getattr(sample, "uuid", None) not in streamed:
             emit_sample(sample, agent)

@@ -100,7 +100,7 @@ def suggested_oneliner(manifest: Manifest) -> str:
     param the manifest names no value for anywhere gets a `<name>` placeholder."""
     sets: list[str] = []
     # presentation order: params may carry an `order` hint (task-level params first —
-    # they're what a researcher cares about); ties break by name
+    # they are what a researcher cares about); ties break by name
     ordered = sorted(manifest["params"].items(),
                      key=lambda kv: (kv[1].get("order", 100), kv[0]))
     for name, pschema in ordered:

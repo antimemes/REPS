@@ -34,7 +34,7 @@ reps-testing = { path = "../../lib/reps-testing", editable = true }
 reps-events = { path = "../../lib/reps-events", editable = true }
 reps-experiment = { path = "../../lib/reps-experiment" }
 
-# the console script can't be `concordia` (it would collide with the upstream package's
+# the console script cannot be `concordia` (it would collide with the upstream package's
 # own entry namespace and reads ambiguously); the binary is `concordia-sim`.
 [project.scripts]
 concordia-sim = "concordia_sim.main:main"

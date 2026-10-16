@@ -4,7 +4,7 @@
 
 JSON parses as JSON; `@path` reads the file (JSON if it parses, else the raw text is
 the string value); anything else is a bare string. A value that *looks* like JSON
-(`[`/`{` first) but doesn't parse fails loudly rather than silently becoming a string.
+(`[`/`{` first) but does not parse fails loudly rather than silently becoming a string.
 """
 
 from __future__ import annotations

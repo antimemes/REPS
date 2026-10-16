@@ -12,7 +12,7 @@
 # A credential template is two role-typed vars:
 #   api_key   the secret — hidden at the setup prompt, masked in listings.
 #             `required` (default true): a value must exist at runtime; consumers
-#             fail early and actionably when it doesn't. Local OpenAI-compatible
+#             fail early and actionably when it does not. Local OpenAI-compatible
 #             servers (llama.cpp, vLLM, Ollama) may ignore auth, so openai, vllm and
 #             ollama allow an absent key — the chat client sends a placeholder
 #             bearer when it is absent.

@@ -23,7 +23,7 @@ from pathlib import Path
 class ApiKey:
     """The template's secret: hidden at the setup prompt, masked in listings.
     `required` = a value must exist at runtime — consumers fail early and
-    actionably when it doesn't."""
+    actionably when it does not."""
 
     name: str
     required: bool = True

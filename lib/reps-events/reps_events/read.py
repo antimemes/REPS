@@ -48,7 +48,7 @@ def parse_record(source: str | bytes, *, payload: Any = None) -> Envelope[Any]:
 
 
 class EventReadError(ValueError):
-    """A record couldn't be decoded; the message identifies its file and line."""
+    """A record could not be decoded; the message identifies its file and line."""
 
 
 @overload

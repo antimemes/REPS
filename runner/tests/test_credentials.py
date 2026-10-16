@@ -463,7 +463,7 @@ def test_multi_set_first_use_and_picker_in_one_invocation(cfg, monkeypatch, caps
 def test_picker_unknown_choice_complains(cfg, monkeypatch, capsys):
     credentials.save({"openai": {"default": {"OPENAI_API_KEY": "d"},
                                  "work": {"OPENAI_API_KEY": "w"}}})
-    _stdin(monkeypatch, "wrok\n")  # scripted input can't retype — complain and fail
+    _stdin(monkeypatch, "wrok\n")  # scripted input cannot retype — complain and fail
     with pytest.raises(ValueError, match="wrok"):
         _resolve(_manifest({"kind": "llm"}), {"model": "openai/q"})
     err = capsys.readouterr().err
@@ -568,7 +568,7 @@ def test_list_json_masks_secrets_by_type(cfg, capsys):
     credentials.save({"openai": {"default": {"OPENAI_API_KEY": "sk-secret",
                                              "OPENAI_BASE_URL": "http://h/v1"}}})
     doc = _list_json(capsys)
-    # literal True, not a string: a consumer can't accidentally round-trip the mask
+    # literal True, not a string: a consumer cannot accidentally round-trip the mask
     assert doc["store"]["openai"]["default"]["OPENAI_API_KEY"] is True
     assert doc["store"]["openai"]["default"]["OPENAI_BASE_URL"] == "http://h/v1"
     assert "sk-secret" not in capsys.readouterr().out
@@ -656,12 +656,12 @@ def test_selection_beats_remembered_and_skips_prompts(cfg, monkeypatch, capsys):
 def test_selection_typo_guards_both_halves(cfg, capsys):
     credentials.save({"openai": {"default": {"OPENAI_API_KEY": "d"}}})
     manifest = _manifest({"kind": "llm"})
-    # a set the run doesn't route to
+    # a set the run does not route to
     with pytest.raises(ValueError, match="--credential.*route to"):
         credentials.resolve_run_credentials(
             manifest, {"model": "openai/q"}, experiment="e", interactive=False,
             selections={"anthropic": "default"})
-    # a profile that doesn't exist
+    # a profile that does not exist
     with pytest.raises(ValueError, match="--credential openai=wrok: no such profile"):
         credentials.resolve_run_credentials(
             manifest, {"model": "openai/q"}, experiment="e", interactive=False,

@@ -121,7 +121,7 @@ def save(data: dict[str, dict[str, dict[str, str]]]) -> Path:
             for key in sorted(vals):
                 lines.append(f'{key} = "{_toml_escape(str(vals[key]))}"')
             lines.append("")
-    # create with 0600 from the start (don't briefly expose secrets at default umask)
+    # create with 0600 from the start (do not briefly expose secrets at default umask)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w") as f:
         f.write("\n".join(lines))
@@ -472,7 +472,7 @@ def _template_rows(name: str) -> tuple[tuple[str, bool, str], ...]:
 def _prompt_values(name: str, current: dict[str, str] | None) -> dict[str, str] | None:
     """Prompt a set's template values. Secrets are hidden; non-secret prompts show
     the current value or the known default (Enter adopts it). Returns None when
-    scripted input can't satisfy validation (a retype needs a human)."""
+    scripted input cannot satisfy validation (a retype needs a human)."""
     vals = dict(current or {})
     for var, secret, default in _template_rows(name):
         existing = vals.get(var, "")
@@ -489,7 +489,7 @@ def _prompt_values(name: str, current: dict[str, str] | None) -> dict[str, str] 
                 break
             print(problem, file=sys.stderr)
             if not sys.stdin.isatty():
-                return None  # scripted input can't retype — fail rather than desync
+                return None  # scripted input cannot retype — fail rather than desync
         if entered:
             vals[var] = entered
     return vals
@@ -508,7 +508,7 @@ def _prompt_profile_name(*, suggestion: str | None,
         else:
             return entered
         if not sys.stdin.isatty():
-            return None  # scripted input can't retype — fail rather than desync
+            return None  # scripted input cannot retype — fail rather than desync
 
 
 def _cmd_list() -> int:
@@ -579,7 +579,7 @@ def _set_json(arg: str) -> int:
     on stdin, applied with the SAME semantics as the prompts — start from the current
     profile, non-empty values overwrite, empty/absent keep, explicit null deletes.
     That merge lets a tool edit a base URL without ever having held the key
-    (list --json masks secrets, so it can't send them back). Output is one JSON line;
+    (list --json masks secrets, so it cannot send them back). Output is one JSON line;
     validation (profile name rules, URL shape) matches the interactive face."""
     name, dot, profile = arg.partition(".")
     profile = profile if dot else "default"
@@ -678,7 +678,7 @@ def prompt_set(arg: str) -> int:
 def _cmd_set(argv: list[str]) -> int:
     # values are ONLY ever prompted (or piped line-per-prompt on stdin; or, --json,
     # one JSON object on stdin): a KEY=VALUE argv form would put secrets in `ps`
-    # output and shell history, so it doesn't exist
+    # output and shell history, so it does not exist
     as_json = "--json" in argv
     argv = [a for a in argv if a != "--json"]
     if len(argv) != 1:

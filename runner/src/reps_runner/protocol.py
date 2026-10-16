@@ -268,7 +268,7 @@ def execute_run(
         )
         stdin, stdout, stderr = proc.stdin, proc.stdout, proc.stderr
         if stdin is None or stdout is None or stderr is None:
-            raise RuntimeError("child pipes missing")  # typeshed can't see Popen(PIPE)
+            raise RuntimeError("child pipes missing")  # typeshed cannot see Popen(PIPE)
 
         def read_output(stream: TextIO, kind: Literal["stdout", "stderr"]) -> None:
             try:
@@ -313,7 +313,7 @@ def execute_run(
                 item = events_q.get(timeout=0.5)
             except queue.Empty:
                 # orphaned grandchildren can inherit our pipes and hold them open long
-                # after the experiment exited — don't wait on them forever
+                # after the experiment exited — do not wait on them forever
                 if (
                     child_exited_at is not None
                     and time.monotonic() - child_exited_at > 10

@@ -38,7 +38,7 @@ pkgs.mkShell {
     # sandboxed experiments (inspect's docker sandbox) need a Docker daemon; the
     # devshell ships the whole engine (client + compose plugin + dockerd) and
     # `task docker:up` sudo-starts the daemon on the default socket.
-    # fuse-overlayfs: dockerd's wrapper doesn't bundle it, and it's the only
+    # fuse-overlayfs: dockerd's wrapper does not bundle it, and it's the only
     # storage driver that works when data-root sits on virtiofs (kernel overlayfs
     # refuses a virtiofs upperdir).
     pkgs.docker

@@ -1,6 +1,6 @@
 """End-to-end: a real keyless mockllm eval through eval -> translate -> summary.
 
-Skipped where inspect_ai can't import (e.g. a bare venv missing the C++ runtime the
+Skipped where inspect_ai cannot import (e.g. a bare venv missing the C++ runtime the
 numpy wheel needs) — the nix build and devshell provide it; these assert the real
 Inspect objects still map the way test_translate's fakes assume.
 """
@@ -229,7 +229,7 @@ def test_score_reproducible(inspect_ok, tmp_path, event_capture):
 
 def test_events_conform_to_schema(inspect_ok, tmp_path, capsys, event_capture):
     """Every emitted event validates against `reps-emit schema` (skip if reps-emit
-    isn't on PATH — it ships with reps-events, also installed in this environment)."""
+    is not on PATH — it ships with reps-events, also installed in this environment)."""
     if not shutil.which("reps-emit"):
         pytest.skip("reps-emit not on PATH")
     import jsonschema  # inspect_ai pulls this in

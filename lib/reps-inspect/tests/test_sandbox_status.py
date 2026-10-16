@@ -1,4 +1,4 @@
-"""sandbox_status: provisioning commands become status events, exec chatter doesn't."""
+"""sandbox_status: provisioning commands become status events, exec chatter does not."""
 
 from __future__ import annotations
 

@@ -3,7 +3,7 @@
 The runner-protocol scaffold re-exported here; provider routing in
 :mod:`reps_experiment.providers`; the instrumented LLM client in
 :mod:`reps_experiment.llm` (imported explicitly — it needs the ``[llm]`` extra's
-OpenAI SDK, which the base package deliberately doesn't require).
+OpenAI SDK, which the base package deliberately does not require).
 """
 
 # explicit re-exports (`x as x`): the typed-package idiom both pyright and ruff

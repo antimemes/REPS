@@ -100,7 +100,7 @@ PROVIDERS: dict[str, _Source] = {
 class _ModelsApi:
     """A provider's live /models endpoint, queried only when its key (the registry's
     secret var — never redeclared here) is available: the public catalogs lag on
-    dated snapshot ids for the newest models, the providers don't. Google's REST
+    dated snapshot ids for the newest models, the providers do not. Google's REST
     list takes the key as a query param."""
 
     url: str
@@ -366,7 +366,7 @@ def main() -> int:
         # every model is surfaced (the GUI combobox is type-to-filter; curation is
         # the user's job, not the catalog's), sorted newest first
         models = sorted(by_stem.values(), key=lambda m: (m["release_date"], m["id"]), reverse=True)
-        # visibility tripwire: an id the provider's own list doesn't contain is
+        # visibility tripwire: an id the provider's own list does not contain is
         # either lag in models.dev or a bogus community id — say so
         fp_set = set(first_party)
         for m in models:

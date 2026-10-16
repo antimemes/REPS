@@ -1,7 +1,7 @@
 # The inspect_evals family: one REPS experiment per runnable task in the GENERATED
 # task_catalog.json (the task is the experiment, never a param) — regenerate with
 # `task tasks:update`; never add a catalog task by hand. Tasks whose eval declares a
-# pip extra we don't install get no experiment (degraded but correct — install the
+# pip extra we do not install get no experiment (degraded but correct — install the
 # extra in pyproject + relock + regen to enable them); sandbox needs come from the
 # eval's own declared runtime metadata. The bundled keyless `hello` smoke ships from
 # this family (hello_task/), so getting-started needs no key, network, or sandbox.
@@ -69,7 +69,7 @@ let
       ++ lib.optional keyless ./hello_task;
 
     # presentation order (`order`/`group` hints): the task's own params first —
-    # they're what a researcher cares about — then model, then the inspect harness
+    # they are what a researcher cares about — then model, then the inspect harness
     # knobs, then generation.
     params = with reps.types;
       # the task's own kwargs, flattened to real typed params (catalog-generated:

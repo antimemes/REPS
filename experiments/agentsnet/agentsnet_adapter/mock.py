@@ -44,7 +44,7 @@ def mock_responder(seed: int) -> Callable[[list[dict[str, Any]]], str]:
         own_name = own.group(1) if own else "agent"
         found = _NEIGHBOURS.search(system)
         neighbours = _names(found.group(1)) if found else []
-        # the final question: "... Don't use any text for your final answer except one of these valid options: a, b"
+        # the final question: "... Do not use any text for your final answer except one of these valid options: a, b"
         valid = _VALID.search(last)
         if valid:
             options = _names(valid.group(1))

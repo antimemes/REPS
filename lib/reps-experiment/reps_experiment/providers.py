@@ -35,7 +35,7 @@ class Endpoint:
     api_key: str
 
 
-# Where a provider mounts its OpenAI-compat surface when it isn't at the stored
+# Where a provider mounts its OpenAI-compat surface when it is not at the stored
 # base itself — exceptions-only, this client's own knowledge (the same shape as
 # reps-inspect's name remap): the stored ANTHROPIC_BASE_URL stays the plain API
 # origin the rest of the ecosystem expects, and the /v1 mount is appended here.
