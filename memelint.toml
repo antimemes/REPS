@@ -41,7 +41,6 @@ words = [
   "heartbeat",         # the runner's periodic rewrite of run.json that shows a run is live
   "hello",             # the keyless smoke task and app (inspect-hello, hello_task)
   "identity",          # the facts that make runs poolable: experiment, source fingerprint and params (condition identity)
-  "instrument",        # add REPS event recording to a model client (base of "instrumented")
   "instrumentation",   # the event-recording hooks built into the REPS chat client
   "interactive",       # a run with a terminal where the runner can prompt (opposite of headless)
   "keyless",           # a configuration that needs no API key (mock model, offline)
@@ -64,6 +63,7 @@ words = [
   "preview",           # `reps-runner preview`, the local read-only run viewer
   "projection",        # a derived read-time view of the event stream (card, index); never a rewrite
   "provenance",        # a run's recorded origin: source, fetch_ref, tree_hash, runtime
+  "provisioning",      # the run lifecycle state before running; Inspect pulls or builds its sandbox images here
   "publish",           # upload a verified run to the S3 store (`reps-runner publish`)
   "receiver",          # the reference event-socket receiver (reps_testing) used by tests
   "registry",          # the experiment package registry in pkgs/ that discovers experiments and their tests
@@ -174,12 +174,4 @@ words = [
   "vllm",              # vLLM, an open-weight model inference server; the vllm/ model ID prefix
   "werewolf",          # the Werewolf game, the example experiment used in tests and docs
   "zlib",              # the zlib compression library
-
-  # forms the inflection check does not derive (drop after the upstream fix)
-  "packaging",         # Python build metadata that makes an upstream installable (packaging.patch); -ing of bundled "package", not derived
-  "parsing",           # reading text into structure; -ing of bundled "parse", not derived
-  "pinned",            # pin + -ned: the check does not double the consonant
-  "provisioning",      # the run state before running; Inspect's docker pull/build setup
-  "publishing",        # the publish step and its docs chapter; -ing of publish, not derived
-  "resolving",         # -ing of bundled "resolve", not derived
 ]

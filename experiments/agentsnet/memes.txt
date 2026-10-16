@@ -20,5 +20,4 @@ parquet       # the Apache Parquet file format; the pinned graph dataset is one 
 perozzi       # Bryan Perozzi, an AgentsNet author
 recipient     # the agent a message is addressed to; the `recipient` field of `agentsnet.message`, paired with `sender`
 scipy         # the Python scientific library upstream imports (scipy.spatial)
-scoring       # upstream's score computation step, named alongside parsing; -ing form of "score" (root list) drops the e, like "parsing" in the root list
 tönshoff      # Jan Tönshoff, an AgentsNet author
