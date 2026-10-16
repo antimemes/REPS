@@ -10,6 +10,8 @@
 
 - [Choose inputs and run](running/experiments.md)
 - [Configure model credentials](running/secrets.md)
+- [Run open-weight models](running/open-weight-models.md)
+  - [Vast.ai Serverless](running/open-weight-models/vast.md)
 - [Repeat and compare runs](running/model.md)
 - [Publishing](running/publishing.md)
 - [Working with Nix](running/nix.md)
