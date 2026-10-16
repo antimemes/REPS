@@ -1,0 +1,102 @@
+#:schema https://raw.githubusercontent.com/antimemes/memelint/main/crates/memelint/memelint.schema.json
+
+# Technical names of REPS. A word goes here when it is a technical name in this
+# domain, not when it is only easier English. An experiment's own words live in
+# its memes.txt and apply to that directory only.
+subtree-word-lists = ["experiments/*/memes.txt"]
+ignore = [".cache/"]
+
+words = [
+  # REPS vocabulary
+  "attribution", "bookkeeping", "boundaries", "boundary", "call", "card", "comparability",
+  "concordia", "emit", "envelope", "envelopes", "experiment", "experiments", "families",
+  "family", "fetchable", "fingerprints", "hello", "identity", "impossiblebench", "inspect",
+  "keyless", "ladder", "manifest", "manifests", "mockllm", "oneliner", "prompt", "provenance",
+  "registry", "relock", "reproducibility", "reps", "responder", "roster", "round", "run",
+  "runner", "scaffold", "store", "tier",
+  # generic software: candidates for memelint's bundled software list
+  "actor", "adapter", "adapters", "alias", "allowlist", "allowlisted", "answer", "archive",
+  "arg", "args", "argv", "artifact", "artifacts", "assets", "assistant", "attribute",
+  "attributes", "attrs", "auth", "author", "bearer", "body", "bug", "callable", "caller",
+  "callers", "canonical", "capture", "captured", "capturing", "catalog", "cell", "chain",
+  "chat", "checkout", "child", "classic", "cmd", "collisions", "compat", "configured",
+  "console", "consume", "consumer", "consumers", "consumes", "content", "context", "contract",
+  "conversation", "counters", "covariates", "coverage", "custom", "cwd", "dataset", "datasets",
+  "declare", "declared", "declares", "dep", "deps", "derived", "deterministic",
+  "deterministically", "dev", "devshell", "dir", "docs", "document", "edit", "editable",
+  "editing", "emission", "emitted", "emitting", "engine", "entrypoint", "env", "eval", "exec",
+  "executable", "execution", "fallback", "fetch", "field", "fields", "flake", "flakeless",
+  "flakes", "framework", "generation", "global", "handlers", "harness", "hidden", "hint",
+  "hints", "id", "ids", "image", "images", "immutable", "inferred", "infra", "ingestion",
+  "instance", "instances", "instrumented", "int", "interpreter", "invocation", "invoke",
+  "language", "launch", "launched", "launcher", "lazily", "lazy", "legacy", "lib", "line",
+  "lines", "llm", "loader", "logger", "machine", "malformed", "marker", "markers", "menu",
+  "message", "messages", "metrics", "migrated", "mirror", "mirrors", "model", "models",
+  "mutable", "naming", "native", "nested", "network", "non", "nonzero", "normalized",
+  "nullable", "numbered", "numeric", "observations", "offline", "op", "packaging", "page",
+  "pages", "paper", "param", "params", "parsing", "passthrough", "phases", "pin", "pinned",
+  "pins", "placeholder", "platform", "policy", "pool", "pre", "prefix", "presentation",
+  "preview", "print", "printed", "prints", "project", "projections", "prose", "protocol",
+  "provider", "publish", "pure", "raw", "re", "reader", "readers", "receiver", "ref",
+  "regenerate", "repo", "resolution", "resolve", "resolved", "resolves", "rev", "revision",
+  "roles", "root", "roots", "rule", "rules", "runnable", "scalar", "scanner", "score",
+  "scorer", "scores", "secret", "secrets", "section", "seed", "seeds", "self", "semantic",
+  "semantics", "seq", "setup", "shared", "signature", "skip", "skipped", "skips", "snapshot",
+  "snapshots", "software", "spec", "standalone", "static", "stdlib", "storage", "str",
+  "strict", "sub", "subclass", "subclassing", "subprocess", "subst", "substrings", "subtree",
+  "suffix", "summary", "symlink", "targets", "text", "trailing", "transcript", "translate",
+  "translated", "tree", "trees", "typecheck", "typechecker", "undeclared", "union", "unions",
+  "untyped", "user", "users", "validate", "validated", "validates", "validation", "var",
+  "variant", "variants", "vars", "verbatim", "vertex", "viewer", "vocabulary", "wheel",
+  "wheels", "workspace", "wrapped", "wrapper",
+  # tools, projects, providers and models
+  "anthropic", "azureai", "compose", "dlopen", "docker", "dockerd", "fuse", "git", "github",
+  "google", "kernel", "linux", "litellm", "manylinux", "mistral", "nix", "npm", "numpy",
+  "ollama", "openai", "overlayfs", "pydantic", "pyproject", "pyright", "python", "setuptools",
+  "sudo", "torch", "unix", "upperdir", "uv", "venv", "virtiofs", "zlib",
+  # docs/
+  "backslash", "backslashes", "em", "font", "html", "mdbook", "rem", "sections", "slug",
+  "span", "tab", "tabs", "tarball", "target", "toggle", "toolbar",
+  # experiments/
+  "answers", "authors", "bootstrap", "chdir", "covariate", "embedder", "formula", "httpx",
+  "initializes", "knobs", "mirrored", "node", "nodes", "pandas", "phase", "pip", "prefilled",
+  "scenario", "scenarios", "seeded", "simulation", "summaries", "treatment", "wrapping",
+  # lib/
+  "aliases", "azure", "bodies", "dataclasses", "deployment", "harnesses", "helper", "kw",
+  "latest", "lifecycle", "openrouter", "org", "prefixes", "producer", "providers", "qualifier",
+  "role", "serializer", "serving", "tenant", "vendored", "vllm",
+  # lib/model-catalog/
+  "catalogs", "combobox", "moonshotai", "regens", "tripwire",
+  # lib/reps-events/
+  "argparse", "audio", "citation", "citations", "claude", "contracts", "counter", "deprecated",
+  "deserialization", "discriminated", "discriminator", "discriminators", "helpers", "iterable",
+  "jsonish", "logging", "lookup", "migrate", "migrates", "pathname", "producers", "registries",
+  "runners", "solvers", "subclasses", "subcommand", "tmp", "truncated", "typechecking",
+  "validator", "video", "viewers", "village",
+  # lib/reps-experiment/
+  "consumed", "def", "fallbacks", "frameworks", "grok", "groq", "infers", "instrumentation",
+  "mod", "noqa", "prefill",
+  # lib/reps-inspect/
+  "agentharm", "aggregate", "batch", "bedrock", "cloudflare", "contextvar", "derive",
+  "fingerprint", "fireworks", "getattr", "handler", "hf", "inference", "llama", "moonshot",
+  "multiagent", "normalizers", "perplexity", "provisioning", "retypes", "sagemaker", "sandbox",
+  "scorers", "sglang", "solver", "status", "telemetry", "temperature", "translates",
+  "translator", "validators",
+  # lib/reps-providers/
+  "cluster", "engines", "gemini", "infer", "quantization", "tenants", "vast", "venue",
+  # pkgs/
+  "app", "attr", "direnv", "dist", "dists", "editor", "entrypoints", "hatch", "pkgs",
+  "pycache", "regenerated",
+  # runner/
+  "adb", "asset", "atomic", "bool", "browser", "buckets", "candidates", "chmod", "diagram",
+  "fetches", "frame", "gate", "gated", "gcloud", "headless", "heartbeat", "hex",
+  "instantiation", "integrations", "interactive", "interactively", "invoked", "isinstance",
+  "ladder", "launchers", "launching", "loopback", "membership", "mtime", "ndjson",
+  "normalizes", "normpath", "oneliners", "papers", "picker", "players", "poll", "polls",
+  "prefs", "procfs", "projection", "publishable", "publishing", "resolving", "retype",
+  "sandboxed", "scalars", "scp", "shards", "shorthand", "spawn", "stdio", "symlinks", "ts",
+  "typeshed", "umask", "unconfigured", "unmigratable", "urllib", "vendor", "vocabularies",
+  "walker", "werewolf",
+  # scripts/
+  "bash", "databank", "exp", "signatures", "toggles", "typing",
+]
