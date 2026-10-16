@@ -27,7 +27,7 @@ let
         "?${lib.concatStringsSep "?" (builtins.tail refParts)}"
     else null;
 
-  # types.llm governs its own hints: every llm-typed param gets the shared model
+  # types.llm controls its own hints: every llm-typed param gets the shared model
   # catalog (lib/model-catalog) appended to its suggestions at eval time, so no
   # experiment can desync from it. An experiment's own `suggestions` attr means
   # experiment-specific EXTRAS, prepended (e.g. hello's keyless mock) — never a
@@ -79,7 +79,7 @@ let
     in builtins.toFile name (lib.concatStringsSep "\n" (lib.reverseList filtered.lines));
   # Directory declarations hash the unchanged tree separately from normalized
   # locks, retaining each lock's relative path. No build or on-disk rewrite is
-  # needed to compute identity; the venv still consumes the original lock.
+  # needed to calculate identity; the venv still consumes the original lock.
   identityImport = name: path:
     let
       locksIn = directory: prefix: lib.concatMap (entry:
@@ -165,7 +165,7 @@ in
       projectName = (builtins.fromTOML (builtins.readFile (workspaceRoot + "/pyproject.toml"))).project.name;
       workspace = uv2nix.lib.workspace.loadWorkspace { inherit workspaceRoot; };
       # Let uv2nix resolve sources, then filter local path sources using the
-      # documented per-package overrideAttrs interface. Fetchers remain intact.
+      # documented per-package overrideAttrs interface. Fetchers stay intact.
       projectOverlay = workspace.mkPyprojectOverlay { inherit sourcePreference; };
       filteredProjectOverlay = final: prev:
         lib.mapAttrs
@@ -224,7 +224,7 @@ in
 
   # mkExperiment: the schema + program → a runnable flake app with the manifest JSON and
   # source identity baked in. `program` is whatever speaks the runner protocol (params
-  # JSON on stdin → events through REPS_EVENT_SOCKET): a derivation (resolved via lib.getExe — the
+  # JSON on stdin → events through REPS_EVENT_SOCKET): a derivation (resolved through lib.getExe — the
   # usual case, a writeShellApplication adapter next to package.nix) or an explicit
   # executable path string.
   mkExperiment =
@@ -242,7 +242,7 @@ in
       # (inspect_evals' listing), hand-written in the wrapper otherwise.
     , links ? [ ]
       # Plain Markdown catalog text, supplied from the package directory by the
-      # registry. This field does not alter the experiment's declared `src`.
+      # registry. This field does not change the experiment's declared `src`.
     , readme ? null
     , readmeAssets ? null
     , program
@@ -266,7 +266,7 @@ in
 
       # Per-experiment content identity. The condition hash's `source` is a content
       # hash of this experiment's declared sources and shared Python package sources,
-      # each re-imported via builtins.path
+      # each re-imported through builtins.path
       # so its hash depends ONLY on that subtree's content, never on the whole-repo
       # rev. So editing one experiment's directory cannot change another's condition_id.
       # Interpreter declarations are source; platform and runner closures,

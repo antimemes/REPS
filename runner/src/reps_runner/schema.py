@@ -3,9 +3,9 @@
 Two-phase validation: a spec check before hashing (unknown params, missing required
 values, type mismatches), then a check on realized params before launch, where
 instantiation checks (minLen, …) also run. In the MVP spec and realized params are
-identical (there are no distributions yet); the phases are kept because their error
+same (there are no distributions yet); the phases are kept because their error
 surfaces differ — spec errors are usage errors (exit 2), realized errors fail the
-run. Types describe shape; everything pydantic-ish happens here at instantiation.
+run. Types describe shape; everything pydantic-ish occurs here at instantiation.
 """
 
 

@@ -1,7 +1,7 @@
 """Provider prefixes -> OpenAI-compatible endpoints, resolved from the environment.
 
 A model id's provider prefix (``anthropic/claude-…``, ``groq/llama-…``) picks which
-credential set to read and which endpoint to talk to; every provider here serves the
+credential set to read and which endpoint to speak to; every provider here serves the
 OpenAI **/chat/completions** wire protocol, either natively or through a compatibility
 mount. Each mapping is declared in ``PROVIDERS`` — explicit per provider, never
 inferred from the id's shape. The runner injects the env vars from its credential

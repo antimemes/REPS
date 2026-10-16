@@ -205,7 +205,7 @@ def run(params: Params) -> None:
         )
     finally:
         # Capture every completed native file even when the simulation fails.
-        # Ingestion precedes Pandas so native values remain unchanged.
+        # Ingestion precedes Pandas so native values stay unchanged.
         simulation_error = sys.exception()
         try:
             rows = ingest_storage(Path(storage))

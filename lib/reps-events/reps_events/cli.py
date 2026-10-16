@@ -5,7 +5,7 @@
     reps-emit llm-call --agent a --model mock/x < call.json
     reps-emit schema [TYPE]
 
-Validates against reps_events and submits one event to REPS_EVENT_SOCKET.
+Validates against reps_events and sends one event to REPS_EVENT_SOCKET.
 The runner acknowledges successful recording. Invalid events or failed delivery
 return exit 2. Schema commands print JSON Schema without requiring a runner.
 """
@@ -30,7 +30,7 @@ from reps_events import (
     json_schemas,
 )
 
-# CLI surface per type: (flag-name, field-name, kind) where kind ∈
+# CLI surface per type: (flag-name, field-name, type) where type ∈
 # str | json (value parsed as JSON) | jsonish (JSON if it parses, else raw string)
 # Required-ness is the model's job, not argparse's.
 FIELDS: dict[str, list[tuple[str, str, str]]] = {
@@ -71,7 +71,7 @@ def _parse(kind: str, raw: str, flag: str):
             return json.loads(raw)
         except json.JSONDecodeError:
             return raw
-    try:  # kind == "json"
+    try:  # type == "json"
         return json.loads(raw)
     except json.JSONDecodeError as exc:
         raise SystemExit(f"reps-emit: {flag} expects JSON, got {raw!r} ({exc})")

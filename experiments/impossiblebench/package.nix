@@ -86,7 +86,7 @@ let
     # after the task fn has already built its dataset, and swebench prepares a
     # docker image per sample in there — eval-level alone means images for the
     # whole split. 0 (= whole split) must stay absent: upstream slices
-    # samples[:limit] whenever its arg is non-null.
+    # samples[:limit] when its arg is non-null.
     text = ''
       config=$(mktemp)
       trap 'rm -f "$config"' EXIT

@@ -15,7 +15,7 @@ field map (env var → value; no field-level fallback between profiles). The def
 profile is used silently; named profiles are offered at an interactive picker, and a
 choice can be remembered per experiment in ``~/.config/reps/preferences.toml`` (names
 only — never secret, so not 0600). Managed with ``reps-runner credentials set
-<name>[.<profile>]``, which prompts for every value — secrets via a hidden prompt,
+<name>[.<profile>]``, which prompts for every value — secrets through a hidden prompt,
 NEVER argv (argv is visible in ``ps`` and shell history, so there deliberately is no
 ``KEY=VALUE`` form). Scripted use pipes one line per prompt on stdin.
 """
@@ -430,7 +430,7 @@ def _is_secret(name: str, key: str) -> bool:
 
 def _url_problem(key: str, value: str) -> str | None:
     """A base-URL env var must be a full http(s) URL. A bare host fails inside every
-    client — urllib raises "unknown url type", SDKs hang against the wrong port — long
+    client — urllib raises "unknown url type", SDKs hang against the incorrect port — long
     after this command succeeded, so catch it here where the fix is one retype. Empty
     passes (it clears the key). Returns the complaint, or None if the value is fine."""
     if not value or not (key.endswith("_BASE_URL") or key.endswith("_API_BASE")):
@@ -458,7 +458,7 @@ def _template_rows(name: str) -> tuple[tuple[str, bool, str], ...]:
     if provider is not None:
         return ((provider.api_key.name, True, ""),
                 (provider.base_url.name, False, provider.base_url.default))
-    # not a built-in: a NAMED credential set with the conventional env var names —
+    # not a built-in: a NAMED credential set with the standard env var names —
     # exactly what `openai-api/<name>/<model>` ids read
     prefix = re.sub(r"[^A-Za-z0-9]+", "_", name).upper()
     print(f"{name!r} isn't a built-in name (built-ins: "
@@ -471,7 +471,7 @@ def _template_rows(name: str) -> tuple[tuple[str, bool, str], ...]:
 
 def _prompt_values(name: str, current: dict[str, str] | None) -> dict[str, str] | None:
     """Prompt a set's template values. Secrets are hidden; non-secret prompts show
-    the current value or the known default (Enter adopts it). Returns None when
+    the current value or the known default (Enter uses it). Returns None when
     scripted input cannot satisfy validation (a retype needs a human)."""
     vals = dict(current or {})
     for var, secret, default in _template_rows(name):
@@ -483,7 +483,7 @@ def _prompt_values(name: str, current: dict[str, str] | None) -> dict[str, str] 
         while True:
             entered = _read(f"{var} [{state}]: ", secret)
             if not entered and not existing and default and not secret:
-                entered = default  # empty prompt adopts the shown default
+                entered = default  # empty prompt uses the shown default
             problem = _url_problem(var, entered)
             if problem is None:
                 break

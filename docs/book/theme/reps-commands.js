@@ -101,7 +101,7 @@
       return line.slice(0, cut).replace(/[$`"\\]/g, "\\$&") + line.slice(cut);
     }).join("\n");
   }
-  // Block-level pass: commands span multiple lines via trailing backslashes, and
+  // Block-level pass: commands span multiple lines through trailing backslashes, and
   // the no-nix-run-installed form must wrap the WHOLE span in
   //   nix-shell -p nix-run --run "…"
   // with the span dq-escaped so the nesting is paste-safe.
@@ -158,7 +158,7 @@
     });
     // prose variants (reps-commands.css): .reps-when-flakes / .reps-when-flakeless
     // divs swap with the With tab, so pages can e.g. drop flake.nix from the
-    // story entirely for plain-Nix readers (the no-JS/default state)
+    // story fully for plain-Nix readers (the no-JS/default state)
     document.documentElement.classList.toggle("reps-flakes", p.mode === "flakes");
   }
 
@@ -234,7 +234,7 @@
 
       if (p.mode === "flakes") {
         // the registry toggle is meaningless for a local checkout; the global-flakes
-        // toggle decides whether commands carry the armor flag
+        // toggle decides if commands carry the armor flag
         var r2 = el("div", { class: "reps-row" });
         r2.appendChild(check("flakes enabled globally", p.flakes, function (v) { update({ flakes: v }); }));
         if (p.source === "github") {

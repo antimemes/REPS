@@ -35,7 +35,7 @@ class ActorRegistry(BaseModel):
 class RenderHint(BaseModel):
     """Payload paths and literal text with {path} substitutions, never expressions.
 
-    A title/body consisting solely of a bare field path remains a path lookup.
+    A title/body consisting solely of a bare field path stays a path lookup.
     Missing substitutions are empty. Fields and badge always contain bare paths.
     """
 

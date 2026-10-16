@@ -32,7 +32,7 @@ would have. Two things differ from ChatOpenAI and are REPS-wide: the client
 lifts an inline <think> block out of the text into a reasoning part before
 upstream parses the reply, and a content-filter 400 whose body carries
 `choices` is returned as an empty reply (ChatOpenAI raises; upstream's
-with_retry would then re-raise after ten identical attempts and the run would
+with_retry would then re-raise after ten same attempts and the run would
 die). Retries compound: with_retry's ten attempts wrap the REPS client's own
 eight.
 """

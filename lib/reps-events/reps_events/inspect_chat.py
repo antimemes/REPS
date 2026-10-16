@@ -14,7 +14,7 @@
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
+# in the Software without restriction, including without limit the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
@@ -41,7 +41,7 @@
 # Drop the unused ToolCallView and legacy ToolCall.type / tool_error migrations.
 # Drop ChatMessageBase.source, ToolCall.view and its ToolCallContent viewer model;
 # keep ToolCall.parse_error as boundary parsing evidence. ToolCallError.type is str:
-# boundary producers report API errors; harness adapters retain native error types.
+# boundary producers report API errors; harness adapters keep native error types.
 # LLMCall drops role, cache, params and its temperature/max_tokens properties,
 # plus deferred instance_id/repeat attribution. Its optional retries counter
 # records observed HTTP 429/5xx responses, not Inspect runtime bookkeeping
@@ -420,7 +420,7 @@ class ChatMessageBase(_Model):
         ChatMessage content is very general and can contain either
         a simple text value or a list of content parts (each of which
         can either be text or an image). Solvers (e.g. for prompt
-        engineering) often need to interact with chat messages with
+        engineering) frequently need to interact with chat messages with
         the assumption that they are a simple string. The text
         property returns either the plain str content, or if the
         content is a list of text and images, the text items
@@ -441,13 +441,13 @@ class ChatMessageBase(_Model):
         ChatMessage content is very general and can contain either
         a simple text value or a list of content parts (each of which
         can either be text or an image). Solvers (e.g. for prompt
-        engineering) often need to interact with chat messages with
+        engineering) frequently need to interact with chat messages with
         the assumption that they are a simple string. The text property
         sets text either to content directly (if it is a `str`) or to
         the first text content item in the message (inserting one at
         the beginning if necessary). If there are multiple text content
         items in the message then after the set there will be only
-        one remaining (image content will remain).
+        one remaining (image content will stay).
         """
         if isinstance(self.content, str):
             self.content = text
@@ -576,7 +576,7 @@ class StopCategory(_Model):
 
 
 class StopDetails(_Model):
-    """Additional detail about why a model stopped generating (e.g. a content refusal).
+    """More detail about why a model stopped generating (e.g. a content refusal).
 
     `categories` is the canonical list (always iterable; a single-category provider
     appears as one entry). `category` and `explanation` are a convenience high-level

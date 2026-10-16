@@ -6,7 +6,7 @@ Explicit deviation from the paper: memory *relevance* becomes content-hash
 noise, so retrieval ranking is driven by recency (0.99^i, w=0.5) and LLM-rated
 importance (w=3); ``always_include`` nodes (agreed limits) are unaffected.
 
-``mxbai``: the paper's ``mixedbread-ai/mxbai-embed-large-v1``, pinned below, via
+``mxbai``: the paper's ``mixedbread-ai/mxbai-embed-large-v1``, pinned below, through
 sentence-transformers — needs network (HF download, ~1.3 GB) or a warm
 ``HF_HOME``; never the prefilled path.
 """
@@ -24,7 +24,7 @@ MXBAI_MODEL = "mixedbread-ai/mxbai-embed-large-v1"
 MXBAI_REVISION = "b33106f585b9ce46904ad7443a3b52b7a63e231c"
 
 # upstream's dimension (mxbai-embed-large-v1); embeddings land in
-# embeddings.json via upstream's NumpyEncoder, so plain ndarrays are required
+# embeddings.json through upstream's NumpyEncoder, so plain ndarrays are required
 _DIM = 1024
 _RETRIEVE_PREFIX = "Represent this sentence for searching relevant passages: "
 
@@ -51,7 +51,7 @@ def make_embedder(kind: str):
     if kind == "hash":
         return HashEmbedder()
     if kind == "mxbai":
-        # Retain upstream's encoding and retrieval prefix; only pin construction.
+        # Keep upstream's encoding and retrieval prefix; only pin construction.
         from simulation.persona import EmbeddingModel
         from sentence_transformers import SentenceTransformer
 

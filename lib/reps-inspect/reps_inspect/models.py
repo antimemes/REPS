@@ -85,5 +85,5 @@ class Params(BaseModel):
     message_limit: int = Field(default=0, ge=0)
     # per-sample token cap (0 = none).
     token_limit: int = Field(default=0, ge=0)
-    # forwarded to Inspect's generate config as `seed` (arrives via $REPS_SEED).
+    # forwarded to Inspect's generate config as `seed` (arrives through $REPS_SEED).
     seed: int = 0

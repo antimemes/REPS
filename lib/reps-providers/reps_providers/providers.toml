@@ -18,7 +18,7 @@
 #             bearer when it is absent.
 #   base_url  the endpoint — always the PLAIN API origin the provider's own
 #             ecosystem expects for the var. `default` (default "") is offered at
-#             the setup prompt (Enter adopts it) and used as the runtime fallback;
+#             the setup prompt (Enter uses it) and used as the runtime fallback;
 #             no default means setup and runtime both require an explicit value.
 #
 # Everything else about a provider is a LAYER owned by its consumer, referencing

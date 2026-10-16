@@ -1,7 +1,7 @@
 # The dev shell — imported by the flake (devShells.default), also usable standalone
-# via legacy `nix-shell` (default.nix supplies the SAME flake.lock-pinned nixpkgs).
+# through legacy `nix-shell` (default.nix supplies the SAME flake.lock-pinned nixpkgs).
 # Toolchains only: per-project Python deps come from each project's pyproject/uv.lock
-# via `uv run`; the shell never duplicates dependency lists.
+# through `uv run`; the shell never duplicates dependency lists.
 { pkgs ? (import ./. { }).pkgs
 , memelintSrc ? (import ./pkgs/locked-sources.nix { }).memelint
 }:

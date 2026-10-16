@@ -99,7 +99,7 @@ class ServedModelMismatch(SystemExit):
     """Fatal routing error, deliberately outside harnesses' Exception fallbacks.
 
     Continuing with a default answer would conceal that this condition ran the
-    wrong model. The original response and an error log are emitted before exit.
+    incorrect model. The original response and an error log are emitted before exit.
     """
 
 
@@ -108,7 +108,7 @@ class EmptyResponse(RuntimeError):
 
 
 def _status_error_response(event: LLMCall, error: openai.APIStatusError) -> ChatCompletion | None:
-    """Retain the full error body and construct choices as the SDK does for 200s."""
+    """Keep the full error body and construct choices as the SDK does for 200s."""
     from openai._models import construct_type_unchecked
     from openai.types.chat import ChatCompletion
 
@@ -128,7 +128,7 @@ def _status_error_response(event: LLMCall, error: openai.APIStatusError) -> Chat
 
 def _record_response(event: LLMCall, response: ChatCompletion | None,
                      status_error: openai.APIStatusError | None) -> bool:
-    """Snapshot output before caller-facing text changes; retain rejected bodies."""
+    """Snapshot output before caller-facing text changes; keep rejected bodies."""
     if response is None:
         return False
     body = response.model_dump(mode="json")

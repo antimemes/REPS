@@ -280,7 +280,7 @@ def test_ladder_dangling_preference_reasks(cfg, monkeypatch, capsys):
     _stdin(monkeypatch, "work\ny\n")
     _resolve(_manifest({"kind": "llm"}), {"model": "openai/q"}, experiment="concordia")
     assert credentials.credentials_cli(["remove", "openai.work"]) == 0
-    # remembered profile is gone → falls back to the picker (default remains)
+    # remembered profile is gone → falls back to the picker (default stays)
     _stdin(monkeypatch, "\nn\n")
     env = _resolve(_manifest({"kind": "llm"}), {"model": "openai/q"},
                    experiment="concordia")
@@ -536,7 +536,7 @@ def test_headless_dangling_pref_falls_back_to_default(cfg, monkeypatch, capsys):
 
 def test_cli_undotted_save_as_keeps_current_values(cfg, monkeypatch, capsys):
     # undotted `set` edits default: Enter-past-the-rest keeps current values, and
-    # a custom name at the end is a save-as (default remains untouched)
+    # a custom name at the end is a save-as (default stays untouched)
     credentials.save({"openai": {"default": {"OPENAI_API_KEY": "sk-d",
                                              "OPENAI_BASE_URL": "http://h/v1"}}})
     code = _cli(["set", "openai"], stdin="\n\nbackup\n", monkeypatch=monkeypatch)

@@ -7,11 +7,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792170207,
-        "narHash": "sha256-dFmh02Sh1NyO7RMs/xrA0XvehtfSnIccqudL9cw1Esk=",
+        "lastModified": 1792177476,
+        "narHash": "sha256-iqyp+MdgwO77jxcLMqrND7fjsHGNwOGq5P4KDlhe7pk=",
         "owner": "antimemes",
         "repo": "memelint",
-        "rev": "593932dc66a7ddd5bf8598197aa1a7e141103aeb",
+        "rev": "17f21356d541f91bcaa542afcb8ab739e16630fd",
         "type": "github"
       },
       "original": {

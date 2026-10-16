@@ -20,7 +20,7 @@ dependencies = [
     "wandb>=0.19,<0.22",           # simulation.utils.logger imports wandb.sdk.data_types.trace_tree
     "torch",
     "transformers>=4.44,<5",       # pathfinder/model.py imports 4.x-era generation classes
-    "sentence-transformers",       # hard import via simulation.persona (construction is lazy)
+    "sentence-transformers",       # hard import through simulation.persona (construction is lazy)
 ]
 
 # In-tree REPS libraries are shared with the runner.

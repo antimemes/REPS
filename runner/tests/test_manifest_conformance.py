@@ -25,7 +25,7 @@ import pytest
 from reps_events import VOCABULARY_VERSION, Json
 from reps_runner.schema import Manifest
 
-# kinds the nix `types` constructors can produce (plus reserved run/harness kinds)
+# types the nix `types` constructors can produce (plus reserved run/harness types)
 KINDS = {"llm", "str", "int", "float", "bool", "enum", "list", "struct", "object",
          "run", "harness"}
 

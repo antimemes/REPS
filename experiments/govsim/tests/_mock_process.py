@@ -31,7 +31,7 @@ def serve():
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     os.environ["WANDB_MODE"] = "disabled"
     # Match main's suppression while importing wandb's generated GraphQL models.
-    # The cold bootstrap test retains coverage of warnings during real startup.
+    # The cold bootstrap test keeps coverage of warnings during real startup.
     from pydantic.warnings import UnsupportedFieldAttributeWarning
     warnings.filterwarnings("ignore", category=UnsupportedFieldAttributeWarning)
     with contextlib.redirect_stdout(sys.stderr):

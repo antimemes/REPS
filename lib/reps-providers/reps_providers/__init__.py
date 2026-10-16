@@ -32,7 +32,7 @@ class ApiKey:
 @dataclass(frozen=True, kw_only=True)
 class BaseUrl:
     """The template's endpoint, always the plain API origin. `default` is offered
-    at the setup prompt (Enter adopts it) and used as the runtime fallback; empty
+    at the setup prompt (Enter uses it) and used as the runtime fallback; empty
     means setup and runtime both require an explicit value."""
 
     name: str

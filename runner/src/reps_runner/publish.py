@@ -133,7 +133,7 @@ class Publisher:
                 with compressed.open("rb") as stream:
                     self.s3.put_object(Bucket=self.target.bucket, Key=keys[0], Body=stream,
                                        ContentType="application/zstd")
-                # The card commits the run; an interrupted upload remains immutable.
+                # The card commits the run; an interrupted upload stays immutable.
                 self.s3.put_object(Bucket=self.target.bucket, Key=keys[1], Body=body,
                                    ContentType="application/json")
 

@@ -60,7 +60,7 @@ def govsim_mock_responder(messages: list[dict]) -> str:
     # conclusion by me: [yes/no])
     if "Conversation conclusion by me" in text:
         return UTTERANCE
-    # harvest amount (act_prompts) and the framework's limit extraction
+    # harvest quantity (act_prompts) and the framework's limit extraction
     # (reflect_prompts) — both end with the Answer: instruction
     if 'Put the final answer after "Answer:"' in text:
         return HARVEST_ANSWER

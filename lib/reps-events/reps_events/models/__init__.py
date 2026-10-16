@@ -81,7 +81,7 @@ class Envelope[EventPayload = Payload](Model):
     ts: UtcDatetime
     run: RunId
     experiment: str
-    # BaseModel.schema is a deprecated method; keep the wire name via an alias.
+    # BaseModel.schema is a deprecated method; keep the wire name through an alias.
     schema_: NonNegativeInt = Field(alias="schema")
     seq: NonNegativeInt
     event: EventPayload

@@ -1,6 +1,6 @@
 """A trivial two-sample task: say hello to your model.
 
-Instruction-following samples scored with `includes()`, chosen so BOTH kinds of
+Instruction-following samples scored with `includes()`, chosen so BOTH types of
 model pass deterministically: any real instruct model includes the requested word,
 and the targets are also substrings of mockllm's fixed reply ("Default output from
 mockllm/model") — so `--set model=mockllm/model` runs the same task keyless and

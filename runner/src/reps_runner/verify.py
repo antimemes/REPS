@@ -169,7 +169,7 @@ def _python_venvs(program: str, seen: set[str] | None = None) -> set[str]:
 
     A venv's bin/python can link to the base interpreter; its lexical store root
     is the environment we need to compare. Shell adapters reference that venv's
-    console entrypoint. Unavailable or unrecognized launchers remain unaudited.
+    console entrypoint. Unavailable or unrecognized launchers stay unaudited.
     """
     root = _store_root(program)
     if root is None:

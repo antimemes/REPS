@@ -3,11 +3,11 @@
 Based on Inspect AI 0.3.263, src/inspect_ai/event/_model.py and _base.py.
 Nested vendored models and full provenance: ../inspect_chat.py.
 
-Local changes: retain boundary fields; add agent attribution and an optional
+Local changes: keep boundary fields; add agent attribution and an optional
 non-negative retries count for observed HTTP 429/5xx responses. The retries property
 falls back to the legacy reps_experiment.retries metadata note on old records;
 the legacy reps_experiment.backend marker establishes zero when no count exists.
-Inspect's runtime retry bookkeeping remains in its raw events.
+Inspect's runtime retry bookkeeping stays in its raw events.
 Drop role, cache, config and its params/temperature/max_tokens projections.
 Drop deferred REPS instance_id/repeat attribution. Generation settings stay in call.request.
 Drop input_refs, traceback/traceback_ansi, pending, working_start, span_id, and

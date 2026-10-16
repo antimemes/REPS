@@ -17,7 +17,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 # the default roster/premise (the "two friends at a cafe" scene) for standalone/test
-# runs; the concordia-cafe card bakes this same scenario via its adapter.
+# runs; the concordia-cafe card bakes this same scenario through its adapter.
 _DEFAULT_PREMISE = (
     "Alice and Bob, old friends who have not spoken in months, run into each other "
     "at a small cafe on a rainy afternoon."

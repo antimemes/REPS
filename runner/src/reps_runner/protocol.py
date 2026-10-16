@@ -83,7 +83,7 @@ def _store_path(path: str | None) -> str | None:
 
 
 def _cpu_model() -> str:
-    """Linux exposes the model in procfs; retain a platform description elsewhere."""
+    """Linux exposes the model in procfs; keep a platform description elsewhere."""
     try:
         for line in Path("/proc/cpuinfo").read_text().splitlines():
             key, _, value = line.partition(":")

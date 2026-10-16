@@ -3,7 +3,7 @@
 ``persona_*/embeddings.json`` is omitted: it is recomputable from node
 descriptions and the embedder named in ``govsim.config``. Each file's marker
 hashes the original bytes, not a JSON reserialization. A malformed file has zero
-ingested records and retains its text in
+ingested records and keeps its text in
 ``govsim.unparsed_log``; other files are still captured before the error is raised.
 """
 

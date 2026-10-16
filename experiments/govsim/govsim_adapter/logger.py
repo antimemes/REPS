@@ -8,7 +8,7 @@ no network, no files. On top of that:
   attributes framework calls to their query component and records phase/query
   metadata. One backend serves all personas, matching upstream's single-LLM shape.
 * ``log_game`` (the per-step hook every scenario ``run()``/env already calls)
-  accumulates the round's stats and emits one ``govsim.state`` event per round;
+  collects the round's stats and emits one ``govsim.state`` event per round;
   its ``resource`` field is the chartable pool series.
 
 Round boundaries are inferred from the stats stream itself: a

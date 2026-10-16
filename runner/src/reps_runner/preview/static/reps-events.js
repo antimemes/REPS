@@ -115,7 +115,7 @@ function stamp(ms) {
 }
 
 /* Message content is a string or a list of typed blocks; text and reasoning are
- * shown as text, other block kinds by their type. */
+ * shown as text, other block types by their type. */
 function contentParts(content) {
   if (typeof content === "string") return [{ kind: "text", text: content }];
   if (!Array.isArray(content)) return [];

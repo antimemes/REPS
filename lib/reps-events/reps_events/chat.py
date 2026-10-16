@@ -53,7 +53,7 @@ def _tool_call(call: dict[str, Any]) -> ToolCall:
         if not isinstance(arguments, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
             raise ValueError("tool arguments must be a JSON object")
     except (ValueError, TypeError) as exc:
-        # The exact arguments remain in raw; malformed calls are still evidence.
+        # The exact arguments stay in raw; malformed calls are still evidence.
         return ToolCall(id=call["id"], function=function["name"],
                         arguments={}, parse_error=str(exc))
     return ToolCall(id=call["id"], function=function["name"], arguments=arguments)
@@ -142,7 +142,7 @@ def chat_completion_output(body: dict[str, Any]) -> ModelOutput:
 
 
 def content_filtered_without_model(output: ModelOutput) -> bool:
-    """A wholly filtered response can contain a choice without identifying a model."""
+    """A fully filtered response can contain a choice without identifying a model."""
     return not output.model and bool(output.choices) and all(
         choice.stop_reason == "content_filter" for choice in output.choices
     )

@@ -3,7 +3,7 @@
 One class implementing Concordia's `LanguageModel` interface (`sample_text` /
 `sample_choice`) by delegating to Concordia's own ``BaseGPTModel``
 (concordia.contrib), which owns all prompt-shaping (the continuation system message
-+ few-shot examples) and the multiple-choice retry loop. Underneath it sits
++ few-shot examples) and the multiple-choice retry loop. Below it sits
 :class:`reps_experiment.llm.ChatClient` — the REPS-instrumented OpenAI-compat client:
 provider routing from the model id's prefix, one ``llm.call`` event per call with
 usage and latency, reasoning-tag stripping, and the keyless ``mock/`` backend.

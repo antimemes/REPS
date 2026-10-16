@@ -137,7 +137,7 @@ def test_full_translation_shape(event_capture):
     assert not [e for e in events
                 if e["type"] == "result" and e["name"].startswith("score:")]
 
-    # Dynamic scorer metrics remain available without creating undeclared results.
+    # Dynamic scorer metrics stay available without creating undeclared results.
     assert any(e.get("kind") == "inspect.metric"
                and e["data"] == {"name": "includes/accuracy", "value": 0.5} for e in events)
 
@@ -448,7 +448,7 @@ def test_emit_sample_skips_what_was_streamed_live(event_capture):
     assert [e["type"] for e in _capture(event_capture)] == ["custom", "llm.call"]
     translate.emit_sample(s, "m", transcript=transcript)
     events = _capture(event_capture)
-    # only the closing instance remains
+    # only the closing instance stays
     assert not [e for e in events if e["type"] == "llm.call"]
     assert [e["kind"] for e in events] == ["inspect.sample"]
 

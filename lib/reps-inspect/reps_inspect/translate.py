@@ -224,7 +224,7 @@ def emit_model_event(ev: ModelEvent, agent: str,
         metadata = dict(filtered.get("metadata") or {})
         for key, values in originals.items():
             # A single value uses the simple original_<field> shape. Repeated
-            # fields across choices/messages retain their precise source paths.
+            # fields across choices/messages keep their accurate source paths.
             original = (next(iter(values.values()))
                         if len(values) == 1 and key != "original_content" else values)
             metadata[f"inspect.{key}"] = original
@@ -361,7 +361,7 @@ def emit_aggregate(log: EvalLog, agent: str) -> dict[str, Any]:
 
 def emit_all(log: EvalLog, agent: str) -> dict[str, Any]:
     """Translate the whole EvalLog at once (the batch path — used by tests and any
-    caller that has a finished log). main.py streams instead: samples via a hook,
+    caller that has a completed log). main.py streams instead: samples through a hook,
     then emit_aggregate."""
     with drift_warnings():
         emit(Status(detail=f"eval {log.status}: {log.eval.task} on {agent}"))

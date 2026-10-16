@@ -7,7 +7,7 @@
 # Cards mark code boundaries (inspect tasks are different programs); params mark data.
 #
 # Every configuration runs keyless on `mock/model` (deterministic scripted lines, no
-# network), against any OpenAI-compatible /chat/completions server via
+# network), against any OpenAI-compatible /chat/completions server through
 # `openai/<served-name>`, or against a hosted provider's OpenAI-compatibility
 # endpoint (`anthropic/`, `google/`, `groq/`, `mistral/`, `grok/`, `openrouter/`,
 # `azureai/` — see reps_experiment/providers.py) — endpoint and key come from the

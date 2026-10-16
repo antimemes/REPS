@@ -1,6 +1,6 @@
 """reps-runner CLI.
 
-Invoked via the mkExperiment wrapper, which bakes REPS_MANIFEST, REPS_EXPERIMENT_BIN,
+Invoked through the mkExperiment wrapper, which bakes REPS_MANIFEST, REPS_EXPERIMENT_BIN,
 REPS_SOURCE (per-experiment content identity), REPS_FETCH_REF (pinned clean repo rev),
 and REPS_TREE_HASH (packaging-tree narHash, when known)
 into the environment. One invocation resolves one condition and executes one
@@ -186,7 +186,7 @@ def main() -> int:
         return 2
     manifest = load_manifest(manifest_path)
     # Identity vs reproducibility: REPS_SOURCE is this experiment's content id — it
-    # alone feeds the condition hash, so editing one experiment subtree never shifts
+    # alone feeds the condition hash, so editing one experiment subtree never moves
     # another's. REPS_FETCH_REF is the fetchable repo rev, recorded for reproducibility.
     source = os.environ.get("REPS_SOURCE") or "dirty:unknown"
     try:
@@ -262,7 +262,7 @@ def main() -> int:
 
         def on_event(envelope: dict[str, Any]) -> None:
             # an experiment's error-level log is the "why it failed" — say it on
-            # the terminal as it happens, not only in the stored stream
+            # the terminal as it occurs, not only in the stored stream
             ev: dict[str, Any] = envelope.get("event") or {}
             if ev.get("type") == "log" and ev.get("level") == "error":
                 _log(f"{label} error: {ev.get('message')}")

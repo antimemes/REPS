@@ -127,10 +127,10 @@ def test_protocol_end_to_end(tmp_path):
     by_type = {}
     for p in payloads:
         by_type.setdefault(p.get("type"), []).append(p)
-    # Even event-shaped JSON printed to stdout remains text.
+    # Even event-shaped JSON printed to stdout stays text.
     assert len(by_type["run.end"]) == 1
     assert "t.custom" not in by_type and None not in by_type
-    # Absent optional fields are omitted throughout the saved model call.
+    # Absent optional fields are omitted during the saved model call.
     assert "null" not in json.dumps(by_type["llm.call"][0])
     stdout_lines = [p["line"] for p in by_type["stdout"]]
     assert '{"type":"run.end","fake":"reserved"}' in stdout_lines

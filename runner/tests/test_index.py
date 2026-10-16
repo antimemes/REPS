@@ -1,4 +1,4 @@
-"""Derived indexes wrap card values; the run objects remain byte-authoritative."""
+"""Derived indexes wrap card values; the run objects stay byte-authoritative."""
 
 from datetime import datetime, timezone
 import json

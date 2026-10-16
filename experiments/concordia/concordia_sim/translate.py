@@ -39,7 +39,7 @@ def emit_provenance(*, concordia_version: str, model: str,
 def _strip_leading_name(actor: str, action: str) -> str:
     """Clean an action into a spoken line: drop the actor-name prefix Concordia adds
     ("Alice: hello" / "Alice hello" — `from` already carries the actor), the "-- " speech
-    marker, and matched wrapping quotes. Returns empty if nothing meaningful remains (the
+    marker, and matched wrapping quotes. Returns empty if nothing meaningful stays (the
     caller skips empty turns)."""
     text = action.strip()
     if text.startswith(actor):
@@ -62,7 +62,7 @@ def emit_scene(premise: str) -> int:
 
 
 def emit_turn(step: int, actor: str, action: str, roster: set[str]) -> int:
-    """Retain one resolved agent action as a custom event, live. Skips
+    """Keep one resolved agent action as a custom event, live. Skips
     setup/skip phases (a non-roster actor) and empty actions. Returns 1 if emitted, else 0.
     Preserve the engine action verbatim; do not classify every action as speech."""
     if actor not in roster:
@@ -80,7 +80,7 @@ def emit_turn(step: int, actor: str, action: str, roster: set[str]) -> int:
 # of the experiment — what a researcher would cite, distinct from the llm.call process
 # record (which stays complete but is not required reading). GM bookkeeping (terminate,
 # next_acting, action specs, its repeated summaries) is deliberately absent: framework
-# noise, auditable via llm.calls only.
+# noise, auditable through llm.calls only.
 _PERCEPTION_COMPONENTS = {
     "SelfPerception": "self",
     "SituationPerception": "situation",
@@ -99,7 +99,7 @@ class TurnEmitter:
     each observation newly written to that agent's memory (the raw_log lists a rolling
     window, so a per-agent high-water mark emits each observation exactly once), and
     one `concordia.perception` with the agent's current self/situation/
-    dynamics readings (evolving state — each value emitted the turn it's computed)."""
+    dynamics readings (evolving state — each value emitted the turn it's calculated)."""
 
     def __init__(self, roster: set[str]) -> None:
         self.roster = set(roster)

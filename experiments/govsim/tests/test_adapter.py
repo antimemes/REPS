@@ -391,7 +391,7 @@ def test_upstream_mock_pipeline(tmp_path, experiment, event_capture, warmed_run)
 def test_failed_run_retains_config_and_raw_log(tmp_path, event_capture, fail_simulation, warmed_run):
     config = tmp_path / "params.json"
     config.write_text(json.dumps(params()))
-    # A broken checkpoint remains inspectable in the transcript, without artifacts.
+    # A broken checkpoint stays inspectable in the transcript, without artifacts.
     script = '''
 import importlib
 import os

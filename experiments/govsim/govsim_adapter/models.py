@@ -42,9 +42,9 @@ class UpstreamLogData(Model):
 
 
 class RecordData(RootModel[dict[str, JsonValue]]):
-    """An open native row: upstream keys vary by action and are not stable.
+    """An open native row: upstream keys change by action and are not stable.
 
-    Retain every field and value, including unfamiliar actions and nested data.
+    Keep every field and value, including unfamiliar actions and nested data.
     """
 
     model_config = ConfigDict(strict=True, allow_inf_nan=False)
@@ -107,7 +107,7 @@ class GovsimRecord(CustomEvent[RecordData]):
 
 
 # Actions in GovSim 1d11adf, concurrent_env.py's log_env.json writers.
-# Native rows remain open and untouched; these classes identify their action.
+# Native rows stay open and untouched; these classes identify their action.
 _ROW_FIELDS = [f"data.{name}" for name in (
     "agent_id", "round", "action", "resource_in_pool_before_harvesting",
     "resource_in_pool_after_harvesting", "concurrent_harvesting", "resource_collected",
@@ -136,7 +136,7 @@ class GovsimHarvest(CustomEvent[RecordData]):
 
 
 class GovsimSummary(CustomEvent[RecordData]):
-    """Upstream retains this interaction as HTML, not a separate summary string."""
+    """Upstream keeps this interaction as HTML, not a separate summary string."""
 
     kind: Literal["govsim.summary"] = "govsim.summary"
     render: ClassVar[RenderHint] = RenderHint(
