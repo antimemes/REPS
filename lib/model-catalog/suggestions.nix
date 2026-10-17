@@ -27,6 +27,7 @@ let
     { value = "vllm/"; description = "vllm/<org>/<model>: a vLLM-served upstream repo id, e.g. vllm/Qwen/Qwen2.5-7B-Instruct. Set VLLM_BASE_URL on the vllm credential profile; API key optional."; }
     { value = "ollama/"; description = "ollama/<tag>: an Ollama library tag, e.g. ollama/qwen2.5:7b-instruct-fp16. Set OLLAMA_BASE_URL to its OpenAI-compatible endpoint on the ollama credential profile; API key optional."; }
     { value = "openrouter/"; description = "openrouter/<org>/<model>: any OpenRouter-hosted model, including ones added since this catalog was generated. Needs OPENROUTER_API_KEY (asked for on first run)."; }
+    { value = "azure/"; description = "azure/<model>: an Azure OpenAI v1 deployment named after its model, e.g. azure/gpt-5.6-sol. Endpoint (AZURE_OPENAI_BASE_URL) + key asked for on first run."; }
     { value = "azureai/"; description = "Type your Azure deployment name after the slash; endpoint + key asked for on first run."; }
     { value = "openai-api/"; description = "openai-api/<name>/<model>: an OpenAI-compatible server under a named credential set."; }
   ];
