@@ -74,7 +74,7 @@ except Exception:
 def credential_snapshot(endpoints: Mapping[str, str], environment: Mapping[str, str] | None = None) -> dict[str, str]:
     """Check all profiles for recorded endpoints, plus ambient credentials.
 
-    These shell/UI settings have credential-like names but are not secrets and
+    These shell/UI settings have credential-shaped names but are not secrets and
     are not forwarded to experiments. In particular KEYTIMEOUT is a small integer.
     """
     public_settings = {"KEYTIMEOUT", "LESSKEYIN_SYSTEM", "KITTY_PUBLIC_KEY"}
@@ -167,7 +167,7 @@ def _store_root(path: str | None) -> str | None:
 def _python_venvs(program: str, seen: set[str] | None = None) -> set[str]:
     """Read Nix wrapper references without executing them or resolving Python symlinks.
 
-    A venv's bin/python can link to the base interpreter; its lexical store root
+    A venv's bin/python can link to the base interpreter; its lexical Nix store root
     is the environment we must compare. Shell adapters reference that venv's
     console entrypoint. Unavailable or unrecognized launchers stay unaudited.
     """
@@ -247,7 +247,7 @@ def verify_run(run_dir: Path, *, manifest: Path | None = None, catalog: Path | N
         raise VerificationError("run.json is missing or unreadable") from None
     expected = derive_card(records)
     # A saved v0 cache can predate the new reading. Accept it only if it
-    # matches the original stream projection; do not ignore arbitrary card drift.
+    # matches the initial stream projection; do not ignore arbitrary card drift.
     if card != expected:
         original_projection = CardProjection()
         legacy = False
@@ -312,7 +312,7 @@ def verify_cli(argv: list[str]) -> int:
         print(f"verify: FAIL: {exc}", file=sys.stderr)
         return 1
     except Exception:
-        # Filesystem, credential-store and import failures must also fail closed,
+        # Filesystem, credential-file and import failures must also reject the run,
         # without letting a dependency traceback print inputs or credential values.
         print("verify: FAIL: audit could not complete; check the run, manifest and credential store", file=sys.stderr)
         return 1

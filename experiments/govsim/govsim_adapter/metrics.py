@@ -5,7 +5,7 @@ records, rewritten by the env each round). Survival and equality reuse the
 formulas from upstream ``simulation/analysis/plots.py`` (quoted, not imported —
 the analysis stack is not in this env). ``over_usage`` has NO upstream
 implementation; it is our documented reconstruction from persisted inputs:
-the share of harvest actions whose ``wanted_resource`` exceeds that round's
+the share of harvest actions with a ``wanted_resource`` above that round's
 sustainability threshold ``(pool_before // 2) // num_agents``, with
 ``num_agents`` = that round's distinct harvester count. Upstream's env keeps a
 *constant* ``num_agents`` (and a threshold fixed at reset), which does not update

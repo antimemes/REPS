@@ -2,7 +2,7 @@
 # Each entrypoint — nix run (flakes), nix run -f (flakes CLI on classic attrs),
 # $(nix-build …) (classic), and nix-run — must mint IDENTICAL condition identity
 # (source content hash + condition id) for the same experiment and params on the
-# same tree. This guards against eval-path drift (flake store copies, path
+# same tree. This guards against eval-path drift (flake copies in the Nix store, path
 # filtering, arg plumbing) fragmenting conditions by entrypoint with no warning.
 # Keyless: --dry-run only (no experiment executes, no file is written to the
 # databank).

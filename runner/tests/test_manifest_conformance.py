@@ -1,15 +1,15 @@
-"""Manifest conformance sweep — each real nix-built manifest against the schema
+"""Manifest conformance sweep — each real manifest Nix makes against the schema
 vocabulary in reps_runner.schema.
 
 Full structural validation, driven by the TypedDicts themselves (annotations are
 introspected, thus there is no second schema to drift): at each level, keys must
 be declared, required keys present, and each VALUE must match its annotated
-type — a manifest with `order: "1"` or a string where a list belongs fails here
-with the file and path in the message. The walker checks the generated manifest
+type — a manifest with `order: "1"` or a string where a list belongs is rejected here
+with the file and path in the message. The walker checks the manifest Nix makes
 directly against the declared TypedDict vocabulary.
 
-Gated on REPS_TEST_MANIFESTS (task test:python wires it to the nix-built manifests
-dir); skips without it.
+Gated on REPS_TEST_MANIFESTS (task test:python wires it to the manifests dir Nix
+makes); skips without it.
 """
 
 import json
@@ -163,7 +163,7 @@ def test_shipped_readmes_follow_presentation_format():
     assert not any(path.is_file() for path in (catalog / "assets/govsim").rglob("*"))
     assert govsim["schema"]["version"] == 0
     assert govsim["schema"]["models"] == "govsim_adapter.models:Payload"
-    # Resolve through the built experiment's interpreter, not by importing its
+    # Resolve through the experiment build's interpreter, not by importing its
     # adapter into the runner's test environment.
     subprocess.run([
         str(Path(govsim["schema"]["path"]).parent / "python"), "-c",
@@ -172,7 +172,7 @@ def test_shipped_readmes_follow_presentation_format():
         "assert getattr(importlib.import_module(module), attr) is Payload",
         govsim["schema"]["models"],
     ], check=True)
-    # An experiment directory without a README stays valid and omits the field.
+    # An experiment directory without a README is accepted and omits the field.
     if not (root / "experiments/inspect_evals/README.md").exists():
         assert "readme" not in json.loads((catalog / "inspect-hello.json").read_text())
 

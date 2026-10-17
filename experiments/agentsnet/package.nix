@@ -123,7 +123,7 @@ in
       model = param llm {
         description = "provider/model for every agent. Upstream's own model table is bypassed: any model the provider serves can be named. mock/model runs keyless.";
         initial = "openai/gpt-4o-mini";
-        suggestions = [ mockSuggestion ]; # the shared model catalog supplies the rest
+        suggestions = [ mockSuggestion ]; # the REPS model catalog supplies the rest
         order = 1000;
         group = "model";
       };

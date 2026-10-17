@@ -11,7 +11,7 @@
 # `openai/<served-name>`, or against a hosted provider's OpenAI-compatibility
 # endpoint (`anthropic/`, `google/`, `groq/`, `mistral/`, `grok/`, `openrouter/`,
 # `azureai/` — see reps_experiment/providers.py) — endpoint and key come from the
-# credential store, not from params.
+# credential file, not from params.
 { reps, pkgs, lib, writeShellApplication, jq }:
 
 let
@@ -27,7 +27,7 @@ let
   };
 
   # the initial scenario: two old friends at a cafe — keyless, thus the prefilled
-  # command works with zero setup. Presentation only, like each initial.
+  # command works with zero setup. Presentation only, the same as each initial.
   cafeAgents = [
     { name = "Alice"; goal = "Catch up warmly and find out how Bob has been."; model = ""; }
     { name = "Bob"; goal = "Share what has changed in your life since you last met."; model = ""; }

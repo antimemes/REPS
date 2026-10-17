@@ -1,7 +1,7 @@
 """End-to-end keyless pipeline: a real Concordia simulation on the mock backend.
 
 Skips if Concordia (or its heavy deps) will not import — the pure tests continue to
-cover the boundary. Runs the smallest scenario for one step to stay fast.
+examine the boundary. Runs the smallest scenario for one step to stay fast.
 """
 
 import json
@@ -60,7 +60,7 @@ def test_anthropic_without_key_fails_fast(event_capture, monkeypatch):
 def test_azureai_without_base_url_fails_fast(event_capture, monkeypatch):
     # azureai's base has no registry default (per-resource endpoint). Thus a missing
     # env var is caught at construction, before a turn runs. (openai/ falls back
-    # to api.openai.com/v1 — the registry default — thus it no longer fails here.)
+    # to api.openai.com/v1 — the registry default — thus it is not rejected here.)
     monkeypatch.delenv("AZUREAI_BASE_URL", raising=False)
     monkeypatch.setenv("AZUREAI_API_KEY", "k")
     with pytest.raises(RuntimeError, match="AZUREAI_BASE_URL"):
@@ -91,7 +91,7 @@ def test_smoke_mock_run(event_capture, tmp_path, monkeypatch):
     assert metrics["agents"] == 2
     assert metrics["model_calls"] > 0
     # the run uses its full step budget — the dialogic game master cannot end the
-    # scene early (can_terminate_simulation=False), thus max_steps is exact here
+    # scene early (can_terminate_simulation=False), thus steps is max_steps here
     assert metrics["steps"] == 2
     assert metrics["world_events"] > 1
 

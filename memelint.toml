@@ -23,31 +23,31 @@ words = [
   "card",              # run.json, the runner's index card for one run (lifecycle state plus cached stream facts)
   "catalog",           # a curated list: the experiment manifest directory, or the model catalog in lib/model-catalog
   "cell",              # one cell of an upstream sweep: one task on one instance and one model
-  "checkout",          # a local git working copy of the repository, as opposed to a store path or tarball
+  "checkout",          # a local git working copy of the repository, not a Nix store path or a tarball
   "citation",          # a model-output reference to a source; Inspect's vendored Citation models
   "combobox",          # the type-to-filter model picker in the GUI
   "covariate",         # a value recorded for each run (wrapper version, CPU) that is not part of the condition identity
   "databank",          # the published run store and its site (databank.antimemetics.institute)
   "deployment",        # an Azure OpenAI deployment: the named model endpoint on a resource
-  "discriminated",     # as in "discriminated union": a union whose member is chosen by a tag field (no base form in use)
+  "discriminated",     # as in "discriminated union": a union with its member chosen by a tag field (the base is not in use)
   "discriminator",     # the tag field that selects a member of a discriminated union (Pydantic's name)
   "emit",              # write an event record to the run stream (emit(), reps-emit)
   "envelope",          # the record wrapper around an event payload (type, run id, sequence, time); the Envelope model
   "experiment",        # a packaged replication in experiments/; the unit a manifest describes and a run executes
-  "family",            # a group of experiment variants built from one code package (impossiblebench, inspect_evals)
+  "family",            # a group of experiment variants made from one code package (impossiblebench, inspect_evals)
   "fetch",             # retrieve a pinned source or object through the network (Nix/git sense; fetch_ref)
   "fingerprint",       # the hash of an experiment's declared source paths; part of the condition id
   "headless",          # running with no terminal (non-interactive stdin); the runner does not prompt
   "heartbeat",         # the runner's periodic rewrite of run.json that shows a run is live
   "hello",             # the keyless smoke task and app (inspect-hello, hello_task)
   "identity",          # the facts that make runs poolable: experiment, source fingerprint and params (condition identity)
-  "instrumentation",   # the event-recording hooks built into the REPS chat client
+  "instrumentation",   # the event-recording hooks inside the REPS chat client
   "interactive",       # a run with a terminal where the runner can prompt (opposite of headless)
   "keyless",           # a configuration for which no API key is necessary (mock model, offline)
   "knob",              # a parameter a user can change on an experiment; changing one changes the condition id
   "ladder",            # the ordered credential-profile resolution steps (remembered selection, lone default, picker)
   "loopback",          # the local-only network interface (127.0.0.1) the preview serves on
-  "manifest",          # the generated description of an experiment's parameters, results and metadata (manifest.json)
+  "manifest",          # the description Nix makes of an experiment's parameters, results and metadata (manifest.json)
   "metric",            # one declared, measured result of a run (the paper's headline metric); the base of the bundled plural
   "mtime",             # a file's modification time (the card's heartbeat mtime)
   "ndjson",            # newline-delimited JSON, the preview server's event stream format
@@ -56,7 +56,7 @@ words = [
   "paper",             # the upstream publication an experiment replicates
   "phase",             # a stage within an experiment round (GovSim harvest/restaurant, AgentsNet messages/final)
   "picker",            # the runner's interactive credential-profile menu
-  "pin",               # fix a dependency or source to one exact version
+  "pin",               # fix a dependency or source to one version
   "pkgs",              # the Nix package set argument and the pkgs/ directory
   "platform",          # the OS/hardware description recorded in run provenance (`platform` field)
   "poll",              # repeatedly request a resource to check for change (preview shell, Vast API)
@@ -64,7 +64,7 @@ words = [
   "projection",        # a derived read-time view of the event stream (card, index); not a rewrite
   "provenance",        # a run's recorded origin: source, fetch_ref, tree_hash, runtime
   "provisioning",      # the run lifecycle state before running; Inspect pulls or builds its sandbox images here
-  "publish",           # upload a verified run to the S3 store (`reps-runner publish`)
+  "publish",           # upload a verified run to the run store (`reps-runner publish`)
   "receiver",          # the reference event-socket receiver (reps_testing) used by tests
   "registry",          # the experiment package registry in pkgs/ that discovers experiments and their tests
   "relock",            # regenerate a uv.lock after a pyproject edit (`task relock`)
@@ -75,8 +75,8 @@ words = [
   "root",              # the top of a tree: repository root, data-dir root, root index.json
   "roster",            # an experiment's declared list of actors with display labels
   "round",             # one iteration of an experiment's loop (GovSim harvest round, AgentsNet message round)
-  "run",               # one execution of an experiment in a condition; the unit the store records
-  "runner",            # base of "runners": the REPS program that launches an experiment, envelopes its events and writes the store
+  "run",               # one execution of an experiment in a condition; the unit the run store records
+  "runner",            # base of "runners": the REPS program that launches an experiment, envelopes its events and writes the run store
   "scaffold",          # reps_experiment.scaffold, the experiment-side protocol toolkit (emit, deposit_artifact)
   "schema",            # the JSON Schema of a record kind (event schemas, the memelint.toml schema)
   "scenario",          # an experiment's fixed world setup (GovSim fishery/pasture, a Concordia cafe); baked into the card, not a param
@@ -84,7 +84,7 @@ words = [
   "scorer",            # the upstream or Inspect component that computes a sample's score
   "shorthand",         # the runner's CLI value shorthand: JSON, @file, or a bare string
   "simulation",        # one Concordia generative-agent simulation, the thing the concordia experiment runs
-  "slug",              # the owner/name form of the repository name (mdbook {{repo}})
+  "slug",              # the repository name as owner/name (mdbook {{repo}})
   "solver",            # an Inspect solver, the task's agent loop
   "status",            # the REPS status event: experiment progress text that does not change the lifecycle state
   "stdio",             # a child process's stdin, stdout and stderr pipes, captured by the runner
@@ -100,7 +100,7 @@ words = [
   "venue",             # the place a self-hosted engine runs (laptop, cluster, Vast); lives in the profile, not the model ID
   "vertex",            # a graph node (AgentsNet vertex cover); also Google Vertex AI as a provider prefix
   "viewer",            # the local REPS run viewer served by the preview command
-  "vocabulary",        # the shared set of envelope and common event models, versioned by the v field
+  "vocabulary",        # the set of envelope and common event models that all experiments use, versioned by the v field
 
   # models and the model API
   "assistant",         # the model's role in a chat message list (`assistant` message, prefill)
@@ -139,7 +139,7 @@ words = [
   "grok",              # xAI's Grok model family (grok/ provider prefix)
   "groq",              # Groq, a hosted inference provider
   "httpx",             # the Python HTTP client library
-  "impossiblebench",   # ImpossibleBench, a benchmark whose tasks have impossible test variants (experiment family)
+  "impossiblebench",   # ImpossibleBench, a benchmark with tasks that have impossible test variants (experiment family)
   "inspect",           # Inspect, the inspect_ai evaluation framework; also the inspect-* apps
   "kernel",            # the Linux kernel
   "linux",             # the Linux operating system
@@ -151,6 +151,7 @@ words = [
   "mockllm",           # Inspect's mock model provider (`mockllm/model`), the keyless path
   "moonshotai",        # Moonshot AI, the provider prefix for Kimi models
   "nix",               # the Nix package manager and language; the bundled nix list covers .nix files only
+  "nix store",         # Nix's /nix/store, where built outputs live; also "store path"
   "npm",               # the Node.js package manager
   "numpy",             # the NumPy array library
   "ollama",            # a local model server
@@ -169,15 +170,43 @@ words = [
   "unix",              # the Unix family of operating systems; Unix stream sockets
   "upperdir",          # the overlayfs upper directory that stores writes above the lower layers
   "urllib",            # Python's standard HTTP client package
-  "vast",              # Vast.ai, the GPU rental service whose Serverless endpoints host open-weight models
+  "vast",              # Vast.ai, the GPU rental service with Serverless endpoints that host open-weight models
   "virtiofs",          # the virtio filesystem share between a VM and its host
   "vllm",              # vLLM, an open-weight model inference server; the vllm/ model ID prefix
   "werewolf",          # the Werewolf game, the example experiment used in tests and docs
   "zlib",              # the zlib compression library
 ]
 
-[languages.nix]
-words = ["uv"]   # the Python package manager; the bundled python list covers .py files only
-
+# Words tied to a language: a name that one language's code uses in one sense.
 [languages.python]
-words = ["required"]   # pydantic's and TypedDict's term: a field a record must contain
+words = [
+  "required",     # pydantic's and TypedDict's term: a field a record must contain
+  "program",      # the experiment executable the manifest's `program` names; what the runner starts
+  "typed",        # typed experiments, params and observations: declared with a pydantic model, not open dicts
+  "evidence",     # the recorded facts the verify gate checks and publish carries (events, card, artifacts)
+  "reasoning",    # the model-output part that holds its thinking; `reasoning` settings on a request
+  "served",       # the served model name: the name an inference engine answers to, distinct from the catalog id
+  "remembered",   # the runner's remembered selection: a credential profile kept in preferences.toml
+  "built-in",     # a name the program defines itself, not one the user adds (built-in provider names)
+  "fix",          # the remedy the runner prints when it rejects a run (the `fix` field beside `problem`)
+  "raise",        # Python's keyword that signals an exception
+  "base URL",     # the HTTP origin a provider client prepends to its paths
+  "run store",    # the published layout of runs: the local runs/ directory and the S3 bucket
+]
+
+[languages.nix]
+words = [
+  "uv",           # the Python package manager; the bundled python list covers .py files only
+  "program",      # the experiment executable `mkExperiment` wraps (its `program` argument)
+  "typed",        # typed experiments and params, as in the Python sense
+]
+
+[languages.toml]
+words = [
+  "uv",           # the Python package manager; pyproject comments name it
+  "program",      # the experiment executable, as in the Python sense
+  "typed",        # typed experiments and params, as in the Python sense
+  "served",       # the served model name, as in the Python sense
+  "base URL",     # the HTTP origin a provider client prepends to its paths
+  "run store",    # the published layout of runs: the local runs/ directory and the S3 bucket
+]

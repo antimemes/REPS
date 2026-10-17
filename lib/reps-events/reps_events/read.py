@@ -32,7 +32,7 @@ def parse_record(source: str | bytes, *, payload: Any = None) -> Envelope[Any]:
     """Migrate one saved JSON envelope, then validate it at the current version.
 
     Use parse_event for a bare payload with no envelope/version.
-    Pass an experiment's payload union or TypeAdapter for typed custom events.
+    Give an experiment's payload union or TypeAdapter for typed custom events.
     """
     written: dict[str, Any] = json.loads(source)
     if not isinstance(written, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
@@ -68,10 +68,10 @@ def read_events(source: str | Path, *, payload: Any = None) -> Iterator[Envelope
 
     A run directory contains only events.jsonl. Unknown types, invalid fields, and
     truncated JSON raise EventReadError rather than dropping evidence with no warning.
-    It is not necessary for a valid partial run to contain run.end. Each JSON
+    It is not necessary for a correct partial run to contain run.end. Each JSON
     record is migrated before validation; its returned v is current, while source
     files stay untouched.
-    Pass an experiment's payload union or TypeAdapter to decode its custom events.
+    Give an experiment's payload union or TypeAdapter to decode its custom events.
     An explicitly typed TypeAdapter also preserves its union in static type checking.
     """
     supplied: TypeAdapter[Any] = payload

@@ -3,9 +3,9 @@
 Serves two directories on loopback and opens the browser on the shell in `static/`.
 The shell lists runs from `/api/runs` and reads a run's `run.json` and `events.jsonl`
 straight from `/data/`; the embeddable `<reps-events>` element renders the stream.
-With `--manifests DIR` (the built catalog, `nix-build --no-out-link -A manifests`) the
-shell also lists the experiments, shows each one's params and results, and renders a
-command line for a condition; the server only supplies the manifests.
+With `--manifests DIR` (the catalog Nix makes, `nix-build --no-out-link -A manifests`)
+the shell also lists the experiments, shows each one's params and results, and renders
+a command line for a condition; the server only supplies the manifests.
 
     /              static/index.html
     /static/…      this package's static/ directory

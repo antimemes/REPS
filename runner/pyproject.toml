@@ -5,11 +5,11 @@ description = "REPS experiment runner: validation, condition hashing, the runner
 requires-python = ">=3.13"
 dependencies = [
     "rfc8785>=0.1.4",
-    # the event vocabulary lives in reps-events (one definition, shared with each
+    # the event vocabulary lives in reps-events (one definition, used by each
     # Python experiment); it also supplies the reps-emit console command.
     "reps-events",
     # the canonical provider registry (names + credential templates); the runner
-    # uses it for the credential store's prompt templates and the missing-set gate
+    # uses it for the credential file's prompt templates and the missing-set gate
     "reps-providers",
 ]
 

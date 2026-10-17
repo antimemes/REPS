@@ -1,4 +1,4 @@
-"""The producer describes its actual interpreter through the shared serialized record."""
+"""The producer describes its actual interpreter through the serialized REPS record."""
 
 import json
 import locale

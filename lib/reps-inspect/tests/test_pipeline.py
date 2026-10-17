@@ -42,7 +42,7 @@ def inspect_ok():
 
 def _hello_task():
     """The same deterministic task experiments/inspect_evals ships as inspect-hello:
-    instruction-following samples whose targets are also substrings of mockllm's
+    instruction-following samples with targets that are also substrings of mockllm's
     fixed reply ("Default output from mockllm/model"), thus the mock scores 1.0
     keyless and offline."""
     from inspect_ai import Task
@@ -153,7 +153,7 @@ def test_every_fixture_transcript_event_is_retained_raw(inspect_ok, tmp_path, ev
     for index, event in enumerate(events):
         if event.get("kind") == "inspect.event" and event["data"]["event"] == "model":
             assert events[index + 1]["type"] == "llm.call"
-            # Inspect's in-memory/log reader path expands the 0.3.200 pool form.
+            # Inspect's in-memory/log reader path expands the 0.3.200 pool shape.
             assert event["data"]["input"] and isinstance(event["data"]["input"][0], dict)
             assert not event["data"].get("input_refs")
 

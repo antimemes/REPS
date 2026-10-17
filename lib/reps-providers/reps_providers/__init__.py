@@ -22,8 +22,8 @@ from pathlib import Path
 @dataclass(frozen=True, kw_only=True)
 class ApiKey:
     """The template's secret: hidden at the setup prompt, masked in listings.
-    `required` = a value must exist at runtime — consumers fail early and
-    actionably when it does not."""
+    `required` = a value must exist at runtime — consumers stop early with a
+    clear error when it does not."""
 
     name: str
     required: bool = True
@@ -31,9 +31,9 @@ class ApiKey:
 
 @dataclass(frozen=True, kw_only=True)
 class BaseUrl:
-    """The template's endpoint, always the plain API origin. `default` is offered
+    """The template's endpoint, always the API origin. `default` is offered
     at the setup prompt (Enter uses it) and used as the runtime fallback; empty
-    means setup and runtime require an explicit value."""
+    means setup and runtime require a value from the user."""
 
     name: str
     default: str = ""
@@ -81,7 +81,7 @@ _validate(PROVIDERS, MOCK_PREFIXES)
 def requested_model_name(model_id: str) -> str:
     """Remove routing prefixes, preserving slashes within the model name.
 
-    Inspect's openai-api/SERVICE/MODEL form has two routing components.
+    Inspect's openai-api/SERVICE/MODEL shape has two routing components.
     Bare names are model names.
     """
     if model_id.startswith("openai-api/"):
@@ -100,7 +100,7 @@ def snapshot_stem(provider: str | None, name: str) -> str:
     """Remove at most one trailing snapshot qualifier, preserving name casing.
 
     All providers allow -YYYY-MM-DD, -YYYYMMDD, @YYYYMMDD, -YYYY-MM,
-    and -latest. Only mistral allows the ambiguous four-digit -YYMM form.
+    and -latest. Only mistral allows the ambiguous four-digit -YYMM.
     Names here have had their routing prefixes removed.
     """
     if match := _SNAPSHOT_SUFFIX.fullmatch(name):
@@ -112,7 +112,7 @@ def snapshot_stem(provider: str | None, name: str) -> str:
 
 
 def served_model_matches(requested: str, served: str) -> bool:
-    """Resolve aliases by stem; require the exact snapshot for dated requests."""
+    """Resolve aliases by stem; require the same snapshot for dated requests."""
     name = requested_model_name(requested)
     provider = requested.partition("/")[0] if "/" in requested else None
     stem = snapshot_stem(provider, name)

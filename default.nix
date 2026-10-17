@@ -1,4 +1,4 @@
-# Classic entrypoint — plain Nix, nixpkgs-style: no flakes, no flake-compat. The
+# Classic entrypoint — Nix, nixpkgs-style: no flakes, no flake-compat. The
 # flake and this file are two doors into the same pkgs/top-level; nixpkgs is pinned
 # to the SAME revision by reading the authoritative flake.lock.
 #
@@ -44,7 +44,7 @@ runnables
 
 
   # `exec.<name>`: the classic mirror of the flake's APP namespace — bare names for
-  # experiments, reps- prefix for tools, like `nix run .#<name>`. The output
+  # experiments, reps- prefix for tools, as in `nix run .#<name>`. The output
   # IS the executable (a symlink resolved through lib.getExe, i.e. meta.mainProgram).
   # Thus no binary-name knowledge is necessary for the flakeless one-liner:
   #   $(nix-build --no-out-link -A exec.inspect-hello) --set …

@@ -1,4 +1,4 @@
-"""Presentation metadata for schema readers; hints do not enter event records.
+"""Presentation metadata for schema readers; hints do not go into event records.
 
 The former ``group`` hint was removed: viewers render rows in sequence and use
 facets to narrow the stream instead of folding records together.
@@ -15,7 +15,7 @@ _SUBSTITUTION = re.compile(r"\{(" + _PATH + r")\}")
 
 
 def template_paths(value: str | None) -> list[str]:
-    """A bare path keeps its original meaning; templates substitute only {paths}."""
+    """A bare path is read as that path; templates substitute only {paths}."""
     if value is None:
         return []
     if re.fullmatch(_PATH, value):

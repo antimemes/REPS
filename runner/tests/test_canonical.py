@@ -1,6 +1,6 @@
 """Golden condition-identity vector; see docs/book/src/running/model.md.
 
-Changing it requires an explicit identity-format decision.
+Changing it requires an identity-format decision.
 """
 
 from reps_runner.canonical import abbrev, condition_id

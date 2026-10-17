@@ -331,7 +331,7 @@ def test_nonzero_exit_is_failed(tmp_path):
 
 
 def test_experiment_receives_params_and_env(tmp_path):
-    # plain-text echo: lands in the stream as a captured `stdout` event, with no change —
+    # text echo: lands in the stream as a captured `stdout` event, with no change —
     # which is also the capture path a no-adapter wrapped tool exercises
     script = r"""#!/bin/sh
 read -r p
@@ -354,7 +354,7 @@ echo "params=$p seed=$REPS_SEED run=$REPS_RUN_ID"
 @pytest.mark.parametrize("stream, fd", [("stdout", 1), ("stderr", 2)])
 def test_non_utf8_stdio_does_not_drop_subsequent_output(tmp_path, stream, fd):
     # Arbitrary child-process output uses a different path from the typed event
-    # socket. Invalid bytes must not kill its reader or lose later valid text.
+    # socket. Invalid bytes must not kill its reader or lose later correct text.
     script = (
         "#!/bin/sh\n"
         "read -r params\n"
@@ -420,7 +420,7 @@ def test_orphaned_pipe_holders_do_not_hang_the_run(tmp_path):
 
 
 def test_child_env_is_constructed_not_inherited(monkeypatch):
-    # the store is the ONLY way provider credentials reach a run: an ambient key or
+    # the credential file is the ONLY way provider credentials reach a run: an ambient key or
     # base-url exported in the shell neither leaks in nor shadows the stored value
     from reps_runner.protocol import child_env
 
@@ -429,7 +429,7 @@ def test_child_env_is_constructed_not_inherited(monkeypatch):
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "aws-ambient")
     monkeypatch.setenv("DOCKER_HOST", "unix:///run/user/1000/docker.sock")
     env = child_env("rid", "/run/dir", 7, {"OPENAI_API_KEY": "sk-stored"})
-    assert env["OPENAI_API_KEY"] == "sk-stored"  # store overrides host
+    assert env["OPENAI_API_KEY"] == "sk-stored"  # credential file overrides host
     assert "OPENAI_BASE_URL" not in env
     assert "AWS_SECRET_ACCESS_KEY" not in env
     assert env["DOCKER_HOST"] == "unix:///run/user/1000/docker.sock"  # allowlisted

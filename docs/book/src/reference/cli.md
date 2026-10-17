@@ -112,7 +112,7 @@ To audit a saved run by ID, use `nix run .#reps-runner -- verify RUN_ID --data-d
 | `NO_COLOR` | Disable runner terminal color. Nonterminal stderr and `TERM=dumb` also disable it. |
 | `DOCKER_HOST` | Forwarded to the experiment for Docker-backed tasks. The required daemon must be available separately. |
 
-Provider keys and endpoints come from the credential store. The runner does not forward arbitrary environment variables. [Process protocol](protocol.md) lists the variables passed to an experiment; [local execution and storage](local.md) covers terminal operation.
+Provider keys and endpoints come from the credential file. The runner does not forward arbitrary environment variables. [Process protocol](protocol.md) lists the variables passed to an experiment; [local execution and storage](local.md) covers terminal operation.
 
 ## Package attributes
 

@@ -7,7 +7,7 @@ ollama provider. Each node then calls that one object through a langgraph
 `StateGraph` with a `MemorySaver`, one `thread_id` for each node. Thus the full
 conversation of each agent is replayed on each call.
 
-`RepsChatModel` is a `BaseChatModel` whose completions go through REPS's
+`RepsChatModel` is a `BaseChatModel`, and its completions go through REPS's
 `ChatClient`. Thus each call is one `llm.call` event with the full message list
 and the reply as written, the provider is chosen by the run's model id, and
 `mock/` runs keyless. The node a call belongs to arrives as the langgraph
@@ -20,9 +20,9 @@ no `temperature` for OpenAI and Anthropic (their classes send none),
 `temperature` 0.7 for Google (langchain-google-genai's class default); and
 `max_tokens` 1024 for Anthropic (langchain-anthropic's class default) unless
 upstream passes one. The run's seed on each request (the REPS client adds
-it; upstream sent none). Upstream's thinking variants pass `thinking`,
-`thinking_budget` and `include_thoughts` kwargs that have no OpenAI-protocol
-form; they are recorded as request metadata and not forwarded.
+it; upstream sent none). Upstream's thinking variants send `thinking`,
+`thinking_budget` and `include_thoughts` kwargs that the OpenAI protocol has
+no field for; they are recorded as request metadata and not forwarded.
 
 A real reply is turned into LangChain messages by langchain-openai's
 `_create_chat_result`. Thus the AIMessage has the same `usage_metadata` and
@@ -30,7 +30,7 @@ A real reply is turned into LangChain messages by langchain-openai's
 ChatOpenAI's, and upstream's transcripts record them unchanged. Two things
 differ from ChatOpenAI and are REPS-wide: the client lifts an inline <think>
 block out of the text into a reasoning part before upstream parses the reply,
-and a content-filter 400 whose body includes `choices` is returned as an empty
+and a content-filter 400 with `choices` in its body is returned as an empty
 reply (ChatOpenAI raises; upstream's with_retry then raises again after ten same
 attempts and the run dies). Retries compound: with_retry's ten attempts wrap
 the REPS client's eight.

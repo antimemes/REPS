@@ -1,4 +1,4 @@
-"""OpenAI chat-completion bodies mapped to the shared vocabulary, without the SDK."""
+"""OpenAI chat-completion bodies mapped to the REPS vocabulary, without the SDK."""
 
 import json
 import re
@@ -13,7 +13,7 @@ from .inspect_chat import (
 
 
 def _content(value: Any) -> str | list[Content]:
-    """OpenAI content parts -> the shared Inspect content vocabulary."""
+    """OpenAI content parts -> the Inspect content vocabulary."""
     if value is None:
         return ""
     if isinstance(value, str):
@@ -53,7 +53,7 @@ def _tool_call(call: dict[str, Any]) -> ToolCall:
         if not isinstance(arguments, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
             raise ValueError("tool arguments must be a JSON object")
     except (ValueError, TypeError) as exc:
-        # The exact arguments stay in raw; malformed calls are also evidence.
+        # The arguments stay as sent in raw; malformed calls are also evidence.
         return ToolCall(id=call["id"], function=function["name"],
                         arguments={}, parse_error=str(exc))
     return ToolCall(id=call["id"], function=function["name"], arguments=arguments)

@@ -5,7 +5,7 @@
 One run = one Concordia `Simulation.play()`, assembled as upstream's tutorial
 notebook does it: prefabs + instances + Config + Simulation + play. Everything beyond
 that assembly lives at the edges — params in (models.py), the instrumented model client
-(client.py), the transcript out (translate.py). A plain program: no REPS imports beyond
+(client.py), the transcript out (translate.py). A program with no REPS imports beyond
 the event vocabulary. Execution failures preserve partial events and summaries
 and return a nonzero exit code.
 """

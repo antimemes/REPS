@@ -134,7 +134,7 @@ def run(params: Params) -> None:
     from omegaconf import OmegaConf
     from transformers import set_seed
 
-    # Configuration belongs in the transcript, also when setup fails.
+    # Configuration belongs in the transcript, also when setup stops with an error.
     emit(GovsimConfig(data=ConfigData.model_validate(OmegaConf.to_container(cfg, resolve=True))))
 
     set_seed(seed)  # mirrored from upstream main.py (global python/numpy/torch)
@@ -204,7 +204,7 @@ def run(params: Params) -> None:
             cfg.experiment, logger, wrappers, wrapper, embedding_model, storage,
         )
     finally:
-        # Capture each completed native file even when the simulation fails.
+        # Capture each completed native file even on a simulation error.
         # Ingestion precedes Pandas, thus native values stay unchanged.
         simulation_error = sys.exception()
         try:
@@ -213,7 +213,7 @@ def run(params: Params) -> None:
             if simulation_error is None:
                 raise
             # Diagnostics are in the stream. A missing or broken
-            # checkpoint must not replace the original simulation failure.
+            # checkpoint must not replace the initial simulation failure.
             simulation_error.add_note(f"Checkpoint ingestion also failed: {exc}")
 
     if rows is None:
@@ -227,7 +227,7 @@ def run(params: Params) -> None:
 
 
 def main() -> int:
-    # wandb's generated GraphQL models attach Field(repr/frozen) to union
+    # wandb's GraphQL models attach Field(repr/frozen) to union
     # members; Pydantic warns at import time even with wandb disabled.
     warnings.filterwarnings("ignore", category=UnsupportedFieldAttributeWarning)
     # Hydra's defaults_list.py warns because upstream config omits _self_.

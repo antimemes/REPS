@@ -4,7 +4,7 @@ Two-phase validation: a spec check before hashing (unknown params, missing requi
 values, type mismatches), then a check on realized params before launch, where
 instantiation checks (minLen, …) also run. In the MVP spec and realized params are
 same (there are no distributions yet); the phases are kept because their error
-surfaces differ — spec errors are usage errors (exit 2), realized errors fail the
+surfaces differ — spec errors are usage errors (exit 2), realized errors stop the
 run. Types describe shape; everything pydantic-ish occurs here at instantiation.
 """
 
@@ -18,7 +18,7 @@ from reps_events import Json
 
 # ---------------------------------------------------------------------------------
 # The manifest vocabulary, in ONE place — the conformance sweep checks these
-# types against each real nix-built manifest, thus drift fails tests.
+# types against each real manifest Nix makes, thus tests catch drift.
 # TypedDicts, not loose dicts: the manifest is a GENERATED document (mkExperiment),
 # thus the win worth buying is key-correctness — an incorrect key is a type error, not
 # a silent None. Param VALUES stay `Json` (the recursive union from reps_events):
@@ -65,7 +65,7 @@ class ParamDecl(TypedDict):
     # list instantiation bounds, enforced on realized params (validate_realized)
     minLen: NotRequired[int]
     maxLen: NotRequired[int]
-    # fixed typed sub-form (inspect's generate_args), or a variant sub-form keyed
+    # fixed typed field set (inspect's generate_args), or a variant field set keyed
     # by another param's value — currently produced by no in-tree manifest
     fields: NotRequired[dict[str, "ParamDecl"]]
     depends_on: NotRequired[str]
@@ -147,7 +147,7 @@ def bind_params(manifest: Manifest, overrides: Params) -> Params:
     """Each param must be bound by the invocation — there are NO experiment-level
     defaults. A manifest's `initial` values are suggestions only (the suggested
     oneliner the CLI prints on this error is one): they do not
-    enter a run, thus an author changing one cannot change the meaning of
+    go into a run, thus an author changing one cannot change the meaning of
     an existing oneliner."""
     params_schema = manifest["params"]
     unknown = set(overrides) - set(params_schema)
@@ -219,7 +219,7 @@ def validate_value(value: Json, tdesc: ParamType, path: str) -> None:
         for fname, ftype in fields.items():
             validate_value(value[fname], field_type(ftype), f"{path}.{fname}")
     elif kind == "object":
-        # a free-form JSON object — arbitrary keys/values (e.g. a wrapped tool's
+        # a JSON object — arbitrary keys/values (e.g. a wrapped tool's
         # -T/generate args). Materialized as written into the condition hash.
         if not isinstance(value, dict):
             raise _type_error(path, tdesc, value)
@@ -231,7 +231,7 @@ def validate_spec(params: Params, manifest: Manifest) -> None:
     for name, value in params.items():
         pschema = manifest["params"][name]
         if value is None and pschema.get("nullable"):
-            continue  # explicit null on a nullable param — a bound value, not an omission
+            continue  # null on a nullable param — a bound value, not an omission
         validate_value(value, pschema["type"], name)
 
 

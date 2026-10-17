@@ -1,4 +1,4 @@
-"""Local credential store — secrets and base URLs for real models, kept out of
+"""Local credential file — secrets and base URLs for real models, kept out of
 experiment params and off the command line.
 
 The split (docs/book/src/running/model.md): a model *name* is the condition (a `param llm`,
@@ -17,7 +17,7 @@ and a selection can be remembered for each experiment in
 ``~/.config/reps/preferences.toml`` (names only — not secrets, thus not 0600). Managed
 with ``reps-runner credentials set <name>[.<profile>]``, which prompts for each value —
 secrets through a hidden prompt, NEVER argv (argv is visible in ``ps`` and shell
-history, thus there is no ``KEY=VALUE`` form). Scripted use pipes one line for each
+history, thus ``KEY=VALUE`` is not accepted). Scripted use pipes one line for each
 prompt on stdin.
 """
 
@@ -62,9 +62,9 @@ def load() -> dict[str, dict[str, dict[str, str]]]:
 
     A bare value directly in a set's section (the pre-profiles flat layout) reads as
     a field of the ``default`` profile — the two shapes are structurally distinct in
-    TOML, thus no guessing is involved. Writes always produce explicit profiles.
+    TOML, thus no guessing is involved. Writes always produce the profile layout.
 
-    A store readable by group or others is REFUSED, not warned about (ssh/pgpass
+    A credential file readable by group or others is REFUSED, not warned about (ssh/pgpass
     precedent): all other paths here keep secrets unexposed, and reading a leaky
     file quietly tolerates the one exposure that matters. Uniform rule — CI
     materializing the file adds one chmod. Non-regular files (a process-substitution
@@ -227,15 +227,15 @@ def env_for_run(manifest: Manifest, realized_params: Params,
 
 
 def missing_sets(manifest: Manifest, realized_params: Params) -> list[str]:
-    """Credential sets this run's model ids route to with no section in the store. The
-    store is the ONLY source of credentials — a key exported in the shell neither
+    """Credential sets this run's model ids route to with no section in the credential file. The
+    The credential file is the ONLY source of credentials — a key exported in the shell neither
     reaches a run nor suppresses this gate (a suppressed gate skips the setup
     prompt with no warning while the run launches keyless). Only built-in names
     the registry knows must have credentials are reported: an unknown prefix (a
     custom service) can legitimately operate with no credentials, and blocking on
     a guess is inferred-but-wrong.
-    A run naming a built-in with zero configuration can only fail, thus the runner
-    refuses it up front with the fix in hand."""
+    A run naming a built-in with zero configuration can only stop with an error,
+    thus the runner rejects it up front with the fix in hand."""
     store = load()
     return [
         name
@@ -250,10 +250,10 @@ def resolve_run_credentials(manifest: Manifest, realized_params: Params, *,
                             experiment: str, interactive: bool,
                             selections: dict[str, str] | None = None) -> dict[str, str]:
     """The env to inject for this run, resolving a profile for each credential set
-    the run routes to. An explicit selection (`--credential SET=NAME`) is the top of
+    the run routes to. A selection by flag (`--credential SET=NAME`) is the top of
     the ladder: it must name an existing profile of a set this run routes to (a typo
     guard on the two halves), beats a remembered selection, and skips the picker AND the
-    remember question — an explicit flag is a statement, not a conversation opener.
+    remember question — the flag is a statement, not a conversation opener.
     Below that, interactively this can prompt: first-use setup (with the save/[Y/n]
     and profile-name questions) for unconfigured built-ins, and the profile picker
     (with the remember question) for sets with named profiles. Headless it does not
@@ -269,7 +269,7 @@ def resolve_run_credentials(manifest: Manifest, realized_params: Params, *,
                 f"ids route to {sorted(used) or 'no credential sets'} — a typo, or "
                 f"a leftover flag from another experiment")
     missing = [s for s in missing_sets(manifest, realized_params)
-               if s not in selections]  # a selected set is checked against the store below
+               if s not in selections]  # a selected set is checked against the credential file below
     if missing and not interactive:
         raise ValueError(
             f"this run needs credential set(s) {missing} but none are "
@@ -351,7 +351,7 @@ def _pick_profile(name: str, profiles: dict[str, dict[str, str]], *,
     # A numbered list, one entry on each line, with "set up a new profile" as an ordinary
     # numbered entry rather than a keyword sitting among the profile names (gcloud's
     # shape). Each legal answer is then a number, thus no y/n-shaped answer is ever
-    # valid here -- the confusion is structurally impossible instead of diagnosed after
+    # accepted here -- the confusion is structurally impossible instead of diagnosed after
     # the fact. Static text only: these lines interleave with build/status output on
     # stderr, thus no line can redraw or assume it owns the terminal.
     ordered = (["default"] if has_default else []) + [n for n in names if n != "default"]
@@ -378,8 +378,8 @@ def _pick_profile(name: str, profiles: dict[str, dict[str, str]], *,
             if not sys.stdin.isatty():
                 raise ValueError(f"credential set {name!r} needs a choice -- {constraint}")
             continue
-        # the number wins, not a profile with the same name: a numbered menu whose
-        # numbers can be shadowed is a menu that lies. `new` stays typeable (it is
+        # the number wins, not a profile with the same name: a numbered menu with
+        # numbers that can be shadowed is a menu that lies. `new` stays typeable (it is
         # reserved, thus no profile can take it) -- scripted callers written against the
         # old picker keep working, and the reserved-name check keeps it unambiguous.
         selected: str | None = None
@@ -431,10 +431,11 @@ def _is_secret(name: str, key: str) -> bool:
 
 
 def _url_problem(key: str, value: str) -> str | None:
-    """A base-URL env var must be a full http(s) URL. A bare host fails in each
-    client — urllib raises "unknown url type", SDKs hang against the incorrect port — long
-    after this command succeeded, thus catch it here where the fix is one retype. Empty
-    passes (it clears the key). Returns the complaint, or None if the value is fine."""
+    """A base-URL env var must be a full http(s) URL. A bare host causes a problem
+    in each client — urllib raises "unknown url type", SDKs hang against the incorrect
+    port — long after this command succeeded, thus catch it here where the fix is one
+    retype. Empty passes (it clears the key). Returns the complaint, or None if the
+    value is fine."""
     if not value or not (key.endswith("_BASE_URL") or key.endswith("_API_BASE")):
         return None
     if not value.startswith(("http://", "https://")):
@@ -491,7 +492,7 @@ def _prompt_values(name: str, current: dict[str, str] | None) -> dict[str, str] 
                 break
             print(problem, file=sys.stderr)
             if not sys.stdin.isatty():
-                return None  # scripted input cannot retype — fail rather than desync
+                return None  # scripted input cannot retype — stop rather than desync
         if entered:
             vals[var] = entered
     return vals
@@ -510,7 +511,7 @@ def _prompt_profile_name(*, suggestion: str | None,
         else:
             return entered
         if not sys.stdin.isatty():
-            return None  # scripted input cannot retype — fail rather than desync
+            return None  # scripted input cannot retype — stop rather than desync
 
 
 def _cmd_list() -> int:
@@ -533,9 +534,10 @@ def _cmd_list() -> int:
 def masked_store(
     store: dict[str, dict[str, dict[str, str]]],
 ) -> dict[str, dict[str, dict[str, str | bool]]]:
-    """The store with each secret value replaced by literal True — the type change
+    """The credential file with each secret value replaced by literal True — the type change
     (str -> bool) makes accidental round-tripping impossible: a consumer that tried
-    to write the masked value back fails loudly; it does not save the string "true"."""
+    to write the masked value back stops with a clear error; it does not save the
+    string "true"."""
     return {
         name: {
             profile: {
@@ -550,7 +552,7 @@ def masked_store(
 def inventory() -> dict[str, Json]:
     """One self-describing document: the stored sets (masked), the remembered choices, and the
     prompt templates for tools, without duplicating the provider registry.
-    A leaky store file is reported as `problem` (with the chmod fix) instead of an
+    A leaky credential file is reported as `problem` (with the chmod fix) instead of an
     exception: the consumer's job is to SHOW the problem."""
     out: dict[str, Json] = {
         "path": str(config_path()),
@@ -579,7 +581,7 @@ def _cmd_list_json() -> int:
 def _set_json(arg: str) -> int:
     """`credentials set <name>[.<profile>] --json`: one JSON object (env var -> value)
     on stdin, applied with the SAME semantics as the prompts — start from the current
-    profile, non-empty values overwrite, empty/absent keep, explicit null deletes.
+    profile, non-empty values overwrite, empty/absent keep, null deletes.
     That merge lets a tool edit a base URL without ever having held the key
     (list --json masks secrets, thus it cannot send them back). Output is one JSON line;
     validation (profile name rules, URL shape) matches the interactive face."""
@@ -653,7 +655,7 @@ def _cmd_remember(argv: list[str]) -> int:
 def prompt_set(arg: str) -> int:
     """`credentials set <name>` prompts values then a profile name ([default]);
     `credentials set <name>.<profile>` targets that profile directly — the ONE path
-    a credential ever enters the store by, besides the runner's ask-on-first-use.
+    a credential ever enters the credential file by, besides the runner's ask-on-first-use.
     Scripted use pipes one line for each prompt on stdin (non-tty)."""
     name, dot, profile = arg.partition(".")
     if dot and (profile in _RESERVED_PROFILES or not _PROFILE_RE.match(profile)):
@@ -679,7 +681,7 @@ def prompt_set(arg: str) -> int:
 
 def _cmd_set(argv: list[str]) -> int:
     # values are ONLY ever prompted (or piped one line for each prompt on stdin; or, --json,
-    # one JSON object on stdin): a KEY=VALUE argv form puts secrets in `ps`
+    # one JSON object on stdin): KEY=VALUE on argv puts secrets in `ps`
     # output and shell history, thus it does not exist
     as_json = "--json" in argv
     argv = [a for a in argv if a != "--json"]
@@ -714,7 +716,7 @@ def _cmd_remove(argv: list[str]) -> int:
 
 
 def credentials_cli(argv: list[str]) -> int:
-    """`reps-runner credentials <list|set|remove|path>` — manage the local credential store."""
+    """`reps-runner credentials <list|set|remove|path>` — manage the local credential file."""
     if not argv or argv[0] in ("-h", "--help"):
         print(
             "reps-runner credentials — local model credentials & endpoints\n\n"
@@ -741,7 +743,7 @@ def credentials_cli(argv: list[str]) -> int:
             return _cmd_remove(rest)
         if cmd == "remember":
             return _cmd_remember(rest)
-    except ValueError as exc:  # e.g. a group/other-readable store file
+    except ValueError as exc:  # e.g. a group/other-readable credential file
         print(str(exc), file=sys.stderr)
         return 2
     if cmd == "path":

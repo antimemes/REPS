@@ -13,7 +13,7 @@
 #     contract, or a specified third-party typing gap. Adding a rule here is a policy
 #     change; make it in this file, in a reviewed diff, with the reason.
 #   * `cast()` is allowlisted BY FILE: it is only sanctioned at declared dynamic
-#     third-party boundaries. A new cast in a different file fails here —
+#     third-party boundaries. A new cast in a different file is rejected here —
 #     give the value a real type, or argue the file into the list.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -24,8 +24,8 @@ PY_ROOTS=(runner/src lib/reps-testing/reps_testing lib/reps-events/reps_events l
 # Rules that MAY appear in `# pyright: ignore[...]`, and why:
 #   reportUnnecessaryIsInstance   emit-side runtime guards: callers are untyped
 #                                 experiment code, annotations have no effect there
-#   reportUnknownVariableType     third-party symbols whose signatures carry
-#                                 untyped parts (inspect_ai's eval / Scanner)
+#   reportUnknownVariableType     third-party symbols with untyped parts in
+#                                 their signatures (inspect_ai's eval / Scanner)
 #   reportUntypedClassDecorator   third-party decorators shipped untyped
 #                                 (inspect_ai's @hooks)
 ALLOWED_IGNORE_RULES="reportUnnecessaryIsInstance reportUnknownVariableType reportUntypedClassDecorator"

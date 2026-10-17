@@ -25,7 +25,7 @@ def condition_name(condition: str, experiment: str) -> str:
 
 
 def resolve_data_dir(data_dir: str | Path | None = None) -> Path:
-    """Select the shared run store: explicit flag, environment, then XDG default."""
+    """Select the run store all experiments use: flag, environment, then XDG default."""
     if data_dir is not None:
         return Path(data_dir).resolve()
     if "REPS_DATA_DIR" in os.environ:

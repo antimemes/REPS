@@ -14,7 +14,7 @@ def test_registry_shape():
         "openai", "vllm", "ollama"
     }
     assert all(not PROVIDERS[n].base_url.default for n in ("vllm", "ollama"))
-    # and its base default is a real runtime fallback, like the OpenAI SDK's
+    # and its base default is a real runtime fallback, as the OpenAI SDK's is
     assert PROVIDERS["openai"].base_url.default == "https://api.openai.com/v1"
 
 

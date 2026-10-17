@@ -2,7 +2,7 @@
 
 ``hash`` (the keyless default): a deterministic sha256 → unit-vector embedder,
 duck-typing upstream's ``EmbeddingModel`` (``embed`` / ``embed_retrieve``).
-Explicit deviation from the paper: memory *relevance* becomes content-hash
+Declared deviation from the paper: memory *relevance* becomes content-hash
 noise. Thus retrieval ranking is driven by recency (0.99^i, w=0.5) and
 LLM-rated importance (w=3); ``always_include`` nodes (agreed limits) are
 unaffected.
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 MXBAI_MODEL = "mixedbread-ai/mxbai-embed-large-v1"
 MXBAI_REVISION = "b33106f585b9ce46904ad7443a3b52b7a63e231c"
 
-# upstream's dimension (mxbai-embed-large-v1); plain ndarrays are necessary
+# upstream's dimension (mxbai-embed-large-v1); ndarrays are necessary
 # because embeddings land in embeddings.json through upstream's NumpyEncoder
 _DIM = 1024
 _RETRIEVE_PREFIX = "Represent this sentence for searching relevant passages: "

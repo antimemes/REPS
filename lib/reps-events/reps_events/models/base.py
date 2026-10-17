@@ -1,4 +1,4 @@
-"""Shared strict model configuration and event base (no payload imports)."""
+"""Strict model configuration and event base for all event models (no payload imports)."""
 
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
@@ -69,8 +69,9 @@ class Event[EventType: str = str](Model):
         return schema
 
 
-# Covariant containers for shared API annotations. Open serialized objects use
-# dict[str, Any] because adapters pass provider-owned JSON with arbitrary shapes.
+# Covariant containers for the API annotations all modules use. Open serialized
+# objects use dict[str, Any] because adapters supply provider-owned JSON with
+# arbitrary shapes.
 type Json = Mapping[str, "Json"] | Sequence["Json"] | str | int | float | bool | None
 type Scalar = int | float | str | bool
 NonNegativeInt = Annotated[int, Field(ge=0)]

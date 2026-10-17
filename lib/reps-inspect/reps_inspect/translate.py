@@ -243,7 +243,7 @@ class SampleTranscript:
 
     Inspect delivers hooks when events complete, which can differ from transcript
     sequence with nesting. Wait behind pending events, then flush the full prefix.
-    The last pass includes unfinished events and reconciles anything hooks missed.
+    The last flush includes unfinished events and reconciles anything hooks missed.
     """
 
     def __init__(self, sample_id: str | int, epoch: int) -> None:
@@ -271,7 +271,7 @@ def _flat_scores(scores: Mapping[str, Value]) -> dict[str, int | float | str | b
     """Inspect Score.value for each scorer → the spec's flat scalar map: dict-valued
     scorers (agentharm's combined_scorer) flatten with '/'-joined names; a
     non-scalar leaf stringifies (degraded-but-correct — the raw .eval artifact
-    keeps the original)."""
+    keeps the initial value)."""
     out: dict[str, int | float | str | bool] = {}
     for scorer, v in scores.items():
         if isinstance(v, Mapping):

@@ -1,5 +1,5 @@
-# ImpossibleBench (arXiv:2510.20270) as REPS experiments: coding benchmarks whose
-# "impossible" test variants (oneoff / conflicting) can only be passed by
+# ImpossibleBench (arXiv:2510.20270) as REPS experiments: coding benchmarks with
+# "impossible" test variants (oneoff / conflicting) that can only be passed by
 # specification-violating shortcuts — passing IS the reward-hacking signal.
 #
 # One experiment for each upstream @task (the task is the experiment, not a param):
@@ -37,7 +37,7 @@ let
     { name = "tokens_output"; type = int; }
   ];
 
-  # hints come from types.llm (mkExperiment attaches the shared model
+  # hints come from types.llm (mkExperiment attaches the REPS model
   # catalog to each llm-typed param); no hints to declare here
   modelParam = with reps.types; param llm {
     description = "Inspect model id (provider/model), resolved through inspect's own provider layer. Required: there is deliberately no default real model.";
@@ -67,7 +67,7 @@ let
     generate_args = param object {
       description = "Generation config overrides; leave a field unset to keep the provider's default.";
       initial = { };
-      # typed sub-form generated from the pinned inspect_ai's GenerateConfig —
+      # typed sub-form made from the pinned inspect_ai's GenerateConfig —
       # through `reps`, not a ../../ path, for the declaration to use the
       # schema provided by the selected reps package set
       fields = reps.inspectGenerateFields;
@@ -83,7 +83,7 @@ let
     name = "${name}-adapter";
     runtimeInputs = [ jq ];
     # limit goes to the task too, not just eval-level: inspect's limit truncates
-    # after the task fn has built its dataset, and swebench prepares a
+    # after the task fn has made its dataset, and swebench prepares a
     # docker image for each sample in there — eval-level alone means images for the
     # full split. 0 (= full split) must not be set: upstream slices
     # samples[:limit] when its arg is non-null.
@@ -105,7 +105,7 @@ let
   };
 
   # hand-written (no upstream link registry here). Links are pointers, not pins:
-  # the exact rev lives in pyproject.toml/uv.lock
+  # the rev lives in pyproject.toml/uv.lock
   links = [
     { label = "paper"; url = "https://arxiv.org/abs/2510.20270"; }
     { label = "source"; url = "https://github.com/safety-research/impossiblebench"; }

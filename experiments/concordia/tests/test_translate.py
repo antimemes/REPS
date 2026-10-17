@@ -12,7 +12,7 @@ def _events(event_capture):
 def test_scene_then_turns_stream_one_at_a_time(event_capture):
     roster = {"Alice", "Bob"}
     assert emit_scene("Alice and Bob meet at a cafe.") == 1
-    # the original action, with speech markers and quotes, is retained
+    # the action as given, with speech markers and quotes, is retained
     assert emit_turn(1, "Alice", 'Alice -- "Hi Bob!"', roster) == 1
     assert emit_turn(2, "Bob", "Bob Good to see you.", roster) == 1
 

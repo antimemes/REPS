@@ -1,4 +1,4 @@
-"""Concordia's run record -> REPS events. A pure function of plain data (the roster, the
+"""Concordia's run record -> REPS events. A pure function of data (the roster, the
 premise, and one (step, actor, action) tuple for each turn). Thus no Concordia import
 is necessary and its test can feed hand-built inputs.
 
@@ -11,8 +11,8 @@ from __future__ import annotations
 from reps_events import CustomEvent, Result, emit
 
 # The narrator's display name — sits next to roster names ("Alice", "Bob") in the
-# transcript, thus it is spelled like one. main.py names the Concordia game-master
-# entity with the same string, thus each GM-attributed event has one name.
+# transcript, thus it is spelled the same as one. main.py names the Concordia
+# game-master entity with the same string, thus each GM-attributed event has one name.
 GM_NAME = "Game Master"
 
 
@@ -76,8 +76,8 @@ def emit_turn(step: int, actor: str, action: str, roster: set[str]) -> int:
     return 1
 
 
-# The allowlist of per-entity Concordia components whose values are semantically part
-# of the experiment — the values a researcher can cite, distinct from the llm.call
+# The allowlist of per-entity Concordia components with values that are semantically
+# part of the experiment — the values a researcher can cite, distinct from the llm.call
 # process record (which stays complete but is not necessary to read). GM bookkeeping
 # (terminate, next_acting, action specs, its repeated summaries) is not included:
 # framework noise, auditable through llm.calls only.
@@ -92,7 +92,7 @@ class TurnEmitter:
     """`play()`'s step_callback: emit each resolved turn as a native action, drain the
     engine's raw_log into the semantic events (observations, per-turn perceptions),
     and count the events that landed. Concordia passes a StepData; only its (step,
-    acting_entity, action) triple is read, thus tests can feed plain objects. Pass
+    acting_entity, action) triple is read, thus tests can feed their own objects. Give
     `self.raw_log` to `play(raw_log=...)` and call `drain()` one time after play returns.
 
     Semantic tier, for each acting turn: a concordia.observation custom event for

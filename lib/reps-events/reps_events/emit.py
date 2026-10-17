@@ -35,10 +35,10 @@ def emit_producer() -> None:
 def emit(event: ProducerPayload | CustomEvent[Any]) -> None:
     """Validate and serialize an event, preserving open metadata with no change.
 
-    Serialize one time, validate the exact serialized form, then write those
+    Serialize one time, validate that serialized record, then write those
     same bytes. Validation can raise but its normalized result is discarded.
     Public producers and typed CustomEvent subclasses are accepted. Custom events
-    validate against their model and the shared envelope. The runner
+    validate against their model and the envelope all events use. The runner
     alone produces lifecycle events.
     """
     if type(event) not in PRODUCER_MODELS.values() and not isinstance(event, CustomEvent):

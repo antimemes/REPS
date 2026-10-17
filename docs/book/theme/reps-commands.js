@@ -1,6 +1,6 @@
 // Command settings for the REPS user guide.
 //
-// Each runnable command is authored in the canonical local form `nix run .#<name> …`.
+// Each runnable command is authored as the canonical local `nix run .#<name> …`.
 // This rewrites those occurrences to match the reader's setup, controlled from a gear
 // menu in the toolbar and persisted in localStorage. In-page links to
 // #reps-cmd-settings open the same menu.
@@ -14,9 +14,9 @@
   var GITHUB = "github:antimemes/REPS";
   var TARBALL = "https://github.com/antimemes/REPS/archive/main.tar.gz";
   // mode:"nix-build" by default — commands must work on a stock Nix install with
-  // zero configuration, and the exec one-liner is the only form that does.
+  // zero configuration, and the exec one-liner is the only one that does.
   // flakes:false likewise (armor flag until the reader enables them globally);
-  // nixRun:false (the wrapped nix-shell form works without anything installed).
+  // nixRun:false (the wrapped nix-shell command works without anything installed).
   // latest:true — a stale cached main.tar.gz running old code with no warning
   // is worse than a redundant HEAD check.
   var DEFAULTS = {
@@ -89,9 +89,9 @@
   }
   // The `--run "…"` payload is read twice: the shell you paste into resolves the
   // double-quoted string, then nix-shell hands the result to another shell to run.
-  // Thus everything the outer pass eats ($ ` " \) has to be escaped for the
+  // Thus everything the outer shell eats ($ ` " \) has to be escaped for the
   // inner command to arrive intact. The one exception is a backslash that continues
-  // a line: it stays live, and the outer pass folding the span back into one line
+  // a line: it stays live, and the outer shell folding the span back into one line
   // is the thing the inner shell wants.
   var CONTINUATION = /\\\s*$/;
   function dqEscape(text) {
@@ -101,8 +101,8 @@
       return line.slice(0, cut).replace(/[$`"\\]/g, "\\$&") + line.slice(cut);
     }).join("\n");
   }
-  // Block-level pass: commands span multiple lines through trailing backslashes, and
-  // the no-nix-run-installed form must wrap the WHOLE span in
+  // Block-level rewrite: commands span multiple lines through trailing backslashes, and
+  // the no-nix-run-installed command must wrap the WHOLE span in
   //   nix-shell -p nix-run --run "…"
   // with the span dq-escaped, thus the nesting is paste-safe.
   function rewrite(text, p) {

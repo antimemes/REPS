@@ -24,7 +24,7 @@ fetched anonymously from their public source — the provider's authored list of
 every accepted id, which both supplies dated ids the catalogs missed and
 proves when a new model's canonical id is genuinely undated (Anthropic's
 newest are); (2) the provider's authenticated /models endpoint, when a key is
-available in the environment or the reps runner's credential store
+available in the environment or the reps runner's credential file
 (`reps-runner credentials` / ~/.config/reps/credentials.toml). Keyless runs are
 first-class: SDK literals cover the id-form question without credentials.
 Providers listed here are the API-backed providers with a first-party enumerable
@@ -129,9 +129,9 @@ def credential_hint(prefix: str) -> str:
 
 # First-party, public, keyless id lists — each provider's declaration of the
 # ids its API accepts, as (url, extraction regex) pairs. SDK literal-type modules
-# where the SDK ships them (anthropic, openai); the provider's official docs in
-# their machine-readable form otherwise (llms.txt-style markdown, or the docs HTML
-# for google, whose devsite serves no markdown). These are authoritative in a way
+# where the SDK ships them (anthropic, openai); the provider's official docs as
+# machine-readable text otherwise (llms.txt-style markdown, or the docs HTML for
+# google — its devsite serves no markdown). These are authoritative in a way
 # community catalogs are not: LiteLLM has shipped dated ids providers 404 on.
 FIRST_PARTY_ID_SOURCES = {
     "anthropic": [(
@@ -173,7 +173,7 @@ def fetch(url: str, headers: dict | None = None) -> dict:
 
 
 def stored_credentials() -> dict[str, str]:
-    """Env-var -> value from the reps runner's credential store (not printed).
+    """Env-var -> value from the reps runner's credential file (not printed).
 
     Mirrors reps_runner.credentials.config_path(): $REPS_CREDENTIALS_FILE overrides;
     without it, $XDG_CONFIG_HOME/reps/credentials.toml, then
@@ -238,11 +238,11 @@ def openrouter_models() -> list[dict]:
 
     Ids arrive org-scoped (moonshotai/kimi-k3), and there is no
     dated-snapshot scheme, thus none of the lineup/snapshot machinery applies.
-    `~`-prefixed ids are OpenRouter's retired/rerouted aliases — excluded like
-    -latest aliases elsewhere. `:free` variants stay: a distinct serving tier is
-    a legitimately selectable (and distinct) condition. `created` is the stable
-    added-to-OpenRouter timestamp — the closest thing to a release date, and
-    deterministic across regens."""
+    `~`-prefixed ids are OpenRouter's retired/rerouted aliases — excluded, as
+    -latest aliases are elsewhere. `:free` variants stay: a distinct serving
+    tier is a legitimately selectable (and distinct) condition. `created` is the
+    stable added-to-OpenRouter timestamp — the closest thing to a release date,
+    and deterministic across regens."""
     import time
 
     models = []

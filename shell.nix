@@ -40,7 +40,7 @@ pkgs.mkShell {
     # `task docker:up` sudo-starts the daemon on the default socket.
     # fuse-overlayfs: dockerd's wrapper does not bundle it, and it is the only
     # storage driver that works when data-root sits on virtiofs (kernel overlayfs
-    # refuses a virtiofs upperdir).
+    # rejects a virtiofs upperdir).
     pkgs.docker
     pkgs.fuse-overlayfs
   ];
@@ -52,7 +52,7 @@ pkgs.mkShell {
 
   # manylinux wheels (numpy/pandas in inspect_ai, …) dlopen the C++
   # runtime and zlib; nix's bare interpreter has neither on the loader path, thus
-  # plain `uv run` in a uv2nix-less venv fails with `libstdc++.so.6: cannot open`.
+  # `uv run` in a uv2nix-less venv stops with `libstdc++.so.6: cannot open`.
   # Put them on LD_LIBRARY_PATH to let `uv run pytest` etc. work without a manual
   # export.
   shellHook = ''

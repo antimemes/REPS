@@ -32,3 +32,4 @@ sustainability  # the paper's sustainability threshold: the most each harvester 
 transformers    # the Hugging Face transformers library (sentence-transformers runs on it)
 utterance       # one persona's group-chat message; the govsim.utterance event
 wandb           # the Weights & Biases logging library, disabled in REPS runs
+action          # one persona's move in a round, as upstream's native rows record it (harvest, speak, reflect)

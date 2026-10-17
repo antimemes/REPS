@@ -9,13 +9,13 @@ description = "Concordia (google-deepmind) generative agent simulations as REPS 
 requires-python = ">=3.13"
 dependencies = [
     # bounded, thus a relock is a deliberate line-edit, not silent drift of the wrapped
-    # tool; the exact resolved version is in uv.lock and recorded for each run as a
+    # tool; the resolved version is in uv.lock and recorded for each run as a
     # provenance covariate
     "gdm-concordia~=2.4.0",
     # transport for real backends: concordia.contrib's BaseGPTModel drives an
     # OpenAI-SDK client (we hand it an instrumented one; see concordia_sim/client.py)
     "openai>=1.60",
-    # the shared REPS event shapes — typed, validated emission (no hand-built dicts)
+    # the REPS event shapes — typed, validated emission (no hand-built dicts)
     "reps-events",
     # the experiment-side toolkit: protocol scaffold + provider routing; [llm] = the
     # instrumented OpenAI-compat ChatClient (llm.call emission, mock/ backend)

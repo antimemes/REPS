@@ -8,7 +8,7 @@ launcher names it with AGENTSNET_UPSTREAM (its revision with
 AGENTSNET_UPSTREAM_REV) and the dataset file with AGENTSNET_DATASET; a developer
 points the same variables at a checkout and a downloaded parquet. Each run
 copies the tree into the run directory and works from there. Thus the layout
-the authors ran from is reproduced and no file in the store is written to. The
+the authors ran from is reproduced and no file in the Nix store is written to. The
 copy is edited only by the fix patches a run switches on (AGENTSNET_PATCHES
 names their directory, one `<param>.patch` for each switch); otherwise the adapter
 only swaps module attributes at import time (monkeypatches.py).
@@ -29,7 +29,7 @@ from reps_experiment.scaffold import deposit_artifact
 
 from .models import AgentsNetUpstreamRecord, UpstreamRecordData
 
-ENV_TREE = "AGENTSNET_UPSTREAM"          # the authors' tree: the pinned store path, or a checkout
+ENV_TREE = "AGENTSNET_UPSTREAM"          # the authors' tree: the pinned Nix store path, or a checkout
 ENV_REV = "AGENTSNET_UPSTREAM_REV"       # its git revision, when the launcher knows it
 ENV_DATASET = "AGENTSNET_DATASET"        # the parquet file of graph instances (dataset.json)
 ENV_PATCHES = "AGENTSNET_PATCHES"        # the fix patches, one <param>.patch for each switch
@@ -81,7 +81,7 @@ def stage(run_dir: Path, *, better_reprompting: bool, patch_crash_on_all_no: boo
     if work.exists():
         shutil.rmtree(work)
     shutil.copytree(upstream_tree(), work, ignore=IGNORE)
-    # the pinned tree is a read-only store path and copytree keeps its modes; the
+    # the pinned tree is a read-only Nix store path and copytree keeps its modes; the
     # authors' code writes results beside its source files
     for directory, _subdirs, filenames in os.walk(work):
         os.chmod(directory, 0o755)
@@ -100,7 +100,7 @@ def stage(run_dir: Path, *, better_reprompting: bool, patch_crash_on_all_no: boo
 
 
 def _apply_patch(work: Path, name: str) -> None:
-    """Exact context or the run fails; never a partially patched tree."""
+    """Same context or the run stops with an error; never a partially patched tree."""
     subprocess.run(["patch", "-d", str(work), "-p1", "--fuzz=0", "--batch", "--forward", "--quiet",
                     "-i", str(Path(os.environ[ENV_PATCHES]) / f"{name}.patch")], check=True)
 

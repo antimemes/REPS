@@ -12,14 +12,14 @@
 # A credential template is two role-typed vars:
 #   api_key   the secret — hidden at the setup prompt, masked in listings.
 #             `required` (default true): a value must exist at runtime; consumers
-#             fail early and actionably when it does not. Local OpenAI-compatible
-#             servers (llama.cpp, vLLM, Ollama) can ignore auth, thus openai, vllm
-#             and ollama allow a missing key — the chat client sends a placeholder
-#             bearer when it is missing.
+#             stop early with a clear error when it does not. Local
+#             OpenAI-compatible servers (llama.cpp, vLLM, Ollama) can ignore auth,
+#             thus openai, vllm and ollama allow a missing key — the chat client
+#             sends a placeholder bearer when it is missing.
 #   base_url  the endpoint — always the PLAIN API origin the provider's
 #             ecosystem expects for the var. `default` (default "") is offered at
 #             the setup prompt (Enter uses it) and used as the runtime fallback;
-#             no default means setup and runtime require an explicit value.
+#             no default means setup and runtime require a value from the user.
 #
 # All other provider data is a LAYER owned by its consumer, referencing
 # these facts by name and not restating them: foreign catalog spellings live in
@@ -73,7 +73,7 @@ base_url = { name = "OPENROUTER_BASE_URL", default = "https://openrouter.ai/api/
 [providers.azureai]
 # No universal origin — the base URL differs for each resource (the v1 surface,
 # https://<resource>.openai.azure.com/openai/v1; model = your deployment name),
-# thus it has no default: setup and runtime require an explicit value.
+# thus it has no default: setup and runtime require a value from the user.
 api_key = { name = "AZUREAI_API_KEY" }
 base_url = { name = "AZUREAI_BASE_URL" }
 

@@ -9,9 +9,9 @@ provider routing from the model id's prefix, one ``llm.call`` event for each cal
 usage and latency, reasoning-tag stripping, and the keyless ``mock/`` backend.
 
 The mock rides the same BaseGPTModel path as real models — only the responder is
-swapped (deterministic scripted lines; exact-option answers for prompts that list
-options; a valid action spec when the game master asks for one). Thus the smoke/CI run
-exercises upstream's prompt assembly too.
+swapped (deterministic scripted lines; one listed option, as written, for prompts that
+list options; a correct action spec when the game master asks for one). Thus the
+smoke/CI run exercises upstream's prompt assembly too.
 
 Each call — mock or real — emits one ``llm.call`` event. Thus the event stream has
 the same shape keyless as it does against a real model.
@@ -42,8 +42,8 @@ _MOCK_LINES = (
 )
 
 # The game master asks the model to emit the *next action spec* as JSON (see
-# Concordia's next_acting.py). A free-text reply fails its parser. Thus the mock
-# returns a valid, always open-ended spec when it recognises that prompt — keeping
+# Concordia's next_acting.py). Its parser rejects a free-text reply. Thus the mock
+# returns a correct, always open-ended spec when it recognises that prompt — keeping
 # the smoke run on rails.
 _MOCK_ACTION_SPEC = (
     '{"call_to_action": "What happens next?", "output_type": "free", '
@@ -74,7 +74,7 @@ class RepsLanguageModel(language_model.LanguageModel):
         model_id = model or params.default_model
         self._seed = params.seed
         # A model this client cannot serve, or a missing/malformed endpoint, cannot
-        # produce a single useful call — fail the run now, with the fix in the
+        # produce a single useful call — stop the run now, with the fix in the
         # message, instead of limping through max_steps of request_failed noise.
         try:
             self._chat = ChatClient(
@@ -149,15 +149,15 @@ class RepsLanguageModel(language_model.LanguageModel):
 class PerEntitySimulation(generic_simulation.Simulation):
     """Upstream's Simulation is multi-model at three grains — default,
     `override_agent_model` (all entities), `override_game_master_model` — but
-    `add_entity` builds each entity with the one shared `_agent_model`. We must have
+    `add_entity` builds each entity with the one `_agent_model`. We must have
     per-entity grain for two REPS reasons upstream does not have: llm.call attribution
     requires one client for each entity (Concordia gives the model no calling-entity
     context), and the roster's per-agent model override is a treatment axis riding
     the same seam. add_entity is the narrowest seam: swap the model in for the one
-    entity being built, restore it after, delegate all other work.
+    entity being made, restore it after, delegate all other work.
 
     `clients` maps entity name -> RepsLanguageModel; names not in the map build with
-    the shared model as upstream does.
+    `_agent_model` as upstream does.
     """
 
     def __init__(self, *, config, model, embedder,

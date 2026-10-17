@@ -50,7 +50,7 @@ def test_inspect_data_schema_drift(capsys):
         if isinstance(model, type) and issubclass(model, BaseModel)
         and model.__module__ == inspect_chat.__name__ and not name.startswith("_")
     }
-    # Explicit local changes, not additions to the upstream data vocabulary.
+    # Declared local changes, not additions to the upstream data vocabulary.
     # ToolCallContent and ToolCallView are not vendored: viewer data.
     omissions = {"ModelCall.call_refs", "ModelCall.call_key", "ToolCall.view"} | {
         f"{name}.source" for name, model in vendored_models.items()

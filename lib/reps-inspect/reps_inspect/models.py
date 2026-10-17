@@ -1,6 +1,6 @@
 """Typed params (pydantic) — the boundary where config becomes structure.
 
-Everything the Inspect run must have arrives as explicit values: which task, which
+Everything the Inspect run must have arrives as given values: which task, which
 model, task/model args, and the usual sample/generation limits. This program is
 repo-unaware — it maps these onto `inspect_ai.eval(...)` and translates the
 resulting EvalLog into REPS events (docs/book/src/reference/events.md).
@@ -19,7 +19,7 @@ from reps_providers import PROVIDERS
 # bridge from REPS's canonical vars to the vars inspect's provider reads). The
 # `types.llm` vocabulary speaks provider names (`moonshotai/kimi-k3`, matching the
 # provider's org naming); which spelling inspect_ai gives its backend for that
-# provider is this wrapper's concern. Explicit for each provider — not inferred from
+# provider is this wrapper's concern. Declared for each provider — not inferred from
 # the id's shape.
 INSPECT_PROVIDER_REMAP: dict[str, tuple[str, dict[str, str]]] = {
     "moonshotai": ("moonshot", {"MOONSHOTAI_API_KEY": "MOONSHOT_API_KEY",
@@ -38,7 +38,7 @@ def inspect_model(model: str) -> str:
     only the eval call sees inspect's spelling. Prepare the environment the way
     Inspect's provider reads it: optional keys in the registry get a placeholder
     bearer when unset, following the chat client's rule, because Inspect's
-    providers, like the OpenAI SDK, refuse an empty key. Bridged env vars are copied,
+    providers reject an empty key, as the OpenAI SDK does. Bridged env vars are copied,
     not overwritten — an explicitly set inspect-native var wins."""
     provider, sep, rest = model.partition("/")
     if not sep:
@@ -77,7 +77,7 @@ class Params(BaseModel):
     generate_args: dict[str, Any] = Field(default_factory=dict)
     # sample cap (0 = all).
     limit: int = Field(default=0, ge=0)
-    # repeats of the dataset (1 = one pass).
+    # repeats of the dataset (1 = no repeat).
     epochs: int = Field(default=1, ge=1)
     # provider connection cap (0 = Inspect default).
     max_connections: int = Field(default=0, ge=0)

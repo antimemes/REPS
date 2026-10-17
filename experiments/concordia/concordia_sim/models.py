@@ -9,7 +9,7 @@ run knobs. The experiment cards in package.nix bake the scenario fields (agents,
 premise, game_master) for each experiment and expose only the comparison axes (models,
 steps, generation knobs) as params: the scenario is the experiment, not a param.
 The defaults here give a standalone/test invocation a sensible scenario;
-they do not reach a real run, whose adapter always writes a complete config.
+they do not reach a real run; its adapter always writes a complete config.
 `seed` is not authored by a caller — the adapter merges `$REPS_SEED` in.
 """
 
@@ -62,12 +62,12 @@ class Params(BaseModel):
     # the number of messages in the conversation (6 -> three turns apiece).
     max_steps: int = Field(default=6, gt=0)
 
-    # the default language model — drives the game master and each agent whose roster
-    # row leaves `model` empty, as `provider/model`. `mock/...` runs keyless & offline;
+    # the default language model — drives the game master and each agent with an empty
+    # roster-row `model`, as `provider/model`. `mock/...` runs keyless & offline;
     # `openai/<name>` is sent to an OpenAI-compatible /chat/completions server. The
     # endpoint + key are NOT params — they come from the credential set's env
     # (OPENAI_BASE_URL / OPENAI_API_KEY), which the runner injects from the local
-    # credential store (`nix run .#reps-runner -- credentials set openai`). Thus the model
+    # credential file (`nix run .#reps-runner -- credentials set openai`). Thus the model
     # *name* is the condition; where it is served is not.
     default_model: str = Field(default="mock/model", min_length=1)
 

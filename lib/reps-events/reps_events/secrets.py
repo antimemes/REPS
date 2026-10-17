@@ -1,4 +1,4 @@
-"""Credential leak checks shared by the verifier and experiment test helpers."""
+"""Credential leak checks used by the verifier and experiment test helpers."""
 
 from collections.abc import Mapping
 import json
@@ -29,7 +29,7 @@ def assert_run_has_no_secrets(
 ) -> None:
     """Scan each saved file and decoded JSON record for credential material.
 
-    By default, credential values come from the current process environment. Pass
+    By default, credential values come from the current process environment. Give
     a snapshot when the run used a different environment. Empty values carry no
     secret and are ignored. Decode all files, binary artifacts also, as UTF-8 with
     replacement. Thus ASCII credentials are checked regardless of file type.

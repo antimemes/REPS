@@ -1,8 +1,8 @@
 # The inspect_evals family: one REPS experiment for each runnable task in the GENERATED
 # task_catalog.json (the task is the experiment, not a param) — regenerate with
-# `task tasks:update`; do not add a catalog task by hand. Tasks whose eval declares a
-# pip extra we do not install get no experiment (degraded but correct — install the
-# extra in pyproject + relock + regen to enable them); what the sandbox must have
+# `task tasks:update`; do not add a catalog task by hand. A task gets no experiment
+# when its eval declares a pip extra we do not install (degraded but correct — install
+# the extra in pyproject + relock + regen to enable them); what the sandbox must have
 # comes from the eval's declared runtime metadata. The bundled keyless `hello` smoke
 # ships from this family (hello_task/), thus getting-started works without a key,
 # network, or sandbox.
@@ -16,8 +16,8 @@ let
   };
 
   catalog = builtins.fromJSON (builtins.readFile ./task_catalog.json);
-  # the typed sub-form schema for generate_args, generated from the pinned
-  # inspect_ai's GenerateConfig (shared infra, like the model catalog) —
+  # the typed sub-form schema for generate_args, made from the pinned
+  # inspect_ai's GenerateConfig (REPS infra, the same as the model catalog) —
   # through `reps`, not a ../../ path, for the declaration to use the
   # schema provided by the selected reps package set
   genFields = reps.inspectGenerateFields;
@@ -52,7 +52,7 @@ let
     { name = "tokens_output"; type = int; }
   ];
 
-  # Experiment-specific EXTRA hints only — the shared model catalog is attached by
+  # Experiment-specific EXTRA hints only — the REPS model catalog is attached by
   # types.llm (mkExperiment), with extras prepended. The keyless mock leads:
   # it is this family's getting-started story and works for each inspect task.
   modelSuggestions = [
@@ -73,7 +73,7 @@ let
     # the ones a researcher cares about — then model, then the inspect harness
     # knobs, then generation.
     params = with reps.types;
-      # the task's kwargs, flattened to real typed params (catalog-generated:
+      # the task's kwargs, flattened to real typed params (made from the catalog:
       # concrete defaults become `initial`s; declared-None defaults become
       # required nullable params bound with `--set k=null`). Their `order` is the
       # upstream signature's declared sequence — not alphabetized.
@@ -121,7 +121,7 @@ let
     # in $REPS_SEED) and the wrapper's interface (`reps-inspect-eval CONFIG.json`):
     # each flattened task param regroups into inspect task_args as its real
     # kwarg name (the catalog's kwarg map un-does the `task_` collision prefix);
-    # explicit nulls pass through — the task is called with kwarg=None, its
+    # nulls the caller gives are kept — the task is called with kwarg=None, its
     # declared default.
     program =
       let

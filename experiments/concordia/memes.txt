@@ -14,4 +14,5 @@ premise      # the opening situation the game master narrates; the scenario's `p
 qwen         # Qwen, the Alibaba family of open-weight models (vllm/Qwen/..., openrouter/qwen/...)
 scene        # Concordia's unit of play: the opening premise plus the turns that follow; the concordia.scene custom event
 sim          # the concordia-sim program (the experiment's entry point) and the Simulation object it drives
+action          # a resolved turn of an entity: what it did or said; also the action spec the game master asks for
 acting order    # the fixed sequence in which the game master gives entities their turns; Concordia's term

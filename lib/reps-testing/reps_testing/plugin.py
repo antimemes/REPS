@@ -1,4 +1,4 @@
-"""Explicit socket capture fixture with the producer contract's reference receiver."""
+"""On-request socket capture fixture with the producer contract's reference receiver."""
 
 from collections.abc import Generator
 import threading

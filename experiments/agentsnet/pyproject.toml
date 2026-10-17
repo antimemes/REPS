@@ -33,7 +33,7 @@ dependencies = [
     "regex==2024.11.6",
 ]
 
-# In-tree REPS libraries are shared with the runner.
+# In-tree REPS libraries, the same ones the runner uses.
 [tool.uv.sources]
 reps-testing = { path = "../../lib/reps-testing", editable = true }
 reps-events = { path = "../../lib/reps-events", editable = true }

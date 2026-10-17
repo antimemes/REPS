@@ -2,7 +2,7 @@
 # experiment: 5 LLM personas share a common-pool resource — harvest, negotiate,
 # collapse or sustain.
 #
-# Upstream is a package in the venv, built from the pinned checkout plus two
+# Upstream is a package in the venv, made from the pinned checkout plus two
 # patches: seed.patch changes existing behavior, packaging.patch only supplies
 # missing packaging. Its pathfinder DSL is a uv git dependency. Other adaptation
 # lives in ./govsim_adapter: Hydra composition, model injection, hash embeddings

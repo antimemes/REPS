@@ -3,7 +3,7 @@
 { lib, fetchurl, experiment, reps }:
 let
   # Inspect's mock counts tokens with tiktoken. Supply its pinned vocabulary as
-  # a build input to let the built launcher run without network access.
+  # a build input to let the launcher run without network access.
   encodingUrl = "https://openaipublic.blob.core.windows.net/encodings/o200k_base.tiktoken";
   encoding = fetchurl {
     url = encodingUrl;

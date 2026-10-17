@@ -95,7 +95,7 @@ def _empty_vertex_cover(model, answers, error: ZeroDivisionError) -> bool:
     """Upstream's vertex-cover scorer divides by the cover size, which is zero when
     no agent answered "Yes" (all "No", or unparseable). Only that case, raised in
     that function, qualifies; a different ZeroDivisionError is not upstream's known
-    crash and must fail the run."""
+    crash and must stop the run with an error."""
     frame = error.__traceback__
     while frame is not None and frame.tb_next is not None:
         frame = frame.tb_next

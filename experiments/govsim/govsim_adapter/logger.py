@@ -14,7 +14,7 @@ no network, no files. On top of that:
 Round boundaries are inferred from the stats stream: a
 ``conversation_resource_limit`` key closes the round (the restaurant phase), and
 a repeated ``*_collected_resource`` key means a new round began — which covers
-the no-language perturbation, whose phase cycle drops the restaurant step. The
+the no-language perturbation, where the phase cycle drops the restaurant step. The
 pool reported for a round is the value observed alongside its last stats entry
 (the post-harvest pool), not the post-doubling value the next round opens with.
 """

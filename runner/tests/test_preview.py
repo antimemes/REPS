@@ -53,7 +53,7 @@ def home(tmp_path):
 
 @pytest.fixture
 def catalog(tmp_path):
-    """A built manifests directory: <name>.json files, the assets tree, one damaged file."""
+    """A manifests directory: <name>.json files, the assets tree, one damaged file."""
     root = tmp_path / "manifests"
     (root / "assets" / "zeta").mkdir(parents=True)
     (root / "assets" / "zeta" / "figure.png").write_bytes(b"not a manifest")
@@ -160,7 +160,7 @@ def test_events_are_migrated_to_the_current_vocabulary_on_read(server):
     assert [r["seq"] for r in served] == [0, 1, 2]
     assert served[0]["v"] == VOCABULARY_VERSION                       # the v0 step ran…
     assert served[0]["event"]["error"].startswith("Empty choices")   # …and flagged the empty reply
-    assert served[1] == {**current, "v": VOCABULARY_VERSION}          # current records pass through
+    assert served[1] == {**current, "v": VOCABULARY_VERSION}          # current records go through
     assert served[2] == future                                        # unmigratable: sent as written
     assert (run_dir / "events.jsonl").read_text() == written          # the file is evidence, untouched
 

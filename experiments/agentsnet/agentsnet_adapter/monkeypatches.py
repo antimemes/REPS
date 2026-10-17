@@ -6,7 +6,7 @@ tree on disk is not changed.
   swap-chat-model    LiteralMessagePassing.init_chat_model and .ChatOllama ->
                      a factory returning RepsChatModel (llm.py). Upstream's
                      `.with_retry(stop_after_attempt=10)` applies to the
-                     replacement as it did to the original (the ollama branch
+                     replacement as it did to upstream's (the ollama branch
                      has no retry wrapper upstream, and none here).
   no-throttle        upstream builds an InMemoryRateLimiter from a per-model-name
                      table (KeyError for a name not in it) to pace its API

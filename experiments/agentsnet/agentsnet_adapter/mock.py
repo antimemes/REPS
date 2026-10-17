@@ -3,7 +3,7 @@
 It plays a cooperative but unthinking agent against upstream's prompts: it
 reads its name and neighbours from the system prompt, sends one short message to
 each neighbour each round in the JSON shape the prompt asks for, and answers
-the final question with one of the valid options the prompt lists, chosen
+the final question with one of the options the prompt lists, chosen
 deterministically from the run seed and its name. It is a pure function of
 the message list. It exercises upstream's loop, parsing and scoring; its replies
 always parse. Thus second prompts and unparseable answers are tested by wrapping it

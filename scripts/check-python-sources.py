@@ -46,7 +46,7 @@ reps-experiment = { path = "../libs/experiment" }
 """,
     )
     subprocess.run(["uv", "lock"], cwd=app, check=True)
-    # Pass paths as arguments, thus checkout locations require no Nix escaping.
+    # Give paths as arguments, thus checkout locations require no Nix escaping.
     expression = root / "build.nix"
     expression.write_text("""
 { repo, fixture }:

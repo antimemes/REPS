@@ -1,4 +1,4 @@
-"""GovSim schema 0: shared technical events and typed simulation observations."""
+"""GovSim schema 0: the REPS technical events and typed simulation observations."""
 
 from typing import Annotated, ClassVar, Literal
 
@@ -78,7 +78,7 @@ class GovsimUnparsedLog(CustomEvent[UnparsedLogData]):
 
 
 class GovsimUpstreamLog(CustomEvent[UpstreamLogData]):
-    """Original file identity, emitted before its ingested native rows."""
+    """Upstream file identity, emitted before its ingested native rows."""
 
     render: ClassVar[RenderHint] = RenderHint(
         icon="file-input", title="{data.source} · {data.records} records",

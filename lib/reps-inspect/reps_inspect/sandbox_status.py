@@ -1,7 +1,7 @@
 """Surface inspect's silent docker provisioning as `status` events.
 
 Running with ``display="none"`` (which the JSONL event channel requires) makes
-inspect pass ``--progress quiet`` to each docker compose command and capture the
+inspect give ``--progress quiet`` to each docker compose command and capture the
 output of the long ones. Thus a first run can sit minutes in a multi-GB
 image pull with no events on the stream — while the one thing compose prints is
 a harmless "No services to build" warning on stderr. Each such subprocess is,
@@ -9,8 +9,8 @@ however, wrapped in inspect's ``trace_action(logger, "Subprocess", cmd)``, which
 logs structured records (``action``/``detail``/``event``/``duration`` as record
 attributes — no message parsing) at TRACE level. This handler listens on the
 ``inspect_ai`` package logger (it sets ``propagate=False``, thus a root handler
-does not see these) and emits just the provisioning commands — docker
-build/pull, plain or compose — as status events with durations. Per-tool-call
+does not see these) and emits just the provisioning commands — docker build/pull,
+with or without compose — as status events with durations. Per-tool-call
 ``compose exec`` and ``compose up``/``down`` chatter is excluded:
 they fire for each sample and the stream is narrated at that level.
 """

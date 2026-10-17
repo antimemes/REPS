@@ -19,7 +19,7 @@ def test_docker_verb_provisioning():
         docker_verb(f"{COMPOSE} pull --ignore-buildable --policy missing " "default")
         == "docker compose pull"
     )
-    # internal images build with plain docker
+    # internal images build with docker, not compose
     assert docker_verb("docker build -t img /ctx") == "docker build"
     assert docker_verb("docker pull aisiuk/inspect-tool-support") == "docker pull"
 
@@ -35,7 +35,7 @@ def test_docker_verb_excludes_noise():
 
 
 def _trace_record(detail: str, event: str, **extra) -> logging.LogRecord:
-    """A record shaped like inspect's trace_action output: message text plus
+    """A record with the shape of inspect's trace_action output: message text plus
     structured attrs (the handler reads only the attrs)."""
     record = logging.LogRecord(
         "inspect_ai.util._subprocess",

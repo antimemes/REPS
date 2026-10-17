@@ -207,7 +207,7 @@ def collect(stores: list[Store], cache: Path | None = None, dry_run: bool = Fals
                 name = identity["experiment"]
                 if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", name):
                     raise PublishError("invalid experiment name")
-                # A known run filtered out of this index stays present in the store.
+                # A known run filtered out of this index stays present in the run store.
                 unseen.discard(run)
                 if any(identity[field] not in store.filters[plural]
                        for plural, field in (("experiments", "experiment"), ("conditions", "condition"), ("runs", "run"))

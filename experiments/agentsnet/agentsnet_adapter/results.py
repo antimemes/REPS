@@ -1,8 +1,8 @@
 """The authors' per-run numbers and the per-round messages, read from their
 objects after the run.
 
-Upstream keeps, for each node, the full LangChain conversation (`chat_history`, the
-`messages_to_dict` form) and the last parsed JSON object (`messages`); it
+Upstream keeps, for each node, the full LangChain conversation (`chat_history`, as
+`messages_to_dict` writes it) and the last parsed JSON object (`messages`); it
 writes the former as `transcripts` in its results JSON. The per-round messages
 are reconstructed by walking each transcript the way upstream's
 `chat_tool.py` reads it: each AI reply that follows a round prompt is parsed

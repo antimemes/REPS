@@ -1,6 +1,6 @@
 # The shipped CLI includes publishing; fixture consumers can use the base library.
-# reps-runner, packaged from its uv.lock with the shared locked Python toolchain.
-# The interpreter is selected here, for each project.
+# reps-runner, packaged from its uv.lock with the locked Python toolchain all
+# projects use. The interpreter is selected here, for each project.
 { pkgs, pyproject-nix, uv2nix, pyproject-build-systems }:
 
 let

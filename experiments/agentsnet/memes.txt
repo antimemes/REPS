@@ -22,3 +22,5 @@ recipient     # the agent a message is addressed to; the `recipient` field of `a
 scipy         # the Python scientific library upstream imports (scipy.spatial)
 tönshoff      # Jan Tönshoff, an AgentsNet author
 final           # the phase after the message rounds, when each agent gives its answer; also "final answer"
+fix             # a fix patch or fix switch: one of the AGENTSNET_PATCHES applied to the authors' tree
+cover           # a vertex cover: the node set the vertex-cover task asks the agents to find (cover size, empty cover)

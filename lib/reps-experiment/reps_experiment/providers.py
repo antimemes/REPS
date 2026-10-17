@@ -3,14 +3,14 @@
 A model id's provider prefix (``anthropic/claude-…``, ``groq/llama-…``) picks which
 credential set to read and which endpoint to speak to; each provider here serves the
 OpenAI **/chat/completions** protocol, natively or through a compatibility
-mount. Each mapping is declared in ``PROVIDERS`` — explicit for each provider, not
+mount. Each mapping is declared in ``PROVIDERS`` — given for each provider, not
 inferred from the id's shape. The runner injects the env vars from its credential
-store (``reps-runner credentials``); this module only reads them.
+file (``reps-runner credentials``); this module only reads them.
 
 No third-party deps. Each canonical provider (the reps-providers package's
 registry) is routed: env var names, defaults, and requiredness are consumed
 directly, restated nowhere. A provider belongs in the registry only if its
-endpoint takes a plain bearer key through HTTP — OAuth-only surfaces (Vertex) have
+endpoint takes a bearer key through HTTP — OAuth-only surfaces (Vertex) have
 no entry; degraded-but-correct beats a mapping that half-works. Should a
 registry provider ever NOT speak the OpenAI protocol, this client grows an
 exclusion — its concern, not the registry's.
@@ -37,7 +37,7 @@ class Endpoint:
 
 # Where a provider mounts its OpenAI-compat surface when it is not at the stored
 # base — exceptions-only, this client's knowledge (the same shape as
-# reps-inspect's name remap): the stored ANTHROPIC_BASE_URL stays the plain API
+# reps-inspect's name remap): the stored ANTHROPIC_BASE_URL stays the API
 # origin the rest of the ecosystem expects, and the /v1 mount is appended here.
 _MOUNT_SUFFIX = {"anthropic": "/v1"}
 

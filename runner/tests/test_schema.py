@@ -42,7 +42,7 @@ MANIFEST = {
                 "role": {"kind": "enum", "values": ["w", "v"]},
             }}},
             "minLen": 2,
-            "initial": PLAYERS,  # presentation only — does not enter a binding
+            "initial": PLAYERS,  # presentation only — does not go into a binding
         },
         "rounds": {"type": {"kind": "int"}, "initial": 2},
         "goal": {"type": {"kind": "str"}},  # no initial: placeholder in suggestions
@@ -108,7 +108,7 @@ def test_nullable_param_accepts_explicit_null():
     }}
     validate_spec({"subset": None, "plain": "x"}, manifest)
     validate_realized({"subset": None, "plain": "x"}, manifest)
-    with pytest.raises(SchemaError):  # null is only valid on nullable params
+    with pytest.raises(SchemaError):  # null is only accepted on nullable params
         validate_spec({"subset": None, "plain": None}, manifest)
     validate_spec({"subset": "mmlu", "plain": "x"}, manifest)  # non-null stays typed
     with pytest.raises(SchemaError):

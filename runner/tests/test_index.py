@@ -601,7 +601,7 @@ def test_exclusions_and_warnings_are_logged_in_dry_run(stores, tmp_path, capsys,
 def test_invalid_exclusions_fail_before_any_s3_call(tmp_path, catalog, monkeypatch, capsys, exclude, message, dry_run):
     path = tmp_path / "stores.json"
     store = {"s3": "s3://store-one/prefix", "url": "https://data.example.org/one"}
-    # An invalid later entry must also prevent the first store from being opened.
+    # An invalid later entry must also prevent the first run store from being opened.
     path.write_text(json.dumps({"v": 0, "stores": [store, store | {"exclude": exclude}]}))
     def unexpected_client(_):
         pytest.fail("invalid exclusion must be rejected before any S3 call")

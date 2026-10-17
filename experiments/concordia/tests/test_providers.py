@@ -1,4 +1,4 @@
-"""The provider table (shared: reps_experiment.providers): pure resolution from
+"""The provider table (from reps_experiment.providers): pure resolution from
 (model id, env) to an endpoint. Exercised from this experiment's suite — the lib
 has no test harness yet."""
 
@@ -12,7 +12,7 @@ def test_openai_env_overrides_default_and_tolerates_no_key():
     assert ep.base_url == "http://llama.local:11434/v1"
     assert ep.served_model == "qwen3.5-9b"
     assert ep.api_key == "dummy"  # local servers ignore the bearer token
-    # no env var set at all: fall back to the registry default, like the OpenAI SDK does
+    # no env var set at all: fall back to the registry default, as the OpenAI SDK does
     ep = resolve("openai/gpt-4o", {})
     assert ep.base_url == "https://api.openai.com/v1"
 
@@ -21,7 +21,7 @@ def test_anthropic_mounts_compat_layer_under_v1():
     ep = resolve("anthropic/claude-haiku-4-5-20251001", {"ANTHROPIC_API_KEY": "k"})
     assert ep.base_url == "https://api.anthropic.com/v1"
     assert ep.served_model == "claude-haiku-4-5-20251001"
-    # the stored base URL is the plain origin; the /v1 mount is this mapping's job
+    # the stored base URL is only the origin; the /v1 mount is this mapping's job
     ep = resolve("anthropic/claude-haiku-4-5-20251001",
                  {"ANTHROPIC_API_KEY": "k", "ANTHROPIC_BASE_URL": "https://proxy.local/"})
     assert ep.base_url == "https://proxy.local/v1"

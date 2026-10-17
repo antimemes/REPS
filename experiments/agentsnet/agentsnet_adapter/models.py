@@ -1,4 +1,4 @@
-"""agentsnet schema 0: shared technical events and the typed observations the
+"""agentsnet schema 0: the REPS technical events and the typed observations the
 adapter emits around the authors' code.
 
 This module has no import from the authors' tree or LangChain, to let the
@@ -64,7 +64,7 @@ class MessageData(Model):
 class AnswerData(Model):
     agent: str
     answer: str | None = None          # None (omitted when serialized): unparseable after the second prompt; upstream scores it as None
-    valid: bool                        # among upstream's valid answers for that agent
+    valid: bool                        # one of the answers upstream accepts for that agent
 
 
 class UpstreamRecordData(Model):

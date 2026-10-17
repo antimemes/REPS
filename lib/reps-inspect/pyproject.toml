@@ -1,7 +1,7 @@
-# The shared inspect wrapper: one program (`reps-inspect-eval CONFIG.json`) that runs
-# an inspect_ai eval and translates its EvalLog into REPS events. Experiment families
-# (experiments/hello, experiments/impossiblebench, …) depend on this library and add
-# the package that provides their tasks; the family's adapter bakes the task spec
+# The inspect wrapper all families use: one program (`reps-inspect-eval CONFIG.json`)
+# that runs an inspect_ai eval and translates its EvalLog into REPS events. Experiment
+# families (experiments/hello, experiments/impossiblebench, …) depend on this library and
+# add the package that provides their tasks; the family's adapter bakes the task spec
 # (`pkg:<module>:<attr>`) into the config. Shared infra: NOT part of an experiment's
 # content identity — wrapper versions are recorded for each run as covariates instead.
 [project]
@@ -11,7 +11,7 @@ description = "Run an Inspect (inspect_ai) eval as a REPS experiment program —
 requires-python = ">=3.13"
 dependencies = [
     # Since 0.3.184, input_tokens excludes cache reads/writes. Keep that semantic
-    # floor; exact versions are locked and recorded for each run as provenance.
+    # floor; versions are locked and recorded for each run as provenance.
     "inspect-ai>=0.3.184,<0.4",
     # Each API-backed inspect provider SDK, installed uniformly: one env serves all
     # providers (and mixed-provider multiagent runs). Thus the environment does not vary
@@ -33,7 +33,7 @@ dependencies = [
     "azure-ai-inference>=1.0.0b4",
     # bedrock + sagemaker
     "aioboto3>=13.0.0",
-    # the shared REPS event shapes — typed, validated emission (no hand-built dicts)
+    # the REPS event shapes — typed, validated emission (no hand-built dicts)
     "reps-events",
     # canonical provider credential requirements
     "reps-providers",

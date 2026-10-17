@@ -35,7 +35,7 @@ _ZERO = {"samples": 0, "completed": 0, "errors": 0,
 def resolve_task(spec: str):
     """`pkg:<module>:<attr>` -> the imported @task callable (how a family selects a
     task function from an installed package, e.g. `pkg:impossiblebench:impossible_swebench`);
-    all other specs (registry id or `path/file.py@task_fn`) pass through to Inspect
+    all other specs (registry id or `path/file.py@task_fn`) go through to Inspect
     with no change."""
     if spec.startswith("pkg:"):
         modname, sep, attr = spec[4:].partition(":")
@@ -72,7 +72,7 @@ def eval_kwargs(params: Params, log_dir: Path) -> dict[str, Any]:
     return kw
 
 
-def deposit_log(log_obj: Any, run_dir: Path) -> None:  # Any: EvalLog, whose import is lazy
+def deposit_log(log_obj: Any, run_dir: Path) -> None:  # Any: EvalLog; its import is lazy
     """Copy the run's `.eval` log into the deposit as an artifact (the irreducible
     Inspect record; the translated events are its secondary rendering)."""
     src = getattr(log_obj, "location", None)
@@ -155,7 +155,7 @@ def _run(params: Params) -> int:
 
     # STREAM: run_eval blocks through the full eval, thus emit as it goes — a status
     # when each sample starts, each completed native transcript prefix, and a last
-    # reconciliation pass. A raw ModelEvent and its derived call stay adjacent.
+    # reconciliation step. A raw ModelEvent and its derived call stay adjacent.
     # hook `data` params are Any on purpose: their classes ride the pinned inspect
     # version and this bridge duck-types them (getattr-guarded) rather than binding
     # to one release's names. The decorator is untyped upstream.

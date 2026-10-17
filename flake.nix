@@ -23,7 +23,7 @@
         f (import nixpkgs { inherit system; }));
     in
     {
-      # Namespace policy (nixpkgs-flat, like `nixpkgs#dig`): experiments get bare names —
+      # Namespace policy (flat, as in `nixpkgs#dig`): experiments get bare names —
       # they are the product and the headline oneliner (`nix run reps#inspect-hello`).
       # REPS's tools carry the `reps-` prefix (`reps-runner`). Thus the bare
       # namespace belongs to the registry and name collisions are a curation duty, as

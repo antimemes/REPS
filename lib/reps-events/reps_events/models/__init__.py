@@ -88,7 +88,7 @@ class Envelope[EventPayload = Payload](Model):
 
 
 def validate_event(payload: Mapping[str, Any]) -> list[str]:
-    """Validate the public vocabulary without modifying the original payload."""
+    """Validate the public vocabulary without modifying the given payload."""
     try:
         EVENT_ADAPTER.validate_json(json.dumps(dict(payload), allow_nan=False), strict=True)
     except (ValueError, TypeError) as exc:

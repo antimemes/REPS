@@ -1,4 +1,4 @@
-"""An OpenAI-SDK-shaped chat client with REPS instrumentation built in.
+"""An OpenAI-SDK-shaped chat client with REPS instrumentation included.
 
 For experiments that call models directly (their loop, or a wrapped framework
 that accepts an OpenAI client): construct `ChatClient(model_id, ...)` and hand it
@@ -99,7 +99,8 @@ class ServedModelMismatch(SystemExit):
     """Fatal routing error, outside harnesses' Exception fallbacks.
 
     Continuing with a default answer conceals that this condition ran the
-    incorrect model. The original response and an error log are emitted before exit.
+    incorrect model. The provider's response and an error log are emitted before
+    exit.
     """
 
 
@@ -259,7 +260,7 @@ class ChatClient:
                     break
                 if error is not None:
                     raise error
-                # Like the HTTP retry hook, count the last empty attempt too.
+                # As the HTTP retry hook does, count the last empty attempt too.
                 self._retry_count.set(self._retry_count.get() + 1)
                 if attempt == _MAX_RETRIES:
                     raise EmptyResponse(

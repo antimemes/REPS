@@ -38,7 +38,7 @@ def with_producer(directory, *, index=1, count=1, program=None, executable=None)
 
 @pytest.fixture
 def nix_wrapper(monkeypatch, tmp_path):
-    """Model read-only Nix store files without creating or mutating store objects."""
+    """Model read-only Nix store files without creating or mutating Nix store objects."""
     script = tmp_path / "adapter"
     script.write_text(f'#!/bin/sh\n{VENV}/bin/experiment "$@"\n')
     is_file, path_open = Path.is_file, Path.open
@@ -140,7 +140,7 @@ def digest_files(directory):
 
 
 def use_legacy_build(manifest):
-    """Give the union subprocess a test build with the original v0 envelope."""
+    """Give the union subprocess a test build with the initial v0 envelope."""
     interpreter = manifest.parent / "legacy-bin" / "python"
     interpreter.parent.mkdir()
     interpreter.write_text(f'''#!{sys.executable}

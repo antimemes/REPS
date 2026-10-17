@@ -1,4 +1,4 @@
-"""Local credential store: resolution (which env to inject for a run's llm params),
+"""Local credential file: resolution (which env to inject for a run's llm params),
 profile storage (0600 toml), the interactive ladder, and the `reps-runner credentials`
 CLI."""
 
@@ -175,7 +175,7 @@ def test_missing_sets_gate(cfg, monkeypatch):
     assert credentials.missing_sets(manifest, {"model": "mockllm/model"}) == []
     # unknown prefix (a custom service can legitimately operate with no credentials) → not blocked
     assert credentials.missing_sets(manifest, {"model": "custom/model"}) == []
-    # a host env var does NOT satisfy the gate — the store is the only credential
+    # a host env var does NOT satisfy the gate — the credential file is the only credential
     # source, and an accidentally exported key must not skip the setup prompt
     monkeypatch.setenv("OPENAI_API_KEY", "sk-ambient")
     assert credentials.missing_sets(manifest, {"model": "openai/q"}) == ["openai"]
@@ -239,7 +239,7 @@ def test_first_use_decline_feeds_run_but_stores_nothing(cfg, monkeypatch, capsys
 
 def test_ladder_lone_default_is_silent(cfg, monkeypatch, capsys):
     credentials.save({"openai": {"default": {"OPENAI_API_KEY": "k"}}})
-    _stdin(monkeypatch, "")  # no prompts expected — empty stdin fails each read
+    _stdin(monkeypatch, "")  # no prompts expected — each read on empty stdin raises
     env = _resolve(_manifest({"kind": "llm"}), {"model": "openai/q"})
     assert env == {"OPENAI_API_KEY": "k"}
 
@@ -302,7 +302,7 @@ def test_headless_default_else_refuse(cfg, monkeypatch, capsys):
     # no config → actionable refusal, not a prompt
     with pytest.raises(ValueError, match="credentials set openai"):
         _resolve(manifest, {"model": "openai/q"}, interactive=False)
-    # named profiles, no default, no remembered selection → refuse with the fix
+    # named profiles, no default, no remembered selection → reject with the fix
     credentials.save({"openai": {"work": {"OPENAI_API_KEY": "w"}}})
     with pytest.raises(ValueError, match="no 'default'"):
         _resolve(manifest, {"model": "openai/q"}, interactive=False)
@@ -355,14 +355,14 @@ def test_cli_set_dotted_targets_profile_without_name_prompt(cfg, monkeypatch, ca
     assert credentials.load()["openai"] == {
         "work": {"OPENAI_API_KEY": "sk-w", "OPENAI_BASE_URL": "http://w/v1"}
     }
-    # reserved / malformed profile names are refused up front
+    # reserved / malformed profile names are rejected up front
     assert _cli(["set", "openai.new"]) == 2
     assert _cli(["set", "openai.Work"]) == 2
 
 
 def test_cli_set_rejects_schemeless_base_url(cfg, monkeypatch, capsys):
-    # a bare host only fails later, in a client ("unknown url type") — the
-    # set command is where the fix is cheap, thus it refuses and shows the shape
+    # a bare host only causes a problem later, in a client ("unknown url type") —
+    # the set command is where the fix is cheap, thus it rejects and shows the shape
     code = _cli(["set", "openai"], stdin="sk-k\nllama.forest.local\n", monkeypatch=monkeypatch)
     assert code == 2
     assert credentials.load() == {}
@@ -370,7 +370,7 @@ def test_cli_set_rejects_schemeless_base_url(cfg, monkeypatch, capsys):
 
 
 def test_cli_set_refuses_values_on_argv(cfg, capsys):
-    # there is NO KEY=VALUE form: argv is visible in ps / shell history
+    # KEY=VALUE is NOT accepted: argv is visible in ps / shell history
     assert _cli(["set", "openai", "OPENAI_API_KEY=sk-leaked"]) == 2
     assert credentials.load() == {}
     assert "never taken on the command line" in capsys.readouterr().err
@@ -416,12 +416,12 @@ def test_cli_remove_set_and_profile(cfg, monkeypatch, capsys):
 
 
 def test_group_readable_store_is_refused(cfg, monkeypatch, capsys):
-    # ssh/pgpass precedent: a leaky store is refused with the fix, not warned past
+    # ssh/pgpass precedent: a leaky credential file is rejected with the fix, not warned past
     credentials.save({"openai": {"default": {"OPENAI_API_KEY": "sk-k"}}})
     os.chmod(cfg, 0o644)
     with pytest.raises(ValueError, match="chmod 600"):
         credentials.load()
-    # the gate refuses too — a leaky file must not satisfy a run
+    # the gate rejects too — a leaky file must not satisfy a run
     with pytest.raises(ValueError, match="chmod 600"):
         _resolve(_manifest({"kind": "llm"}), {"model": "openai/q"}, interactive=False)
     assert _cli(["list"]) == 2
@@ -463,7 +463,7 @@ def test_multi_set_first_use_and_picker_in_one_invocation(cfg, monkeypatch, caps
 def test_picker_unknown_choice_complains(cfg, monkeypatch, capsys):
     credentials.save({"openai": {"default": {"OPENAI_API_KEY": "d"},
                                  "work": {"OPENAI_API_KEY": "w"}}})
-    _stdin(monkeypatch, "wrok\n")  # scripted input cannot retype — complain and fail
+    _stdin(monkeypatch, "wrok\n")  # scripted input cannot retype — complain and stop
     with pytest.raises(ValueError, match="wrok"):
         _resolve(_manifest({"kind": "llm"}), {"model": "openai/q"})
     err = capsys.readouterr().err
@@ -597,7 +597,7 @@ def test_set_json_merges_like_the_prompts(cfg, monkeypatch, capsys):
     assert _json.loads(capsys.readouterr().out)["saved"] == "openai.work"
     assert credentials.load()["openai"]["work"] == {
         "OPENAI_API_KEY": "sk-old", "OPENAI_BASE_URL": "http://new/v1"}
-    # explicit null deletes
+    # null deletes
     _stdin(monkeypatch, _json.dumps({"OPENAI_BASE_URL": None}))
     assert credentials.credentials_cli(["set", "openai.work", "--json"]) == 0
     assert credentials.load()["openai"]["work"] == {"OPENAI_API_KEY": "sk-old"}
@@ -608,10 +608,10 @@ def test_set_json_validates_like_the_prompts(cfg, monkeypatch, capsys):
     # URL shape enforced
     _stdin(monkeypatch, _json.dumps({"OPENAI_BASE_URL": "llama.forest.local"}))
     assert credentials.credentials_cli(["set", "openai.work", "--json"]) == 2
-    # reserved/invalid profile names refused
+    # reserved/invalid profile names rejected
     _stdin(monkeypatch, _json.dumps({"OPENAI_API_KEY": "k"}))
     assert credentials.credentials_cli(["set", "openai.new", "--json"]) == 2
-    # garbage stdin refused, store untouched
+    # garbage stdin rejected, credential file untouched
     _stdin(monkeypatch, "not json")
     assert credentials.credentials_cli(["set", "openai.work", "--json"]) == 2
     assert credentials.load() == {}
@@ -637,13 +637,13 @@ def test_remember_command_writes_prefs_and_guards_typos(cfg, capsys):
     assert env == {"OPENAI_API_KEY": "w"}
 
 
-# -- explicit selection (--credential SET=NAME) ----------------------------------------
+# -- selection by flag (--credential SET=NAME) -----------------------------------------
 
 def test_selection_beats_remembered_and_skips_prompts(cfg, monkeypatch, capsys):
     credentials.save({"openai": {"default": {"OPENAI_API_KEY": "d"},
                                  "work": {"OPENAI_API_KEY": "w"}}})
     credentials.credentials_cli(["remember", "exp", "openai", "default"])
-    _stdin(monkeypatch, "")  # a prompt fails on empty stdin
+    _stdin(monkeypatch, "")  # a prompt raises on empty stdin
     env = credentials.resolve_run_credentials(
         _manifest({"kind": "llm"}), {"model": "openai/q"},
         experiment="exp", interactive=True, selections={"openai": "work"})
@@ -669,7 +669,7 @@ def test_selection_typo_guards_both_halves(cfg, capsys):
 
 
 def test_selection_satisfies_headless_missing_gate(cfg, capsys):
-    # headless + unconfigured built-in normally refuses; an explicit selection of a
+    # headless + unconfigured built-in normally rejects; a selection by flag of a
     # profile that DOES exist must not be blocked by that gate
     credentials.save({"openai": {"work": {"OPENAI_API_KEY": "w"}}})
     env = credentials.resolve_run_credentials(

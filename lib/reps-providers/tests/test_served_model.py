@@ -1,4 +1,4 @@
-"""Served-model identity rules shared by clients and saved-run audits."""
+"""Served-model identity rules that clients and saved-run audits both use."""
 
 import pytest
 

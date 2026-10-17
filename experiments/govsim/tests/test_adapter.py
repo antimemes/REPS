@@ -165,7 +165,7 @@ def test_collapse_and_outsider_denominator():
 def test_backend_forwards_sampling_and_caps_tokens(monkeypatch, event_capture, text, completion, returned):
     from govsim_adapter.backend import ChatClientBackend
     backend = ChatClientBackend("mock/model", 42, temperature=0.2, max_tokens=64)
-    # Replace transport only: exercise the real adapter and shared client's
+    # Replace transport only: exercise the real adapter and ChatClient's
     # generation policy with no network request.
     captured = {}
     def transport(kw):

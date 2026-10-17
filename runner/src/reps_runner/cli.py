@@ -44,7 +44,7 @@ def _log(msg: str) -> None:
 
 
 def _sgr(text: str, *codes: str) -> str:
-    """ANSI-styled on a terminal, plain text in all other places (pipes, CI, NO_COLOR)."""
+    """ANSI-styled on a terminal, not styled in all other places (pipes, CI, NO_COLOR)."""
     if not sys.stderr.isatty() or os.environ.get("NO_COLOR") or os.environ.get("TERM") == "dumb":
         return text
     return f"\033[{';'.join(codes)}m{text}\033[0m"
@@ -93,7 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def suggested_oneliner(manifest: Manifest) -> str:
-    """The fully-explicit invocation, each param bound to a real declared value:
+    """The fully-declared invocation, each param bound to a real declared value:
     its `initial`, then its first suggestion, then an enum's first member — thus the
     printed command runs as-is. Each param stays on the command line — the
     oneliner IS the condition spec, no value hidden in defaults. Only a
@@ -161,7 +161,7 @@ def main() -> int:
         from .preview import preview_cli
         return preview_cli(sys.argv[2:])
 
-    # `reps-runner credentials …` manages the local credential store; it is a standalone
+    # `reps-runner credentials …` manages the local credential file; it is a standalone
     # management command, not a run, thus a manifest/experiment env is not necessary.
     if sys.argv[1:2] == ["credentials"]:
         from .credentials import credentials_cli

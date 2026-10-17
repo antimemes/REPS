@@ -1,4 +1,4 @@
-# The impossiblebench family's pinned env: the shared inspect wrapper + the upstream
+# The impossiblebench family's pinned env: the REPS inspect wrapper + the upstream
 # impossiblebench package (which brings inspect_evals[swe_bench], swebench, datasets).
 # The experiment declarations are package.nix; this project only pins the software —
 # a uv "virtual" project (package = false): no local code to build, the tasks come

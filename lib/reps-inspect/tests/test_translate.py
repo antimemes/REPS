@@ -3,8 +3,8 @@
 These used to run on duck-typed fakes; they now construct the actual pydantic
 models (EvalLog, EvalSample, ModelEvent, …), thus they double as contract tests
 against the PINNED inspect_ai version — a field the translator reads that
-upstream renames or retypes fails here at test time, not mid-eval. The cost is
-that construction states each required field; the fixtures below are the
+upstream renames or retypes reports an error here at test time, not mid-eval. The
+cost is that construction states each required field; the fixtures below are the
 minimal honest instances.
 """
 
@@ -224,7 +224,7 @@ def test_message_source_and_tool_view_survive_only_in_raw_event(event_capture):
 
 def test_errored_model_event_preserves_error(event_capture):
     """The live-fire regression: a failed call's ModelEvent has `error` as a
-    plain string, a placeholder empty output message, no usage, no working_time,
+    string, a placeholder empty output message, no usage, no working_time,
     and the provider's error body in call.response (inspect_ai's error branch).
     The error stays a string, as Inspect records it."""
     ev = _model_event(
@@ -470,6 +470,6 @@ def test_provenance_records_sliceable_covariates(event_capture):
             if e.get("kind") == "inspect.provenance"]
     assert len(prov) == 1
     d = prov[0]["data"]
-    # the exact upstream versions advisories will slice on
+    # the full upstream versions advisories will slice on
     assert d["packages"] == {"inspect_ai": "0.3.248", "inspect_evals": "0.15.0"}
     assert d["task"] == "gsm8k" and d["task_version"] == 1

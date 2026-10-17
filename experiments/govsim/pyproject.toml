@@ -23,7 +23,7 @@ dependencies = [
     "sentence-transformers",       # hard import through simulation.persona (construction is lazy)
 ]
 
-# In-tree REPS libraries are shared with the runner.
+# The runner uses the same in-tree REPS libraries.
 [tool.uv.sources]
 reps-testing = { path = "../../lib/reps-testing", editable = true }
 reps-events = { path = "../../lib/reps-events", editable = true }
