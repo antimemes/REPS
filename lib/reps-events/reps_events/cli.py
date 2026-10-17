@@ -30,8 +30,8 @@ from reps_events import (
     json_schemas,
 )
 
-# CLI surface per type: (flag-name, field-name, type) where type ∈
-# str | json (value parsed as JSON) | jsonish (JSON if it parses, else raw string)
+# CLI surface for each type: (flag-name, field-name, type) where type ∈
+# str | json (value parsed as JSON) | jsonish (JSON if it parses, raw string if not)
 # Required-ness is the model's job, not argparse's.
 FIELDS: dict[str, list[tuple[str, str, str]]] = {
     "status": [("--detail", "detail", "str")],
@@ -56,7 +56,7 @@ FIELDS: dict[str, list[tuple[str, str, str]]] = {
     "custom": [("--kind", "kind", "str"), ("--data", "data", "json")],
 }
 
-# subcommand name → wire type name
+# subcommand name → serialized type name
 WIRE_TYPE = {name: name for name in FIELDS}
 WIRE_TYPE.update({
     "llm-call": "llm.call",
@@ -128,8 +128,8 @@ def main(argv: list[str] | None = None) -> int:
         if raw is not None:
             body[field] = _parse(kind, raw, flag)
 
-    # llm-call: the bulky parts (input/output/tools/call) may arrive as one JSON
-    # object on stdin instead of flags — flags win field-by-field if both are given.
+    # llm-call: the bulky parts (input/output/tools/call) can arrive as one JSON
+    # object on stdin instead of flags — flags win field-by-field if stdin and flags are given.
     if args.command == "llm-call" and not sys.stdin.isatty():
         stdin_raw = sys.stdin.read().strip()
         if stdin_raw:

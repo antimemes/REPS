@@ -1,7 +1,7 @@
 { experiment, reps, lib, runCommand, gnupatch }:
 let
   patches = builtins.attrNames (builtins.readDir experiment.program.patches);
-  # every subset of the fixes, applied in name order as the adapter does
+  # each subset of the fixes, applied in name sequence as the adapter does
   subsets = lib.foldl' (acc: name: acc ++ map (s: s ++ [ name ]) acc) [ [ ] ] patches;
 in
 {
@@ -28,9 +28,9 @@ in
   };
   smoke = reps.testers.smoke {
     inherit experiment;
-    # coloring: its scorer divides by the edge count, so no answer pattern can
-    # raise under the mock's seed-dependent picks (vertex cover's divides by the
-    # cover size, which an all-"No" pick makes zero: upstream's own crash, which
+    # coloring: its scorer divides by the edge count, thus no answer pattern can
+    # raise with the mock's seed-dependent picks (vertex cover's divides by the
+    # cover size, which an all-"No" pick makes zero: upstream's crash, which
     # the adapter records as score 0 with upstream_crashed)
     params = {
       model = "mock/model"; task = "coloring"; graph_generator = "ws"; graph_size = 4; graph_index = 0;

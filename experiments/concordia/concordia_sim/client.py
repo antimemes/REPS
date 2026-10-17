@@ -1,19 +1,19 @@
-"""The language model behind every agent and the game master.
+"""The language model behind each agent and the game master.
 
 One class implementing Concordia's `LanguageModel` interface (`sample_text` /
-`sample_choice`) by delegating to Concordia's own ``BaseGPTModel``
+`sample_choice`) by delegating to Concordia's ``BaseGPTModel``
 (concordia.contrib), which owns all prompt-shaping (the continuation system message
 + few-shot examples) and the multiple-choice retry loop. Below it sits
 :class:`reps_experiment.llm.ChatClient` — the REPS-instrumented OpenAI-compat client:
-provider routing from the model id's prefix, one ``llm.call`` event per call with
+provider routing from the model id's prefix, one ``llm.call`` event for each call with
 usage and latency, reasoning-tag stripping, and the keyless ``mock/`` backend.
 
 The mock rides the same BaseGPTModel path as real models — only the responder is
 swapped (deterministic scripted lines; exact-option answers for choice prompts; a
-valid action spec when the game master asks for one), so the smoke/CI run
+valid action spec when the game master asks for one). Thus the smoke/CI run
 exercises upstream's prompt assembly too.
 
-Every call — mock or real — emits one ``llm.call`` event, so the event stream has
+Each call — mock or real — emits one ``llm.call`` event. Thus the event stream has
 the same shape keyless as it does against a real model.
 """
 
@@ -31,7 +31,7 @@ from reps_experiment.llm import ChatClient, deterministic_pick
 
 # a small bank of neutral, conversation-shaped replies for the mock backend; picking
 # by hash keeps the mock deterministic while varying enough that Concordia's
-# repetition detector still makes progress.
+# repetition detector continues to make progress.
 _MOCK_LINES = (
     "That's good to hear. Tell me more about it.",
     "I understand. Things have been much the same on my end.",
@@ -42,7 +42,7 @@ _MOCK_LINES = (
 )
 
 # The game master asks the model to emit the *next action spec* as JSON (see
-# Concordia's next_acting.py). A free-text reply fails its parser, so the mock
+# Concordia's next_acting.py). A free-text reply fails its parser. Thus the mock
 # returns a valid, always open-ended spec when it recognises that prompt — keeping
 # the smoke run on rails.
 _MOCK_ACTION_SPEC = (
@@ -51,7 +51,7 @@ _MOCK_ACTION_SPEC = (
 )
 
 # BaseGPTModel.sample_choice's phrasing — the mock answers those prompts with one
-# of the listed options verbatim, so upstream's exact-match loop accepts it.
+# of the listed options verbatim. Thus upstream's exact-match loop accepts it.
 _CHOICE_MARKER = "Respond EXACTLY with one of the following strings:"
 
 
@@ -61,12 +61,12 @@ def _wants_action_spec(prompt: str) -> bool:
 
 
 class RepsLanguageModel(language_model.LanguageModel):
-    """A Concordia LanguageModel that emits REPS llm.call events on every call.
+    """A Concordia LanguageModel that emits REPS llm.call events on each call.
 
-    One instance per calling entity: `model` overrides the run's default model id
-    (the per-agent `model` field in the roster), and `agent` names the entity in
-    every llm.call event — Concordia itself gives the model no calling-entity
-    context, so attribution has to ride in on the instance.
+    One instance for each calling entity: `model` overrides the run's default model id
+    (the `model` field for each agent in the roster), and `agent` names the entity in
+    each llm.call event — Concordia gives the model no calling-entity
+    context. Thus attribution has to ride in on the instance.
     """
 
     def __init__(self, params, *, model: str | None = None, agent: str | None = None) -> None:
@@ -149,15 +149,15 @@ class RepsLanguageModel(language_model.LanguageModel):
 class PerEntitySimulation(generic_simulation.Simulation):
     """Upstream's Simulation is multi-model at three grains — default,
     `override_agent_model` (all entities), `override_game_master_model` — but
-    `add_entity` builds every entity with the one shared `_agent_model`. We need
+    `add_entity` builds each entity with the one shared `_agent_model`. We need
     per-entity grain for two REPS reasons upstream does not have: llm.call attribution
-    requires one client per entity (Concordia gives the model no calling-entity
+    requires one client for each entity (Concordia gives the model no calling-entity
     context), and the roster's per-agent model override is a treatment axis riding
     the same seam. add_entity is the narrowest seam: swap the model in for the one
-    entity being built, restore it after, delegate everything else.
+    entity being built, restore it after, delegate all other work.
 
     `clients` maps entity name -> RepsLanguageModel; names not in the map build with
-    the shared model as upstream would.
+    the shared model as upstream does.
     """
 
     def __init__(self, *, config, model, embedder,

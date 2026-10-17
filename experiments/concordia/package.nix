@@ -1,17 +1,17 @@
 # Concordia (google-deepmind's generative agent-based modeling library) as a REPS
 # experiment: multi-agent social simulations, translated live into REPS events.
 #
-# ONE experiment: Concordia scenarios are data interpreted by one program, so the
+# ONE experiment: Concordia scenarios are data interpreted by one program. Thus the
 # scenario — the cast of `agents`, the `premise`, the `game_master` — is composed in
 # params (the webui renders the roster as an editable table), not baked into cards.
 # Cards mark code boundaries (inspect tasks are different programs); params mark data.
 #
-# Every configuration runs keyless on `mock/model` (deterministic scripted lines, no
-# network), against any OpenAI-compatible /chat/completions server through
+# Each configuration runs keyless on `mock/model` (deterministic scripted lines, no
+# network), against an OpenAI-compatible /chat/completions server through
 # `openai/<served-name>`, or against a hosted provider's OpenAI-compatibility
 # endpoint (`anthropic/`, `google/`, `groq/`, `mistral/`, `grok/`, `openrouter/`,
 # `azureai/` — see reps_experiment/providers.py) — endpoint and key come from the
-# credential store, never from params.
+# credential store, not from params.
 { reps, pkgs, lib, writeShellApplication, jq }:
 
 let
@@ -26,8 +26,8 @@ let
     description = "Keyless offline mock — deterministic scripted lines, no network (the smoke/CI path).";
   };
 
-  # the initial scenario: two old friends at a cafe — keyless, so the prefilled
-  # command works with zero setup. Presentation only, like every initial.
+  # the initial scenario: two old friends at a cafe — keyless, thus the prefilled
+  # command works with zero setup. Presentation only, like each initial.
   cafeAgents = [
     { name = "Alice"; goal = "Catch up warmly and find out how Bob has been."; model = ""; }
     { name = "Bob"; goal = "Share what has changed in your life since you last met."; model = ""; }
@@ -37,7 +37,7 @@ in
   concordia = reps.mkExperiment {
     schemaPython = "${env}/bin/python";
     name = "concordia";
-    # NOT ./. — tests are not behavior, so a test edit re-versions nothing
+    # NOT ./. — tests are not behavior, thus a test edit has no effect on the version
     src = [ ./package.nix ./pyproject.toml ./uv.lock ./concordia_sim ];
     summary = "A Concordia generative agent simulation: compose the cast, their goals, and the premise; the transcript streams back as events.";
     # hand-written (no upstream link registry): the wrapped library and its paper

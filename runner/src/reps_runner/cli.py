@@ -44,7 +44,7 @@ def _log(msg: str) -> None:
 
 
 def _sgr(text: str, *codes: str) -> str:
-    """ANSI-styled on a terminal, plain text anywhere else (pipes, CI, NO_COLOR)."""
+    """ANSI-styled on a terminal, plain text in all other places (pipes, CI, NO_COLOR)."""
     if not sys.stderr.isatty() or os.environ.get("NO_COLOR") or os.environ.get("TERM") == "dumb":
         return text
     return f"\033[{';'.join(codes)}m{text}\033[0m"
@@ -93,14 +93,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def suggested_oneliner(manifest: Manifest) -> str:
-    """The fully-explicit invocation, every param bound to a real declared value:
-    its `initial`, else its first suggestion, else an enum's first member — so the
-    printed command runs as-is. Every param stays on the command line — the
-    oneliner IS the condition spec, nothing hidden in defaults. Only a
+    """The fully-explicit invocation, each param bound to a real declared value:
+    its `initial`, then its first suggestion, then an enum's first member — thus the
+    printed command runs as-is. Each param stays on the command line — the
+    oneliner IS the condition spec, no value hidden in defaults. Only a
     param the manifest names no value for anywhere gets a `<name>` placeholder."""
     sets: list[str] = []
-    # presentation order: params may carry an `order` hint (task-level params first —
-    # they are what a researcher cares about); ties break by name
+    # presentation sequence: params can carry an `order` hint (task-level params first —
+    # they are the ones a researcher cares about); ties break by name
     ordered = sorted(manifest["params"].items(),
                      key=lambda kv: (kv[1].get("order", 100), kv[0]))
     for name, pschema in ordered:
@@ -162,7 +162,7 @@ def main() -> int:
         return preview_cli(sys.argv[2:])
 
     # `reps-runner credentials …` manages the local credential store; it is a standalone
-    # management command, not a run, so it needs no manifest/experiment env.
+    # management command, not a run, thus it needs no manifest/experiment env.
     if sys.argv[1:2] == ["credentials"]:
         from .credentials import credentials_cli
         return credentials_cli(sys.argv[2:])
@@ -186,7 +186,7 @@ def main() -> int:
         return 2
     manifest = load_manifest(manifest_path)
     # Identity vs reproducibility: REPS_SOURCE is this experiment's content id — it
-    # alone feeds the condition hash, so editing one experiment subtree never moves
+    # alone feeds the condition hash, thus editing one experiment subtree does not move
     # another's. REPS_FETCH_REF is the fetchable repo rev, recorded for reproducibility.
     source = os.environ.get("REPS_SOURCE") or "dirty:unknown"
     try:
@@ -233,10 +233,10 @@ def main() -> int:
 
     json_out = _json_out if args.json else None
 
-    # Credential resolution may prompt for first-use setup of an unconfigured
-    # built-in (secrets never touch argv), and the profile
-    # picker when named profiles exist. Headless (non-terminal stdin or --non-interactive) it never
-    # prompts — remembered choice, else default profile, else exit 2 with the fix.
+    # Credential resolution can prompt for first-use setup of an unconfigured
+    # built-in (secrets do not touch argv), and the profile
+    # picker when named profiles exist. Headless (non-terminal stdin or --non-interactive) it does not
+    # prompt — remembered choice, then default profile, then exit 2 with the fix.
     realized = cond["params"]  # no distributions in the MVP: realized ARE the spec params
     interactive = sys.stdin.isatty() and not args.non_interactive
     selections = dict(_parse_kv(entry, "--credential") for entry in args.credential)

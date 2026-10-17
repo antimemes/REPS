@@ -1,17 +1,17 @@
 """GovSim's persisted environment rows → REPS results.
 
 Everything the paper's headline numbers need lands in ``log_env.json`` (pandas
-records, rewritten by the env every round). Survival and equality reuse the
+records, rewritten by the env each round). Survival and equality reuse the
 formulas from upstream ``simulation/analysis/plots.py`` (quoted, not imported —
 the analysis stack is not in this env). ``over_usage`` has NO upstream
 implementation; it is our documented reconstruction from persisted inputs:
 the share of harvest actions whose ``wanted_resource`` exceeds that round's
 sustainability threshold ``(pool_before // 2) // num_agents``, with
 ``num_agents`` = that round's distinct harvester count. Upstream's env keeps a
-*constant* ``num_agents`` (and a threshold fixed at reset), which never updates
-when an outsider joins — so in ``*_outsider`` configs the two disagree for
+*constant* ``num_agents`` (and a threshold fixed at reset), which does not update
+when an outsider joins — thus in ``*_outsider`` configs the two disagree for
 wants inside the gap (e.g. pool 100, 5 harvesters: ours 10, upstream's 12).
-The per-round count follows the paper's formula; the divergence is only vs
+The count for each round follows the paper's formula; the divergence is only vs
 upstream's internal bookkeeping.
 """
 
@@ -52,7 +52,7 @@ def compute_metrics(df: pd.DataFrame, max_rounds: int) -> dict:
         }
 
     rounds = int(harvest["round"].max()) + 1
-    # every harvest row of a round logs the same post-allocation pool
+    # each harvest row of a round logs the same post-allocation pool
     pool_after = harvest.groupby("round")["resource_in_pool_after_harvesting"].last()
 
     # survival/collapse — plots.py compute_survival_months_stats: first round

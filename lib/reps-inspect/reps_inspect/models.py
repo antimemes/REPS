@@ -18,8 +18,8 @@ from reps_providers import PROVIDERS
 # REPS canonical provider prefix -> (inspect's name for the same backend, env-var
 # bridge from REPS's canonical vars to the vars inspect's provider reads). The
 # `types.llm` vocabulary speaks provider names (`moonshotai/kimi-k3`, matching the
-# provider's own org naming); which spelling inspect_ai gives its backend for that
-# provider is this wrapper's concern. Explicit per provider — never inferred from
+# provider's org naming); which spelling inspect_ai gives its backend for that
+# provider is this wrapper's concern. Explicit for each provider — not inferred from
 # the id's shape.
 INSPECT_PROVIDER_REMAP: dict[str, tuple[str, dict[str, str]]] = {
     "moonshotai": ("moonshot", {"MOONSHOTAI_API_KEY": "MOONSHOT_API_KEY",
@@ -39,7 +39,7 @@ def inspect_model(model: str) -> str:
     Inspect's provider reads it: optional keys in the registry get a placeholder
     bearer when unset, following the chat client's rule, because Inspect's
     providers, like the OpenAI SDK, refuse an empty key. Bridged env vars are copied,
-    never overwritten — an explicitly set inspect-native var wins."""
+    not overwritten — an explicitly set inspect-native var wins."""
     provider, sep, rest = model.partition("/")
     if not sep:
         return model
@@ -81,9 +81,9 @@ class Params(BaseModel):
     epochs: int = Field(default=1, ge=1)
     # provider connection cap (0 = Inspect default).
     max_connections: int = Field(default=0, ge=0)
-    # per-sample message cap (0 = none).
+    # message cap for each sample (0 = none).
     message_limit: int = Field(default=0, ge=0)
-    # per-sample token cap (0 = none).
+    # token cap for each sample (0 = none).
     token_limit: int = Field(default=0, ge=0)
     # forwarded to Inspect's generate config as `seed` (arrives through $REPS_SEED).
     seed: int = 0

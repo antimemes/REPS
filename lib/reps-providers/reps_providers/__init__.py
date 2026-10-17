@@ -1,14 +1,14 @@
 """Typed access to the canonical provider registry (providers.toml, packaged here).
 
-The registry is DATA — see the TOML's own header for the vocabulary, the two var
+The registry is DATA — see the TOML's header for the vocabulary, the two var
 roles, and the layer rules. This module parses it into frozen kw-only dataclasses
-and validates the naming conventions; the roles themselves are structural, so there
-is nothing to infer. Zero dependencies, by design: the runner and the chat helper
-both consume this without dragging anything else in, and repo-side scripts that
-shouldn't take a dependency at all read the TOML directly.
+and validates the naming conventions; the roles themselves are structural, thus
+there is no role to infer. Zero dependencies, by design: the runner and the chat
+helper consume this without dragging in other packages, and repo-side scripts
+that must not take a dependency at all read the TOML directly.
 
-Model-name parsing and the served-model alias rule also live here so clients and
-saved-run audits use the same interpretation of routing prefixes.
+Model-name parsing and the served-model alias rule also live here for clients and
+saved-run audits to use the same interpretation of routing prefixes.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ class ApiKey:
 class BaseUrl:
     """The template's endpoint, always the plain API origin. `default` is offered
     at the setup prompt (Enter uses it) and used as the runtime fallback; empty
-    means setup and runtime both require an explicit value."""
+    means setup and runtime require an explicit value."""
 
     name: str
     default: str = ""
@@ -62,8 +62,8 @@ def _parse(text: str) -> tuple[dict[str, Provider], set[str]]:
 
 
 def _validate(providers: dict[str, Provider], mock_prefixes: set[str]) -> None:
-    # Naming conventions — the roles themselves are structural. Import-time so a
-    # bad entry can never ship.
+    # Naming conventions — the roles themselves are structural. Import-time, thus a
+    # bad entry cannot ship.
     for name, p in providers.items():
         assert name == p.name and name == name.lower() and "/" not in name, name
         for var in (p.api_key.name, p.base_url.name):
@@ -123,7 +123,8 @@ def served_model_matches(requested: str, served: str) -> bool:
 
 def model_family(served_model: str) -> str | None:
     """Recognize a model family by served name, independently of routing prefixes.
-    Only families with wire-level quirks are named; everything else is None."""
+    Only families with quirks in the serialized API shape are recognized; all other
+    families are None."""
     name = served_model.casefold()
     if re.match(r"(mistral|ministral|codestral|devstral|magistral|pixtral|voxtral)", name):
         return "mistral"

@@ -3,18 +3,18 @@
 # pyright strict enforces everything type-shaped, this enforces what pyright can't
 # express — WHICH escapes are allowed):
 #
-#   * `# type: ignore` in any form is banned (it's also inert: pyrightconfig sets
-#     enableTypeIgnoreComments=false, so it would be a dead comment anyway).
+#   * `# type: ignore` in all forms is banned (it is also inert: pyrightconfig sets
+#     enableTypeIgnoreComments=false, thus it is a dead comment anyway).
 #   * `# pyright:` file directives are banned except rule-scoped ignores — no bare
 #     `# pyright: ignore`, no per-file mode downgrades (`# pyright: basic`, or
 #     rule=false toggles). A file cannot opt out of strict.
 #   * rule-scoped ignores are ALLOWLISTED below: each rule earned its place by one
 #     of the two sanctioned reasons — runtime validation stronger than the static
-#     contract, or a named third-party typing gap. Adding a rule here is a policy
+#     contract, or a specified third-party typing gap. Adding a rule here is a policy
 #     change; make it in this file, in a reviewed diff, with the reason.
 #   * `cast()` is allowlisted BY FILE: it is only sanctioned at declared dynamic
-#     third-party boundaries. A new cast anywhere else fails here — either give the
-#     value a real type, or argue the file into the list.
+#     third-party boundaries. A new cast in a different file fails here — either
+#     give the value a real type, or argue the file into the list.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -23,8 +23,8 @@ PY_ROOTS=(runner/src lib/reps-testing/reps_testing lib/reps-events/reps_events l
 
 # Rules that MAY appear in `# pyright: ignore[...]`, and why:
 #   reportUnnecessaryIsInstance   emit-side runtime guards: callers are untyped
-#                                 experiment code, annotations enforce nothing there
-#   reportUnknownVariableType     third-party symbols whose own signatures carry
+#                                 experiment code, annotations have no effect there
+#   reportUnknownVariableType     third-party symbols whose signatures carry
 #                                 untyped parts (inspect_ai's eval / Scanner)
 #   reportUntypedClassDecorator   third-party decorators shipped untyped
 #                                 (inspect_ai's @hooks)

@@ -1,4 +1,4 @@
-"""One JSON line and one acknowledgement per Unix stream connection."""
+"""One JSON line and one acknowledgement for each Unix stream connection."""
 
 import json
 import os

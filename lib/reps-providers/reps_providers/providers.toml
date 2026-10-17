@@ -3,9 +3,9 @@
 #
 # A provider's name is the canonical model-id prefix: the provider's ORG name
 # (`google`, not the Gemini model family; `moonshotai`, matching their org).
-# A self-hosted engine is named by its serving stack: engines differ in hidden
+# A self-hosted engine's name is its serving stack: engines differ in hidden
 # sampling defaults, chat templates and quantization formats. The venue (laptop,
-# cluster, Vast) is a credential profile. Served names are the engine's own:
+# cluster, Vast) is a credential profile. Served names come from the engine:
 # the upstream repo id for vLLM (`vllm/Qwen/Qwen2.5-7B-Instruct`), the library
 # tag for Ollama (`ollama/qwen2.5:7b-instruct-fp16`).
 #
@@ -13,20 +13,20 @@
 #   api_key   the secret — hidden at the setup prompt, masked in listings.
 #             `required` (default true): a value must exist at runtime; consumers
 #             fail early and actionably when it does not. Local OpenAI-compatible
-#             servers (llama.cpp, vLLM, Ollama) may ignore auth, so openai, vllm and
-#             ollama allow an absent key — the chat client sends a placeholder
+#             servers (llama.cpp, vLLM, Ollama) can ignore auth, thus openai, vllm
+#             and ollama allow an absent key — the chat client sends a placeholder
 #             bearer when it is absent.
-#   base_url  the endpoint — always the PLAIN API origin the provider's own
+#   base_url  the endpoint — always the PLAIN API origin the provider's
 #             ecosystem expects for the var. `default` (default "") is offered at
 #             the setup prompt (Enter uses it) and used as the runtime fallback;
-#             no default means setup and runtime both require an explicit value.
+#             no default means setup and runtime require an explicit value.
 #
-# Everything else about a provider is a LAYER owned by its consumer, referencing
-# these facts by name and never restating them: foreign catalog spellings live in
+# All other provider data is a LAYER owned by its consumer, referencing
+# these facts by name and not restating them: foreign catalog spellings live in
 # lib/model-catalog/update.py; the chat client's compat-mount exceptions live in
 # reps_experiment.providers; framework tenants (inspect, litellm, ...) keep their
-# remaps in their own adapter libraries (reps-inspect), exceptions-only. This file
-# never mentions a tenant or a foreign catalog.
+# remaps in their adapter libraries (reps-inspect), exceptions-only. This file
+# does not mention a tenant or a foreign catalog.
 
 mock_prefixes = ["mock", "mockllm"]
 
@@ -71,9 +71,9 @@ api_key = { name = "OPENROUTER_API_KEY" }
 base_url = { name = "OPENROUTER_BASE_URL", default = "https://openrouter.ai/api/v1" }
 
 [providers.azureai]
-# No universal origin — the base URL is per-resource (the v1 surface,
+# No universal origin — the base URL differs for each resource (the v1 surface,
 # https://<resource>.openai.azure.com/openai/v1; model = your deployment name),
-# so it has no default: setup and runtime both require an explicit value.
+# thus it has no default: setup and runtime require an explicit value.
 api_key = { name = "AZUREAI_API_KEY" }
 base_url = { name = "AZUREAI_BASE_URL" }
 

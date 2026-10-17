@@ -42,8 +42,8 @@ import types
 import typing
 from pathlib import Path
 
-# names the family's own params own; a task kwarg with one of these names is
-# still reachable, but only through the task_args sub-form (where it
+# the names of the family's params; a task kwarg with one of these names is
+# stays reachable, but only through the task_args sub-form (where it
 # unambiguously means the TASK's kwarg)
 FAMILY_PARAMS = {"model", "limit", "epochs", "task_args", "generate_args", "seed"}
 
@@ -138,8 +138,9 @@ def eval_links(ev, tag: str) -> list[dict]:
     """Upstream's declared link metadata -> [{label, url}] for the experiment page.
 
     `arxiv` is upstream's reference-URL field (not always arxiv); `path` is the
-    eval's directory in the upstream repo, linked at the PINNED tag so the docs
-    match what actually runs; huggingface external assets carry the dataset id.
+    eval's directory in the upstream repo, linked at the PINNED tag to make the
+    docs match the code that actually runs; huggingface external assets carry the
+    dataset id.
     direct_url/git_clone assets are fetch templates (`{SHA}` placeholders), not
     browsable pages — skipped, they are captured by upstream's pinning, not links.
     """
@@ -177,7 +178,7 @@ def main() -> int:
     from inspect_evals.metadata import load_listing
 
     # identity fallback for registry-only tasks (no eval.yaml): the package version —
-    # conservative, they re-version on every release
+    # conservative, they re-version on each release
     pkg_version = f"inspect-evals-{importlib.metadata.version('inspect-evals')}"
     # upstream tags releases vX.Y.Z — source links point at the pinned tag
     pin_tag = f"v{importlib.metadata.version('inspect-evals')}"
@@ -213,8 +214,8 @@ def main() -> int:
                 "dataset_samples": t.dataset_samples,
                 "links": eval_links(ev, pin_tag),
             }
-    # registered but absent from the listing: still real, still runnable — carry
-    # them with docstring summaries so the catalog never silently drops a task
+    # registered but absent from the listing: real and runnable — carry them with
+    # docstring summaries, thus the catalog does not silently drop a task
     for name, fn in registered.items():
         if name not in tasks:
             params, kwargs_of, excluded = task_params(fn)
@@ -240,9 +241,10 @@ def main() -> int:
     }
     path = Path(__file__).resolve().parent.parent / "task_catalog.json"
     # comparability diff vs the previous catalog — the advisory seed: identity
-    # deliberately over-fragments on any pin bump, and read-time pooling re-unifies
-    # by default; each DECLARED version bump printed here is a candidate for a
-    # split advisory scoped to that eval (a release note, not an identity input)
+    # deliberately fragments more than necessary on each pin bump, and read-time
+    # pooling re-unifies by default; each DECLARED version bump printed here is a
+    # candidate for a split advisory scoped to that eval (a release note, not an
+    # identity input)
     previous = json.loads(path.read_text())["tasks"] if path.exists() else {}
     for name, t in tasks.items():
         old = previous.get(name, {}).get("version")

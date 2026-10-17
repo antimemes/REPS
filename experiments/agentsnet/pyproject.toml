@@ -3,10 +3,10 @@ name = "agentsnet-adapter"
 version = "0.1.0"  # version string does not increment, rely on git hash
 description = "AgentsNet (Grötschla et al. 2025): the authors' released code, wrapped as a REPS experiment."
 requires-python = ">=3.13"
-# The authors pin nothing (README: `pip install datasets langchain langgraph
+# The authors pin no package (README: `pip install datasets langchain langgraph
 # langchain-openai langchain-ollama langchain-google-genai langchain-anthropic
 # pandas scipy networkx numpy==1.26.4`). The venv takes each package at the last
-# release before the paper and the pinned commit (2025-07-15/16), so the imports
+# release before the paper and the pinned commit (2025-07-15/16). Thus the imports
 # the code was written against (`langchain.schema`, `langchain.chat_models.
 # init_chat_model`, langgraph's MessagesState/MemorySaver) resolve as they did
 # then; langchain 1.0 removed `langchain.schema`. numpy 1.26.4 has no Python

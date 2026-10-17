@@ -69,7 +69,7 @@ class Event[EventType: str = str](Model):
         return schema
 
 
-# Covariant containers for shared API annotations. Open wire objects use
+# Covariant containers for shared API annotations. Open serialized objects use
 # dict[str, Any] because adapters pass provider-owned JSON with arbitrary shapes.
 type Json = Mapping[str, "Json"] | Sequence["Json"] | str | int | float | bool | None
 type Scalar = int | float | str | bool

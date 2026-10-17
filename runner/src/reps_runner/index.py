@@ -1,4 +1,4 @@
-"""Build a local index directory from experiment buckets, using only ListObjectsV2 and GetObject."""
+"""Build a local index directory from experiment buckets, with only ListObjectsV2 and GetObject."""
 
 from __future__ import annotations
 
@@ -135,8 +135,8 @@ def cache_path(cache: Path | None, store: Store, key: str, etag: str) -> Path | 
         return None
     profile = "default" if store.profile is None else store.profile
     parts = f"{profile}/{store.target.bucket}/{key}".split("/")
-    # Reject ambiguous segments instead of using normpath, which can merge distinct
-    # S3 keys into one cache entry. ETags need not be unique across objects, so
+    # Reject ambiguous segments instead of normpath, which can merge distinct
+    # S3 keys into one cache entry. ETags need not be unique across objects, thus
     # bypass the cache for these keys.
     if "/" in profile or any(part in {"", ".", ".."} for part in parts):
         return None
@@ -207,7 +207,7 @@ def collect(stores: list[Store], cache: Path | None = None, dry_run: bool = Fals
                 name = identity["experiment"]
                 if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", name):
                     raise PublishError("invalid experiment name")
-                # A known run filtered out of this index is still present in the store.
+                # A known run filtered out of this index stays present in the store.
                 unseen.discard(run)
                 if any(identity[field] not in store.filters[plural]
                        for plural, field in (("experiments", "experiment"), ("conditions", "condition"), ("runs", "run"))
@@ -262,7 +262,7 @@ def read_catalog(directory: Path, names: list[str]) -> tuple[dict[str, Json], di
 def build(stores: list[Store], directory: Path, catalog: Path, dry_run: bool, cache: Path | None = None) -> None:
     if not catalog.is_dir():
         raise PublishError(f"--catalog must be an existing directory: {catalog}")
-    # Read every source before replacing any destination projection.
+    # Read each source before the first destination projection is replaced.
     grouped = collect(stores, cache, dry_run)
     manifests, assets = read_catalog(catalog, list(grouped))
     objects = {f"experiments/{name}/index.jsonl": b"".join(rows)
@@ -277,7 +277,7 @@ def build(stores: list[Store], directory: Path, catalog: Path, dry_run: bool, ca
             shutil.rmtree(directory)
         directory.mkdir(parents=True)
     for key, source in assets.items():
-        # Path.walk follows the linkFarm and any nested asset-directory symlinks.
+        # Path.walk follows the linkFarm and all nested asset-directory symlinks.
         for parent, dirs, files in source.walk(follow_symlinks=True):
             dirs.sort()
             for name in sorted(files):

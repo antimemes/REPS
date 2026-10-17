@@ -1,6 +1,6 @@
 """Concordia's run record -> REPS events. A pure function of plain data (the roster, the
-premise, and one (step, actor, action) tuple per turn), so it needs no Concordia import
-and its test can feed hand-built inputs.
+premise, and one (step, actor, action) tuple for each turn). Thus it needs no Concordia
+import and its test can feed hand-built inputs.
 
 Opening narration, agent actions, and observations use experiment-specific custom
 events. Their meanings follow Concordia's recorded data.
@@ -11,8 +11,8 @@ from __future__ import annotations
 from reps_events import CustomEvent, Result, emit
 
 # The narrator's display name — sits next to roster names ("Alice", "Bob") in the
-# transcript, so it's spelled like one. main.py names the Concordia game-master
-# entity with the same string, so every GM-attributed event carries one name.
+# transcript, thus it is spelled like one. main.py names the Concordia game-master
+# entity with the same string, thus each GM-attributed event carries one name.
 GM_NAME = "Game Master"
 
 
@@ -39,7 +39,7 @@ def emit_provenance(*, concordia_version: str, model: str,
 def _strip_leading_name(actor: str, action: str) -> str:
     """Clean an action into a spoken line: drop the actor-name prefix Concordia adds
     ("Alice: hello" / "Alice hello" — `from` already carries the actor), the "-- " speech
-    marker, and matched wrapping quotes. Returns empty if nothing meaningful stays (the
+    marker, and matched wrapping quotes. Returns empty if no meaningful text stays (the
     caller skips empty turns)."""
     text = action.strip()
     if text.startswith(actor):
@@ -63,8 +63,8 @@ def emit_scene(premise: str) -> int:
 
 def emit_turn(step: int, actor: str, action: str, roster: set[str]) -> int:
     """Keep one resolved agent action as a custom event, live. Skips
-    setup/skip phases (a non-roster actor) and empty actions. Returns 1 if emitted, else 0.
-    Preserve the engine action verbatim; do not classify every action as speech."""
+    setup/skip phases (a non-roster actor) and empty actions. Returns 1 if emitted, 0 if not.
+    Preserve the engine action verbatim; do not classify all actions as speech."""
     if actor not in roster:
         return 0
     content = _strip_leading_name(actor, action)
@@ -77,10 +77,10 @@ def emit_turn(step: int, actor: str, action: str, roster: set[str]) -> int:
 
 
 # The allowlist of per-entity Concordia components whose values are semantically part
-# of the experiment — what a researcher would cite, distinct from the llm.call process
-# record (which stays complete but is not required reading). GM bookkeeping (terminate,
-# next_acting, action specs, its repeated summaries) is deliberately absent: framework
-# noise, auditable through llm.calls only.
+# of the experiment — the values a researcher can cite, distinct from the llm.call
+# process record (which stays complete but is not required reading). GM bookkeeping
+# (terminate, next_acting, action specs, its repeated summaries) is deliberately
+# absent: framework noise, auditable through llm.calls only.
 _PERCEPTION_COMPONENTS = {
     "SelfPerception": "self",
     "SituationPerception": "situation",
@@ -91,15 +91,15 @@ _PERCEPTION_COMPONENTS = {
 class TurnEmitter:
     """`play()`'s step_callback: emit each resolved turn as a native action, drain the
     engine's raw_log into the semantic events (observations, per-turn perceptions),
-    and count what landed. Concordia passes a StepData; only its (step, acting_entity,
-    action) triple is read, so tests can feed any plain object. Pass `self.raw_log` to
-    `play(raw_log=...)` and call `drain()` once after play returns.
+    and count the events that landed. Concordia passes a StepData; only its (step,
+    acting_entity, action) triple is read, thus tests can feed plain objects. Pass
+    `self.raw_log` to `play(raw_log=...)` and call `drain()` one time after play returns.
 
-    Semantic tier, per acting turn: a concordia.observation custom event for
+    Semantic tier, for each acting turn: a concordia.observation custom event for
     each observation newly written to that agent's memory (the raw_log lists a rolling
-    window, so a per-agent high-water mark emits each observation exactly once), and
-    one `concordia.perception` with the agent's current self/situation/
-    dynamics readings (evolving state — each value emitted the turn it's calculated)."""
+    window, thus a per-agent high-water mark emits each observation exactly one time),
+    and one `concordia.perception` with the agent's current self/situation/
+    dynamics readings (evolving state — each value emitted the turn it is calculated)."""
 
     def __init__(self, roster: set[str]) -> None:
         self.roster = set(roster)
@@ -143,7 +143,7 @@ class TurnEmitter:
             for text in window[seen:]:
                 content = str(text).removeprefix("[observation]").strip()
                 # `Event: ...` is event_resolution's record of the resolved public
-                # turn, copied by the engine into every agent's memory — the same
+                # turn, copied by the engine into each agent's memory — the same
                 # action the step callback already retained as a native event.
                 # Bookkeeping, not perception: only narrated observations are
                 # semantic here.
@@ -154,7 +154,7 @@ class TurnEmitter:
             self._obs_seen[agent] = max(seen, len(window))
 
             # the agent's current read of itself and the scene, this turn (perception
-            # components log their text under 'State'; memory-window ones under 'Value')
+            # components log their text in 'State'; memory-window ones in 'Value')
             perception = {
                 field: str(value).strip()
                 for comp, field in _PERCEPTION_COMPONENTS.items()

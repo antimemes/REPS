@@ -7,10 +7,10 @@
 #     -A experiment-inspect-hello
 #
 # Provenance: git stamps the commit hash into .git-revision when generating an
-# archive (export-subst — GitHub tarballs included), so tarball builds know their
+# archive (export-subst — GitHub tarballs included). Thus tarball builds know their
 # rev and runs record a real fetchable ref. In a checkout the placeholder stays
 # unexpanded and runs omit fetch_ref — a working tree has no pinned clean rev. The
-# `repsRev` argument overrides the stamp (the fetchGit flow states its own rev).
+# `repsRev` argument overrides the stamp (the fetchGit flow states its rev).
 let
   lockedSources = import ./pkgs/locked-sources.nix { };
   stampRev =
@@ -45,8 +45,8 @@ runnables
 
   # `exec.<name>`: the classic mirror of the flake's APP namespace — bare names for
   # experiments, reps- prefix for tools, exactly like `nix run .#<name>`. The output
-  # IS the executable (a symlink resolved through lib.getExe, i.e. meta.mainProgram), so
-  # the flakeless one-liner needs no binary-name knowledge:
+  # IS the executable (a symlink resolved through lib.getExe, i.e. meta.mainProgram).
+  # Thus the flakeless one-liner needs no binary-name knowledge:
   #   $(nix-build --no-out-link -A exec.inspect-hello) --set …
   exec = lib.mapAttrs
     (name: drv: pkgs.runCommand "exec-${name}" { } "ln -s ${lib.getExe drv} $out")

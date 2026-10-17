@@ -138,7 +138,7 @@ def test_govsim_hint_paths_are_declared_for_typed_data():
         data = schema.get("properties", {}).get("data", {})
         if data.get("$ref", "").endswith("/RecordData"):
             # Open native rows have no declared fields; the real log fixture
-            # above checks every one of their paths against actual evidence.
+            # above checks each one of their paths against actual evidence.
             continue
         from reps_events import RenderHint
         hint = RenderHint.model_validate(schema["x-reps-render"]) if "x-reps-render" in schema else None

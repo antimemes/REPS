@@ -1,7 +1,7 @@
 /* <reps-events>: one run's event stream, rendered from parsed envelopes.
  *
  * This element is the embeddable part of the REPS preview; adb-site mounts it
- * later in place of its own stream, so its surface is fixed here:
+ * later in place of its stream, thus its surface is fixed here:
  *
  *   append(records)        parsed envelopes ({v, ts, run, experiment, schema, seq,
  *                          event}); rendered in seq order, kept across calls.
@@ -10,14 +10,14 @@
  *   streaming (attribute)  shows a live indicator while set.
  *   "expand" (DOM event)   detail {seq}; dispatched when a user opens a record
  *                          the element knows is elided (the record carries
- *                          `elided: true`, set by the transport, never by the
- *                          wire vocabulary). The host fetches and calls replace().
+ *                          `elided: true`, set by the transport, not by the
+ *                          serialized vocabulary). The host fetches and calls replace().
  *
  * Theming: CSS custom properties on the host element, defaults below:
  *   --reps-bg, --reps-fg, --reps-muted, --reps-accent, --reps-mono
  *
- * The element never fetches, never reads `location`: hosts are the transports.
- * Everything from a record is inserted as text, never as markup.
+ * The element does not fetch, does not read `location`: hosts are the transports.
+ * Everything from a record is inserted as text, not as markup.
  */
 
 const STYLE = `
@@ -257,7 +257,7 @@ class RepsEvents extends HTMLElement {
     if (!Array.isArray(records)) records = [records];
     for (const record of records) {
       if (!record || typeof record.seq !== "number") continue;
-      if (this._rows.has(record.seq)) continue;  // a transport may re-send what it has shown
+      if (this._rows.has(record.seq)) continue;  // a transport can re-send records it has shown
       const row = this._buildRow(record);
       const entry = { record, row };
       this._rows.set(record.seq, entry);

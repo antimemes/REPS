@@ -1,4 +1,4 @@
-"""Staging the authors' code and reading what it writes.
+"""Staging the authors' code and reading the files it writes.
 
 The authors ran `python main.py` from a checkout: `LiteralMessagePassing`,
 `utils` and `main` importable from the repository root, graphs fetched from the
@@ -7,10 +7,10 @@ repository that package.nix pins by revision (upstream.json): the packaged
 launcher names it with AGENTSNET_UPSTREAM (its revision with
 AGENTSNET_UPSTREAM_REV) and the dataset file with AGENTSNET_DATASET; a developer
 points the same variables at a checkout and a downloaded parquet. Each run
-copies the tree into the run directory and works from there, so the layout the
-authors ran from is reproduced and nothing in the store is written to. The
+copies the tree into the run directory and works from there. Thus the layout
+the authors ran from is reproduced and no file in the store is written to. The
 copy is edited only by the fix patches a run switches on (AGENTSNET_PATCHES
-names their directory, one `<param>.patch` per switch); otherwise the adapter
+names their directory, one `<param>.patch` for each switch); otherwise the adapter
 only swaps module attributes at import time (monkeypatches.py).
 """
 
@@ -32,7 +32,7 @@ from .models import AgentsNetUpstreamRecord, UpstreamRecordData
 ENV_TREE = "AGENTSNET_UPSTREAM"          # the authors' tree: the pinned store path, or a checkout
 ENV_REV = "AGENTSNET_UPSTREAM_REV"       # its git revision, when the launcher knows it
 ENV_DATASET = "AGENTSNET_DATASET"        # the parquet file of graph instances (dataset.json)
-ENV_PATCHES = "AGENTSNET_PATCHES"        # the fix patches, one <param>.patch per switch
+ENV_PATCHES = "AGENTSNET_PATCHES"        # the fix patches, one <param>.patch for each switch
 ARTIFACT_KIND = "agentsnet.artifact"
 UPSTREAM_MODULES = ("main", "LiteralMessagePassing", "utils", "generate_graphs", "chat_tool")
 # left out of the copy: caches, anything a previous run wrote, the README image
@@ -82,12 +82,12 @@ def stage(run_dir: Path, *, better_reprompting: bool, patch_crash_on_all_no: boo
         shutil.rmtree(work)
     shutil.copytree(upstream_tree(), work, ignore=IGNORE)
     # the pinned tree is a read-only store path and copytree keeps its modes; the
-    # authors' code writes results beside itself
+    # authors' code writes results beside its source files
     for directory, _subdirs, filenames in os.walk(work):
         os.chmod(directory, 0o755)
         for filename in filenames:
             os.chmod(os.path.join(directory, filename), 0o644)
-    if better_reprompting:               # name order, as tests/default.nix checks every combination
+    if better_reprompting:               # name sequence, as tests/default.nix checks each combination
         _apply_patch(work, "better_reprompting")
     if patch_crash_on_all_no:
         _apply_patch(work, "patch_crash_on_all_no")

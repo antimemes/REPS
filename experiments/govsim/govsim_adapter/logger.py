@@ -1,17 +1,17 @@
 """RepsLogger — upstream's WandbLogger, neutralized and translated to REPS events.
 
-Subclass, not fork (extend-tool-as-library): ``debug=True`` is forced, so
-``wandb.init(mode="disabled")`` makes every trace/log upstream fires a no-op —
+Subclass, not fork (extend-tool-as-library): ``debug=True`` is forced. Thus
+``wandb.init(mode="disabled")`` makes each trace/log upstream fires a no-op —
 no network, no files. On top of that:
 
 * ``get_agent_chain`` maps names to configured persona IDs; ``start_chain``
   attributes framework calls to their query component and records phase/query
   metadata. One backend serves all personas, matching upstream's single-LLM shape.
-* ``log_game`` (the per-step hook every scenario ``run()``/env already calls)
-  collects the round's stats and emits one ``govsim.state`` event per round;
+* ``log_game`` (the per-step hook each scenario ``run()``/env already calls)
+  collects the round's stats and emits one ``govsim.state`` event for each round;
   its ``resource`` field is the chartable pool series.
 
-Round boundaries are inferred from the stats stream itself: a
+Round boundaries are inferred from the stats stream: a
 ``conversation_resource_limit`` key closes the round (the restaurant phase), and
 a repeated ``*_collected_resource`` key means a new round began — which covers
 the no-language perturbation, whose phase cycle drops the restaurant step. The
@@ -58,7 +58,7 @@ class RepsLogger(WandbLogger):
         return super().get_agent_chain(agent_name, phase_name)
 
     def start_chain(self, chain_name):
-        # ModelWandbWrapper calls these two hooks in order, before any request.
+        # ModelWandbWrapper calls these two hooks in sequence, before each request.
         phase, query = chain_name.split("::", 1)
         self._backend.client.agent = (
             f"framework/{_FRAMEWORK_QUERIES[query]}"
@@ -90,7 +90,7 @@ class RepsLogger(WandbLogger):
         for key, value in stats.items():
             self._collected[key[: -len(_COLLECTED)]] = value
         # latch the pool alongside stats: the round's LAST stats-bearing step
-        # observes the post-harvest pool (the survival-relevant series), never
+        # observes the post-harvest pool (the survival-relevant series), not
         # the post-doubling value the next round opens with
         if stats or _LIMIT in kwargs:
             self._pool = kwargs.get("num_resource", self._pool)

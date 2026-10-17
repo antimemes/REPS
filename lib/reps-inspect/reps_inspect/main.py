@@ -2,7 +2,7 @@
 
     reps-inspect-eval CONFIG.json
 
-One run = one `inspect_ai.eval(...)` over one task. The adapter merges $REPS_SEED
+One run = one `inspect_ai.eval(...)` on one task. The adapter merges $REPS_SEED
 into the params and hands us this config; we resolve the task, run the eval into a
 private log dir, translate the EvalLog (translate.py), and deposit the raw `.eval`
 log as an artifact. Execution failures preserve available evidence and return
@@ -35,7 +35,7 @@ _ZERO = {"samples": 0, "completed": 0, "errors": 0,
 def resolve_task(spec: str):
     """`pkg:<module>:<attr>` -> the imported @task callable (how a family selects a
     task function from an installed package, e.g. `pkg:impossiblebench:impossible_swebench`);
-    anything else (registry id or `path/file.py@task_fn`) passes through to Inspect
+    all other specs (registry id or `path/file.py@task_fn`) pass through to Inspect
     verbatim."""
     if spec.startswith("pkg:"):
         modname, sep, attr = spec[4:].partition(":")
@@ -93,12 +93,12 @@ def deposit_log(log_obj: Any, run_dir: Path) -> None:  # Any: EvalLog, whose imp
 class PrintStream(io.TextIOBase):
     """Solver prints, captured at the source and re-emitted as `stdout` events.
 
-    Inspect runs samples concurrently in one process, so raw prints interleave
+    Inspect runs samples concurrently in one process, thus raw prints interleave
     unattributably; capturing at print time lets us read inspect's active-sample
     contextvar and tag each line with the sample that printed it. (The runner
-    normally synthesizes `stdout` events itself — this emits the same type one
-    hop earlier, where the attribution still exists; anything that escapes this
-    capture still becomes a runner-synthesized line.) Tagged lines are submitted
+    normally synthesizes `stdout` events — this emits the same type one hop
+    earlier, where the attribution continues to exist; anything that escapes this
+    capture becomes a runner-synthesized line.) Tagged lines are submitted
     through the event socket."""
 
     def __init__(self) -> None:
@@ -141,7 +141,7 @@ def _run(params: Params) -> int:
     work = Path.cwd()
     log_dir = work / "inspect-logs"
 
-    # imported lazily so a config/param error reports cleanly before the heavy
+    # imported lazily to let a config/param error report cleanly before the heavy
     # numpy/inspect_ai import chain runs
     # upstream's `eval` signature carries an untyped Scanner param, which strict
     # counts against anyone importing it — their gap, scoped suppression here
@@ -153,12 +153,12 @@ def _run(params: Params) -> int:
     streamed: set[str] = set()
     live: dict[str, SampleTranscript] = {}
 
-    # STREAM: run_eval blocks through the whole eval, so emit as it goes — a status
-    # when each sample starts, each completed native transcript prefix, and a final
+    # STREAM: run_eval blocks through the whole eval, thus emit as it goes — a status
+    # when each sample starts, each completed native transcript prefix, and a last
     # reconciliation pass. A raw ModelEvent and its derived call stay adjacent.
     # hook `data` params are Any on purpose: their classes ride the pinned inspect
     # version and this bridge duck-types them (getattr-guarded) rather than binding
-    # to one release's names. The decorator itself is untyped upstream.
+    # to one release's names. The decorator is untyped upstream.
     @hooks(name="reps-stream", description="stream REPS events as the eval runs")  # pyright: ignore[reportUntypedClassDecorator]
     class RepsStream(Hooks):
         async def on_sample_start(self, data: Any) -> None:
@@ -186,7 +186,7 @@ def _run(params: Params) -> int:
             except Exception as exc:  # a bad sample must not kill the eval
                 emit(Log(message=f"stream: sample emit failed: {exc}", level="warn"))
 
-    _ = RepsStream  # registered by the decorator's side effect, never referenced
+    _ = RepsStream  # registered by the decorator's side effect, not referenced
 
     task = resolve_task(params.task)
     emit(
@@ -209,7 +209,7 @@ def _run(params: Params) -> int:
 
     log_obj = logs[0]
     emit_provenance(log_obj, agent)
-    # fallback: emit any sample the hook did not stream (hook disabled / raced)
+    # fallback: emit each sample the hook did not stream (hook disabled / raced)
     for sample in log_obj.samples or []:
         if getattr(sample, "uuid", None) not in streamed:
             emit_sample(sample, agent)
@@ -234,11 +234,11 @@ def _emit_zero() -> None:
 
 
 def main() -> int:
-    # the task's own prints (solver progress etc.) must not sit in a block buffer
+    # the task's prints (solver progress etc.) must not sit in a block buffer
     # until the next event flush pushes them out — the runner reads this pipe live
     try:
         # duck-typed: reconfigure exists on TextIOWrapper stdouts (a real console
-        # or pipe), not on every TextIO stand-in (pytest's capture, StringIO)
+        # or pipe), not on each TextIO stand-in (pytest's capture, StringIO)
         reconfigure = getattr(sys.stdout, "reconfigure", None)
         if callable(reconfigure):
             reconfigure(line_buffering=True)

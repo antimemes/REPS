@@ -1,8 +1,8 @@
 """agentsnet schema 0: shared technical events and the typed observations the
 adapter emits around the authors' code.
 
-This module imports nothing from the authors' tree or LangChain so the
-build-time schema export can import it on its own.
+This module has no import from the authors' tree or LangChain, to let the
+build-time schema export import it alone.
 """
 
 from typing import Annotated, ClassVar, Literal
@@ -58,12 +58,12 @@ class MessageData(Model):
     sender: str
     recipient: str
     text: str
-    delivered: bool                    # upstream delivers only to neighbours named by the recipient's name
+    delivered: bool                    # upstream delivers only to neighbours with the recipient's name
 
 
 class AnswerData(Model):
     agent: str
-    answer: str | None = None          # None (omitted on the wire): unparseable after the re-prompt; upstream scores it as None
+    answer: str | None = None          # None (omitted when serialized): unparseable after the re-prompt; upstream scores it as None
     valid: bool                        # among upstream's valid answers for that agent
 
 

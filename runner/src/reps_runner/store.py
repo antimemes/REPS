@@ -18,7 +18,7 @@ from reps_events.identity import RunId
 
 
 def condition_name(condition: str, experiment: str) -> str:
-    """A storage name, derived from record fields; never decoded by splitting it."""
+    """A storage name, derived from record fields; not decoded by splitting it."""
     if not re.fullmatch(r"[A-Za-z0-9_-]+", condition) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", experiment):
         raise ValueError("invalid condition or experiment path component")
     return f"{condition}-{experiment}"
@@ -41,8 +41,8 @@ def write_json_atomic(path: Path, obj: Any) -> None:
 
 
 def find_run(home: Path, run_id: str) -> Path | None:
-    """Locate a run directory by its whole ID. Run ids are globally unique but stored under
-    their condition, so the condition segment is globbed."""
+    """Locate a run directory by its whole ID. Run ids are globally unique but stored in
+    their condition directory, thus the condition segment is globbed."""
     matches = sorted((home / "runs").glob(f"*/{run_id}"))
     return matches[0] if matches else None
 

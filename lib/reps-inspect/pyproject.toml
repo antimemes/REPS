@@ -2,8 +2,8 @@
 # an inspect_ai eval and translates its EvalLog into REPS events. Experiment families
 # (experiments/hello, experiments/impossiblebench, …) depend on this library and add
 # the package that provides their tasks; the family's adapter bakes the task spec
-# (`pkg:<module>:<attr>`) into the config. Shared infra: NOT part of any experiment's
-# content identity — wrapper versions are recorded per run as covariates instead.
+# (`pkg:<module>:<attr>`) into the config. Shared infra: NOT part of an experiment's
+# content identity — wrapper versions are recorded for each run as covariates instead.
 [project]
 name = "reps-inspect"
 version = "0.1.0"
@@ -11,16 +11,16 @@ description = "Run an Inspect (inspect_ai) eval as a REPS experiment program —
 requires-python = ">=3.13"
 dependencies = [
     # Since 0.3.184, input_tokens excludes cache reads/writes. Keep that semantic
-    # floor; exact versions are locked and recorded per run as provenance.
+    # floor; exact versions are locked and recorded for each run as provenance.
     "inspect-ai>=0.3.184,<0.4",
-    # Every API-backed inspect provider SDK, installed uniformly: one env serves all
-    # providers (and mixed-provider multiagent runs), so the environment never varies
-    # with the model param. Lower bounds mirror inspect's own runtime version checks
+    # Each API-backed inspect provider SDK, installed uniformly: one env serves all
+    # providers (and mixed-provider multiagent runs). Thus the environment does not vary
+    # with the model param. Lower bounds mirror inspect's runtime version checks
     # (model/_providers/providers.py at the locked inspect-ai). Local-inference
     # providers (hf, vllm, sglang, llama-cpp-python, transformer_lens) are deliberately
     # excluded — they pull torch-scale stacks and change machine requirements; a family
-    # that wants one must declare it explicitly in its own pyproject.
-    # `openai` also powers every OpenAI-compatible provider (openai-api, openrouter,
+    # that wants one must declare it explicitly in its pyproject.
+    # `openai` also powers all OpenAI-compatible providers (openai-api, openrouter,
     # together, fireworks, ollama, moonshot, perplexity, cloudflare, …) through base_url.
     # The locked Inspect HTTP providers import httpx2 and newer Responses types.
     "openai>=3.24.0",
@@ -49,7 +49,7 @@ reps-providers = { path = "../reps-providers" }
 
 # Non-editable path-dep consumers (the inspect experiment families) rebuild only
 # when the cache key changes, and uv's default key is pyproject.toml alone — key
-# on the sources so edits propagate.
+# on the sources to let edits propagate.
 [tool.uv]
 cache-keys = [{ file = "pyproject.toml" }, { file = "reps_inspect/**/*.py" }, { file = "reps_inspect/py.typed" }]
 [project.scripts]

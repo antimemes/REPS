@@ -1,13 +1,13 @@
-"""The authors' per-run numbers and the per-round messages, read from their own
+"""The authors' per-run numbers and the per-round messages, read from their
 objects after the run.
 
-Upstream keeps, per node, the full LangChain conversation (`chat_history`, the
+Upstream keeps, for each node, the full LangChain conversation (`chat_history`, the
 `messages_to_dict` form) and the last parsed JSON object (`messages`); it
 writes the former as `transcripts` in its results JSON. The per-round messages
-are reconstructed by walking each transcript the way upstream's own
-`chat_tool.py` reads it: every AI reply that follows a round prompt is parsed
+are reconstructed by walking each transcript the way upstream's
+`chat_tool.py` reads it: each AI reply that follows a round prompt is parsed
 with upstream's `parse_messages`, and a reply to a re-prompt replaces the one
-that failed, so each round's object is the one upstream delivered.
+that failed. Thus each round's object is the one upstream delivered.
 """
 
 from __future__ import annotations
@@ -23,8 +23,9 @@ RETRY_ANSWER = "Your answer could not be parsed"
 
 def round_messages(history: list[dict], parse: Callable[[str], Optional[dict]]) -> list[dict[str, str]]:
     """`history[i]` is a LangChain message dict ({"type": "human"|"ai"|"system",
-    "data": {"content": ...}}). Returns one object per message round (index 0 =
-    round 1), {} where upstream parsed nothing even after the re-prompt."""
+    "data": {"content": ...}}). Returns one object for each message round
+    (index 0 = round 1), {} where upstream parsed no object even after the
+    re-prompt."""
     rounds: list[dict[str, str]] = []
     phase = None   # "messages" | "final" | None
     for entry in history:

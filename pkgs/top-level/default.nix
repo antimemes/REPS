@@ -1,17 +1,17 @@
-# The wiring: experiments/ is autoimported into a callPackage scope; REPS's own tools
-# are defined here, all-packages.nix style. Entries are functions over their
+# The wiring: experiments/ is autoimported into a callPackage scope; REPS's tools
+# are defined here, all-packages.nix style. Entries are functions of their
 # dependencies; the scope injects them by argument name and makes everything
 # overridable.
 #
 # The registry convention:
 #
-#   experiments/<dir>/package.nix → an attrset of experiments, one attr per
-#   experiment name. One directory usually declares one experiment, but may declare
+#   experiments/<dir>/package.nix → an attrset of experiments, one attr for each
+#   experiment name. One directory usually declares one experiment, but can declare
 #   several backed by the same code (impossiblebench, inspect_evals). Each value is
 #   an reps.mkExperiment result ({ app, manifest, name }).
 #
 # experiments/ holds experiment code only; everything REPS-specific (this wiring,
-# build-support, tool packaging) lives under pkgs/ and the tools' own source trees
+# build-support, tool packaging) lives in pkgs/ and the tools' source trees
 # (runner/).
 { pkgs, pyproject-nix, uv2nix, pyproject-build-systems, rev ? null, narHash ? null }:
 
@@ -44,8 +44,8 @@ let
         inherit origin rev narHash;
       };
 
-      # REPS's own tools; the reps- prefix keeps them out of the registry's bare namespace.
-      # The runner packages itself from its own uv.lock (uv2nix) — see runner/default.nix,
+      # REPS's tools; the reps- prefix keeps them out of the registry's bare namespace.
+      # The runner is packaged from its uv.lock (uv2nix) — see runner/default.nix,
       # including why its workspace import cannot go through reps.cleanImport.
       reps-runner = final.callPackage ../../runner { };
 
@@ -67,7 +67,7 @@ let
           reps = final.reps // {
             mkExperiment = args: let experiment = final.reps.mkExperiment (args // {
               readme = if hasMarkdown then builtins.readFile markdown else null;
-              # Package committed images; illustration tools are never build inputs.
+              # Package committed images; illustration tools are not build inputs.
               readmeAssets = lib.cleanSourceWith {
                 src = directory;
                 name = "reps-readme-assets-${name}";
@@ -88,7 +88,7 @@ let
         }))
       (lib.genAttrs dirNames (_: null)));
 
-  # flatten the per-directory sets into the experiment registry, refusing name
+  # flatten each directory's set into the experiment registry, refusing name
   # collisions (callPackage decorates each set with override/overrideDerivation —
   # drop those)
   registry = lib.foldl'

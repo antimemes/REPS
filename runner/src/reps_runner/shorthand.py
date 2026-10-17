@@ -2,8 +2,8 @@
 
     VALUE := JSON | @path | bare-string
 
-JSON parses as JSON; `@path` reads the file (JSON if it parses, else the raw text is
-the string value); anything else is a bare string. A value that *looks* like JSON
+JSON parses as JSON; `@path` reads the file (JSON if it parses, if not the raw text is
+the string value); all other input is a bare string. A value that *looks* like JSON
 (`[`/`{` first) but does not parse fails loudly rather than silently becoming a string.
 """
 

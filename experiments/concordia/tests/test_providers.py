@@ -1,6 +1,6 @@
 """The provider table (shared: reps_experiment.providers): pure resolution from
 (model id, env) to an endpoint. Exercised from this experiment's suite — the lib
-has no test harness of its own yet."""
+has no test harness yet."""
 
 import pytest
 
@@ -12,7 +12,7 @@ def test_openai_env_overrides_default_and_tolerates_no_key():
     assert ep.base_url == "http://llama.local:11434/v1"
     assert ep.served_model == "qwen3.5-9b"
     assert ep.api_key == "dummy"  # local servers ignore the bearer token
-    # nothing set at all: fall back to the registry default, like the OpenAI SDK does
+    # no env var set at all: fall back to the registry default, like the OpenAI SDK does
     ep = resolve("openai/gpt-4o", {})
     assert ep.base_url == "https://api.openai.com/v1"
 

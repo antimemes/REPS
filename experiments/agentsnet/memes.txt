@@ -21,3 +21,4 @@ perozzi       # Bryan Perozzi, an AgentsNet author
 recipient     # the agent a message is addressed to; the `recipient` field of `agentsnet.message`, paired with `sender`
 scipy         # the Python scientific library upstream imports (scipy.spatial)
 tönshoff      # Jan Tönshoff, an AgentsNet author
+final           # the phase after the message rounds, when each agent gives its answer; also "final answer"

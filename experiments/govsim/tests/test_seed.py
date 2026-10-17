@@ -33,7 +33,7 @@ def test_run_passes_effective_seed_to_environment(
         received.append(seed)
         original_reset(self, seed=seed, options=options)
         # Stop before the first persona action, keeping the real adapter and
-        # upstream construction path without making any model calls.
+        # upstream construction path with no model calls.
         raise ReachedReset
 
     monkeypatch.chdir(tmp_path)

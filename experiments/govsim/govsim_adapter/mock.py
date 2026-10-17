@@ -1,16 +1,16 @@
 """A scenario-aware mock responder for GovSim's prompt chains.
 
-ChatClient's default mock lines fail every GovSim parse, which would make every
+ChatClient's default mock lines fail each GovSim parse, which makes each
 gen/find/select fall back to ``ModelWandbWrapper``'s default values (harvest 0,
 limit -1) — a degenerate all-defaults run. This responder keys on the format
 markers GovSim's prompt functions put in the chat (markers are shared verbatim
 across the fishing/sheep/pollution scenarios) and answers in the exact shapes
-pathfinder's regex parsing consumes, so the mock run exercises the real
+pathfinder's regex parsing consumes, thus the mock run exercises the real
 parse/aggregate paths.
 
-The policy is intentionally boring: every persona harvests 5 units/month.
-5 agents x 5 units from a pool of 100 never exceeds supply, so the resource
-allocation RNG never fires and the run is
+The policy is intentionally boring: each persona harvests 5 units/month.
+5 agents x 5 units from a pool of 100 does not exceed supply, thus the resource
+allocation RNG does not fire and the run is
 deterministic in practice: 12 rounds, no collapse, equal harvests.
 
 Pure function of (messages) — determinism rides on the prompts alone.
@@ -48,12 +48,12 @@ FALLBACK = "Answer: 5. Conversation conclusion by me: yes."
 
 
 def govsim_mock_responder(messages: list[dict]) -> str:
-    """messages is the pathfinder chat: the last entry may be a partially-filled
+    """messages is the pathfinder chat: the last entry can be a partially-filled
     assistant message (the continuation shape); the cue markers live in the last
     user message."""
     text = "\n".join(
         str(m.get("content", ""))
-        for m in messages[-2:]  # last user message + any assistant partial
+        for m in messages[-2:]  # last user message + an assistant partial
     )
 
     # group-chat utterance (converse_prompts: Output format .. Conversation
@@ -61,10 +61,10 @@ def govsim_mock_responder(messages: list[dict]) -> str:
     if "Conversation conclusion by me" in text:
         return UTTERANCE
     # harvest quantity (act_prompts) and the framework's limit extraction
-    # (reflect_prompts) — both end with the Answer: instruction
+    # (reflect_prompts) — the two end with the Answer: instruction
     if 'Put the final answer after "Answer:"' in text:
         return HARVEST_ANSWER
-    # memory importance ratings (store_prompts, select over 1..10)
+    # memory importance ratings (store_prompts, select from 1..10)
     if "Rate the significance" in text:
         return IMPORTANCE
     # framework conversation summary (converse_prompts)

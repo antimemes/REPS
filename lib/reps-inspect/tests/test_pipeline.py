@@ -2,7 +2,7 @@
 
 Skipped where inspect_ai cannot import (e.g. a bare venv missing the C++ runtime the
 numpy wheel needs) — the nix build and devshell provide it; these assert the real
-Inspect objects still map the way test_translate's fakes assume.
+Inspect objects continue to map the way test_translate's fakes assume.
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ def inspect_ok():
 def _hello_task():
     """The same deterministic task experiments/inspect_evals ships as inspect-hello:
     instruction-following samples whose targets are also substrings of mockllm's
-    fixed reply ("Default output from mockllm/model"), so the mock scores 1.0
+    fixed reply ("Default output from mockllm/model"), thus the mock scores 1.0
     keyless and offline."""
     from inspect_ai import Task
     from inspect_ai.dataset import MemoryDataset, Sample
@@ -116,7 +116,7 @@ def test_provenance_emitted_from_real_log(inspect_ok, tmp_path, capsys, event_ca
         e for e in events if e.get("kind") == "inspect.provenance"
     ]
     assert len(prov) == 1
-    # inspect_ai always reports its own version in the log's packages
+    # inspect_ai always reports its version in the log's packages
     assert "inspect_ai" in prov[0]["data"]["packages"]
 
 
@@ -228,7 +228,7 @@ def test_score_reproducible(inspect_ok, tmp_path, event_capture):
 
 
 def test_events_conform_to_schema(inspect_ok, tmp_path, capsys, event_capture):
-    """Every emitted event validates against `reps-emit schema` (skip if reps-emit
+    """Each emitted event validates against `reps-emit schema` (skip if reps-emit
     is not on PATH — it ships with reps-events, also installed in this environment)."""
     if not shutil.which("reps-emit"):
         pytest.skip("reps-emit not on PATH")

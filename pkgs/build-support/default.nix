@@ -1,13 +1,13 @@
 # The reps build-support lib: type constructors and mkExperiment.
 # Types are authored here as nix values and rendered to plain JSON descriptors at eval
-# time (REPS_MANIFEST); the runner and GUI consume JSON and never evaluate nix.
+# time (REPS_MANIFEST); the runner and GUI consume JSON and do not evaluate nix.
 #
 # `rev`/`narHash` describe the source tree being evaluated (null = unknown): the
-# flake door passes them from its own sourceInfo; the classic door knows only a
+# flake door passes them from its sourceInfo; the classic door knows only a
 # revision from the .git-revision stamp or repsRev argument. `origin` is the fetchable ref without
-# a rev — a source cannot know its own URL, so it is stated once at the call site.
-# `reps-runner` arrives by argument, so overriding the runner reaches every
-# experiment.
+# a rev — a source cannot know its URL, thus it is stated one time at the call site.
+# `reps-runner` arrives by argument, thus overriding the runner reaches all
+# experiments.
 { pkgs, origin, reps-runner, pyproject-nix, uv2nix, pyproject-build-systems
 , rev ? null, narHash ? null
 }:
@@ -16,8 +16,8 @@ let
   inherit (pkgs) lib;
 
   # The fetchable reproducibility ref: the pinned rev spliced into the origin ref (in
-  # front of any ?dir=... query). This is NOT condition identity (see mkExperiment's
-  # per-experiment content `source` below) — it is recorded per run so a run can be
+  # front of a ?dir=... query). This is NOT condition identity (see mkExperiment's
+  # per-experiment content `source` below) — it is recorded for each run, thus a run can be
   # re-run from a pinned source.
   refParts = lib.splitString "?" origin;
   fetchRef =
@@ -27,14 +27,14 @@ let
         "?${lib.concatStringsSep "?" (builtins.tail refParts)}"
     else null;
 
-  # types.llm controls its own hints: every llm-typed param gets the shared model
-  # catalog (lib/model-catalog) appended to its suggestions at eval time, so no
-  # experiment can desync from it. An experiment's own `suggestions` attr means
-  # experiment-specific EXTRAS, prepended (e.g. hello's keyless mock) — never a
+  # types.llm controls its hints: each llm-typed param gets the shared model
+  # catalog (lib/model-catalog) appended to its suggestions at eval time, thus no
+  # experiment can desync from it. An experiment's `suggestions` attr means
+  # experiment-specific EXTRAS, prepended (e.g. hello's keyless mock) — not a
   # replacement. Presentation only: hints are not identity.
   llmSuggestions = import ../../lib/model-catalog/suggestions.nix { inherit lib; };
   # Applies to top-level params AND llm-typed fields inside listOf(struct) params
-  # (e.g. a roster's per-agent model cell) — a struct field is a bare type or a
+  # (e.g. a roster's model cell for each agent) — a struct field is a bare type or a
   # param-wrapped one; only fields that actually get hints are rewrapped.
   addHints = p: p // { suggestions = (p.suggestions or [ ]) ++ llmSuggestions; };
   withFieldHints = f:
@@ -55,7 +55,7 @@ let
   # Dev-loop artifacts (a `uv run` .venv, __pycache__, build dists, direnv state)
   # are neither identity nor build input: they must not mint new conditions
   # (mkExperiment's `source` hash) and must not be imported into the store at
-  # eval time — re-hashing a multi-hundred-MB .venv on every fresh eval was the
+  # eval time — re-hashing a multi-hundred-MB .venv on each fresh eval was the
   # dominant cost of a classic-door eval.
   isDevArtifact = base:
     builtins.elem base [ ".venv" "__pycache__" "node_modules" "dist" ".direnv" ".pytest_cache" ".mypy_cache" ".ruff_cache" ]
@@ -67,7 +67,7 @@ let
     filter = p: _type: !isDevArtifact (baseNameOf p);
   };
   # uv repeats path dependencies' test requirements in the lock. Exclude only
-  # these tables from identity, preserving every other byte and the build input.
+  # these tables from identity, preserving all other bytes and the build input.
   identityLock = name: path:
     let
       filtered = lib.foldl' (state: line:
@@ -79,7 +79,7 @@ let
     in builtins.toFile name (lib.concatStringsSep "\n" (lib.reverseList filtered.lines));
   # Directory declarations hash the unchanged tree separately from normalized
   # locks, retaining each lock's relative path. No build or on-disk rewrite is
-  # needed to calculate identity; the venv still consumes the original lock.
+  # needed to calculate identity; the venv continues to consume the original lock.
   identityImport = name: path:
     let
       locksIn = directory: prefix: lib.concatMap (entry:
@@ -109,7 +109,7 @@ let
 in
 {
   # exported for the other source-import sites (web dist, the runner workspace) —
-  # every path that enters the store goes through the same dev-artifact filter
+  # each path that enters the store goes through the same dev-artifact filter
   inherit cleanImport;
   # Pure evaluation checks exercise these private identity functions directly.
   tests.identity-lock = import ./tests/identity-lock.nix { inherit identityLock identityImport; };
@@ -117,8 +117,8 @@ in
   inspectSharedSrcs = defaultSharedSrcs ++ [ ../../lib/reps-inspect/reps_inspect ];
 
   # the generated GenerateConfig sub-form (lib/reps-inspect/generate_fields.json,
-  # regenerated by `task genconfig:update`), exposed here so experiment
-  # declarations never reach above their own directory with relative paths.
+  # regenerated by `task genconfig:update`), exposed here, thus experiment
+  # declarations do not reach above their directory with relative paths.
   # The schema comes from whichever reps package set is being evaluated.
   inspectGenerateFields =
     (builtins.fromJSON (builtins.readFile ../../lib/reps-inspect/generate_fields.json)).fields;
@@ -143,7 +143,7 @@ in
     param = type: attrs: { inherit type; } // attrs;
   };
 
-  # mkPythonEnv: shared uv2nix setup using the toolchain supplied by the entrypoint.
+  # mkPythonEnv: shared uv2nix setup with the toolchain supplied by the entrypoint.
   # Python sources come from uv.lock; local sources are filtered without
   # changing which directory or revision the lock selects.
   mkPythonEnv = lib.makeOverridable
@@ -157,14 +157,14 @@ in
     , groups ? [ ]
       # extra pythonSet overlay for per-experiment-directory fixes (e.g. a git dep that ships a
       # legacy setup.py and needs setuptools injected as a build system). Receives
-      # (final: prev: …) with uv2nix's pythonSet, where `final.resolveBuildSystem`
+      # (`final: prev: …`) with uv2nix's pythonSet, where `final.resolveBuildSystem`
       # is available.
     , overrides ? (_final: _prev: { })
     }:
     let
       projectName = (builtins.fromTOML (builtins.readFile (workspaceRoot + "/pyproject.toml"))).project.name;
       workspace = uv2nix.lib.workspace.loadWorkspace { inherit workspaceRoot; };
-      # Let uv2nix resolve sources, then filter local path sources using the
+      # Let uv2nix resolve sources, then filter local path sources through the
       # documented per-package overrideAttrs interface. Fetchers stay intact.
       projectOverlay = workspace.mkPyprojectOverlay { inherit sourcePreference; };
       filteredProjectOverlay = final: prev:
@@ -191,7 +191,7 @@ in
 
   # Like nixpkgs testers.*, these shared builders turn test declarations into
   # ordinary derivations. Experiments supply data and hooks in tests/default.nix;
-  # overrideAttrs is the escape hatch, never test machinery in package.nix.
+  # overrideAttrs is the escape hatch, not test machinery in package.nix.
   testers = {
     pytest = { experiment, tests, env ? { }, preCheck ? "", flags ? [ ] }:
       pkgs.stdenv.mkDerivation {
@@ -202,12 +202,12 @@ in
         dontBuild = true;
         doCheck = true;
         preCheck = ''export HOME="$TMPDIR"'' + "\n" + preCheck;
-        # Bound concurrent numeric imports in the sandbox. Explicit flags can
-        # still select serial execution for debugging.
+        # Bound concurrent numeric imports in the sandbox. But explicit flags can
+        # select serial execution for debugging.
         checkPhase = "runHook preCheck; python -m pytest ${lib.escapeShellArgs ([ "-n" "8" ] ++ flags)}; runHook postCheck";
         installPhase = ''touch "$out"'';
       };
-    # params is the complete condition; the smoke run never uses manifest initials.
+    # params is the complete condition; the smoke run does not use manifest initials.
     smoke = { experiment, params, env ? { } }:
       pkgs.testers.runCommand {
         name = "${experiment.name}-smoke";
@@ -237,8 +237,8 @@ in
     , sharedSrcs ? defaultSharedSrcs
     , env ? { }
       # external references for the experiment page — [{ label, url }]: the upstream
-      # repo/docs, paper, datasets. Presentation only, never identity (not in `src`):
-      # generated from a wrapped package's own declared metadata where it exists
+      # repo/docs, paper, datasets. Presentation only, not identity (not in `src`):
+      # generated from a wrapped package's declared metadata where it exists
       # (inspect_evals' listing), hand-written in the wrapper otherwise.
     , links ? [ ]
       # Plain Markdown catalog text, supplied from the package directory by the
@@ -248,7 +248,7 @@ in
     , program
     , src           # the experiment's OWN identity sources: a path (usually `./.`) or a
                     # list of paths. See identity note below. Identity is strictly
-                    # content — it records, never judges comparability; declared
+                    # content — it records, does not judge comparability; declared
                     # upstream versions are covariates/advisory input, not identity
                     # (docs/book/src/running/model.md).
     }:
@@ -264,11 +264,11 @@ in
       programPath =
         if lib.isDerivation program then lib.getExe program else program;
 
-      # Per-experiment content identity. The condition hash's `source` is a content
+      # Content identity for each experiment. The condition hash's `source` is a content
       # hash of this experiment's declared sources and shared Python package sources,
       # each re-imported through builtins.path
-      # so its hash depends ONLY on that subtree's content, never on the whole-repo
-      # rev. So editing one experiment's directory cannot change another's condition_id.
+      # for its hash to depend ONLY on that subtree's content, not on the whole-repo
+      # rev. Thus editing one experiment's directory cannot change another's condition_id.
       # Interpreter declarations are source; platform and runner closures,
       # web, docs and repeated lock dev metadata are outside identity.
       # The fetchable rev (`fetchRef`) is recorded
@@ -284,7 +284,7 @@ in
       manifestInput = pkgs.writeText "reps-manifest-${name}-input.json" (builtins.toJSON ({
         schema_version = 1;
         params = withLlmHints params;
-        # Result order is authored explicitly and preserved on the wire.
+        # Result sequence is authored explicitly and kept when serialized.
         inherit name summary env origin links schema results;
       } // lib.optionalAttrs (readme != null) { inherit readme; }));
       # Import from the built program environment. A bad module:attr pointer is

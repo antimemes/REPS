@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 
 
-# Pytest must not display helper arguments containing the leaked text itself.
+# Pytest must not display helper arguments containing the leaked text.
 __tracebackhide__ = True
 
 _CREDENTIAL_NAME = re.compile(r"KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL", re.IGNORECASE)
@@ -27,13 +27,13 @@ _PATTERNS = (
 def assert_run_has_no_secrets(
     run_dir: str | Path, *, environment: Mapping[str, str] | None = None,
 ) -> None:
-    """Scan every saved file and decoded JSON record for credential material.
+    """Scan each saved file and decoded JSON record for credential material.
 
     By default, credential values come from the current process environment. Pass
     a snapshot when the run used a different environment. Empty values carry no
     secret and are ignored. Decode all files as UTF-8 with replacement, including
-    binary artifacts, so ASCII credentials are checked regardless of file type.
-    Failure messages identify the file and category, never the matched value.
+    binary artifacts. Thus ASCII credentials are checked regardless of file type.
+    Failure messages identify the file and category, not the matched value.
     This assertion detects leaks; it does not redact or rewrite evidence.
     """
     root = Path(run_dir)
@@ -77,7 +77,7 @@ def assert_run_has_no_secrets(
                 try:
                     decoded: _Json = json.loads(record)
                 except ValueError:
-                    # Non-JSON artifacts and partial records were still scanned
-                    # as text. Wire validity belongs to read_events, not this check.
+                    # Non-JSON artifacts and partial records were scanned
+                    # as text. Validity of the serialized record belongs to read_events, not this check.
                     continue
                 check_record(decoded, f"{location}:{index}")

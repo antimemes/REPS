@@ -1,16 +1,16 @@
 """Provider prefixes -> OpenAI-compatible endpoints, resolved from the environment.
 
 A model id's provider prefix (``anthropic/claude-…``, ``groq/llama-…``) picks which
-credential set to read and which endpoint to speak to; every provider here serves the
-OpenAI **/chat/completions** wire protocol, either natively or through a compatibility
-mount. Each mapping is declared in ``PROVIDERS`` — explicit per provider, never
+credential set to read and which endpoint to speak to; each provider here serves the
+OpenAI **/chat/completions** protocol, either natively or through a compatibility
+mount. Each mapping is declared in ``PROVIDERS`` — explicit for each provider, not
 inferred from the id's shape. The runner injects the env vars from its credential
 store (``reps-runner credentials``); this module only reads them.
 
-No third-party deps. Every canonical provider (the reps-providers package's
+No third-party deps. Each canonical provider (the reps-providers package's
 registry) is routed: env var names, defaults, and requiredness are consumed
 directly, restated nowhere. A provider belongs in the registry only if its
-endpoint takes a plain bearer key over HTTP — OAuth-only surfaces (Vertex) have
+endpoint takes a plain bearer key through HTTP — OAuth-only surfaces (Vertex) have
 no entry; degraded-but-correct beats a mapping that half-works. Should a
 registry provider ever NOT speak the OpenAI protocol, this client grows an
 exclusion — its concern, not the registry's.
@@ -36,7 +36,7 @@ class Endpoint:
 
 
 # Where a provider mounts its OpenAI-compat surface when it is not at the stored
-# base itself — exceptions-only, this client's own knowledge (the same shape as
+# base — exceptions-only, this client's knowledge (the same shape as
 # reps-inspect's name remap): the stored ANTHROPIC_BASE_URL stays the plain API
 # origin the rest of the ecosystem expects, and the /v1 mount is appended here.
 _MOUNT_SUFFIX = {"anthropic": "/v1"}
@@ -48,7 +48,7 @@ def _supported() -> str:
 
 def resolve(model_id: str, env: Mapping[str, str] = os.environ) -> Endpoint:
     """Resolve a real (non-mock) model id to an Endpoint, or raise ValueError with an
-    actionable message. Every error names the env var or credential set to fix.
+    actionable message. Each error names the env var or credential set to fix.
 
     The env var overrides the registry default (proxies, regional endpoints,
     self-hosted servers); a `_MOUNT_SUFFIX` entry is appended to either."""

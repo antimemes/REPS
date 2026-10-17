@@ -57,7 +57,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 # the canonical provider registry (the reps-providers package's providers.toml:
-# names + credential templates) — this catalog is a LAYER over it: foreign catalog
+# names + credential templates) — this catalog is a LAYER above it: foreign catalog
 # spellings and /models endpoints are declared here; provider names, env var
 # names, and hints are the registry's facts. Read directly (this script runs as
 # bare python3, deliberately dependency-free).
@@ -77,7 +77,7 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/models"
 @dataclass(frozen=True, kw_only=True)
 class _Source:
     """Where a canonical provider's model list lives in the FOREIGN catalogs —
-    their spellings (models.dev says `xai`, litellm says `gemini`), never ours."""
+    their spellings (models.dev says `xai`, litellm says `gemini`), not ours."""
 
     models_dev: str
     litellm: str | None
@@ -99,7 +99,7 @@ PROVIDERS: dict[str, _Source] = {
 @dataclass(frozen=True, kw_only=True)
 class _ModelsApi:
     """A provider's live /models endpoint, queried only when its key (the registry's
-    secret var — never redeclared here) is available: the public catalogs lag on
+    secret var — not redeclared here) is available: the public catalogs lag on
     dated snapshot ids for the newest models, the providers do not. Google's REST
     list takes the key as a query param."""
 
@@ -124,10 +124,10 @@ for _p in list(PROVIDERS) + list(PROVIDER_APIS):
 
 
 def credential_hint(prefix: str) -> str:
-    """The GUI hint for a provider — derived from the registry, never hand-written."""
+    """The GUI hint for a provider — derived from the registry, not hand-written."""
     return f"Needs {SECRET_VARS[prefix]} (asked for on first run)."
 
-# First-party, public, keyless id lists — each provider's own declaration of the
+# First-party, public, keyless id lists — each provider's declaration of the
 # ids its API accepts, as (url, extraction regex) pairs. SDK literal-type modules
 # where the SDK ships them (anthropic, openai); the provider's official docs in
 # their machine-readable form otherwise (llms.txt-style markdown, or the docs HTML
@@ -173,10 +173,11 @@ def fetch(url: str, headers: dict | None = None) -> dict:
 
 
 def stored_credentials() -> dict[str, str]:
-    """Env-var -> value from the reps runner's credential store (never printed).
+    """Env-var -> value from the reps runner's credential store (not printed).
 
-    Mirrors reps_runner.credentials.config_path(): $REPS_CREDENTIALS_FILE overrides,
-    else $XDG_CONFIG_HOME/reps/credentials.toml, else ~/.config/reps/credentials.toml.
+    Mirrors reps_runner.credentials.config_path(): $REPS_CREDENTIALS_FILE overrides;
+    without it, $XDG_CONFIG_HOME/reps/credentials.toml, then
+    ~/.config/reps/credentials.toml.
     """
     import tomllib
 
@@ -198,7 +199,7 @@ def stored_credentials() -> dict[str, str]:
 
 
 def first_party_doc_ids(prefix: str) -> list[str]:
-    """Model ids from the provider's own public declarations, [] on failure."""
+    """Model ids from the provider's public declarations, [] on failure."""
     ids: list[str] = []
     for url, pattern in FIRST_PARTY_ID_SOURCES.get(prefix, []):
         try:
@@ -214,7 +215,7 @@ def first_party_doc_ids(prefix: str) -> list[str]:
 
 
 def live_provider_ids(prefix: str, stored: dict[str, str]) -> list[str]:
-    """The provider's own current model ids, [] when no key is configured."""
+    """The provider's current model ids, [] when no key is configured."""
     if prefix not in PROVIDER_APIS:
         return []
     api = PROVIDER_APIS[prefix]
@@ -236,7 +237,7 @@ def openrouter_models() -> list[dict]:
     """OpenRouter's public /models list (keyless) — the ids its API accepts.
 
     Ids arrive already org-scoped (moonshotai/kimi-k3), and there is no
-    dated-snapshot scheme, so none of the lineup/snapshot machinery applies.
+    dated-snapshot scheme, thus none of the lineup/snapshot machinery applies.
     `~`-prefixed ids are OpenRouter's retired/rerouted aliases — excluded like
     -latest aliases elsewhere. `:free` variants stay: a distinct serving tier is
     a legitimately selectable (and distinct) condition. `created` is the stable
@@ -282,7 +283,7 @@ def dated_snapshots(litellm: dict) -> dict[tuple[str, str], list[tuple[str, str]
 
 
 def stem_of(prefix: str, model_id: str) -> str:
-    """The id with any snapshot qualifier or moving-alias suffix removed."""
+    """The id with a snapshot qualifier or moving-alias suffix removed."""
     if m := DATE_SUFFIX.match(model_id):
         return m["stem"]
     if prefix == "mistral":
@@ -314,7 +315,7 @@ def main() -> int:
         # First-party id lists: SDK literals (keyless) + the live /models endpoint
         # (when a key is available). When ANY first-party list exists it is the
         # EXCLUSIVE snapshot source — community catalogs have shipped dated ids the
-        # provider's API 404s on (claude-opus-4-6-20260205), so litellm only fills
+        # provider's API 404s on (claude-opus-4-6-20260205). Thus litellm only fills
         # in for providers with no first-party list at all.
         doc_ids = first_party_doc_ids(prefix)
         live = live_provider_ids(prefix, stored)
@@ -344,7 +345,7 @@ def main() -> int:
             }
             for m in lineup
         ]
-        # a dated id, its undated alias, and any -latest alias are the same model:
+        # a dated id, its undated alias, and a -latest alias are the same model:
         # keep one entry, preferring the qualified id (sorted last within a stem)
         by_stem = {}
         for m in sorted(
@@ -363,11 +364,11 @@ def main() -> int:
                         "name": m["name"],
                         "release_date": f"{date[:4]}-{date[4:6]}-{date[6:]}",
                     }
-        # every model is surfaced (the GUI combobox is type-to-filter; curation is
+        # all models are surfaced (the GUI combobox is type-to-filter; curation is
         # the user's job, not the catalog's), sorted newest first
         models = sorted(by_stem.values(), key=lambda m: (m["release_date"], m["id"]), reverse=True)
-        # visibility tripwire: an id the provider's own list does not contain is
-        # either lag in models.dev or a bogus community id — say so
+        # visibility tripwire: an id the provider's list does not contain is
+        # either lag in models.dev or a bogus community id — print a note
         fp_set = set(first_party)
         for m in models:
             if fp_set and m["id"] not in fp_set:

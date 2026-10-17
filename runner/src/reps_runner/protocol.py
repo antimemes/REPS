@@ -1,7 +1,7 @@
 """The runner protocol: spawn the experiment, feed params, envelope + persist events.
 
 runner → experiment: params JSON on stdin; REPS_RUN_ID/REPS_RUN_DIR/REPS_SEED env;
-fresh workspace as cwd; a small env allowlist (never the full host environment).
+fresh workspace as cwd; a small env allowlist (not the full host environment).
 experiment → runner: validated JSON events through REPS_EVENT_SOCKET; stdout and
 stderr are always captured as text. The runner records typed envelopes and
 acknowledges each socket submission after writing it to the event store.
@@ -47,10 +47,10 @@ from .card import CardProjection
 
 # DOCKER_HOST: sandboxed experiments must find the machine's docker daemon (a
 # per-user rootless socket on dev boxes — see `task docker:up`); like model
-# endpoints, where the daemon lives is environment, never condition identity.
-# Nothing else ambient — credentials/endpoints reach a run ONLY through the
-# credential store (docs/book/src/running/secrets.md), so a stray key exported in the
-# shell can neither leak into a run nor shadow the stored value.
+# endpoints, where the daemon lives is environment, not condition identity.
+# No other ambient variable — credentials/endpoints reach a run ONLY through the
+# credential store (docs/book/src/running/secrets.md), thus a stray key exported in
+# the shell can neither leak into a run nor shadow the stored value.
 ENV_ALLOWLIST = ["PATH", "HOME", "TERM", "TMPDIR", "DOCKER_HOST"]
 
 # Refresh the index card from captured records while live, even during quiet periods.
@@ -97,7 +97,7 @@ def _cpu_model() -> str:
 def _endpoint_origins(
     manifest: Manifest, params: Params, credential_env: dict[str, str],
 ) -> dict[str, str]:
-    """Record configured endpoint origins, never URL paths or credentials."""
+    """Record configured endpoint origins, not URL paths or credentials."""
     endpoints: dict[str, str] = {}
     for name in sorted(credentials.sets_used(manifest, params)):
         provider = PROVIDERS.get(name)
@@ -126,7 +126,7 @@ def child_env(
     run_id: str, run_dir: str, seed: int, credential_env: dict[str, str] | None = None
 ) -> dict[str, str]:
     # constructed from scratch: system basics from the allowlist, then the stored
-    # credentials/endpoints (credentials.py) — the store always wins over the
+    # credentials/endpoints (credentials.py) — the store always overrides the
     # host — then REPS_* run vars. This is how a real model reaches its key without
     # the key ever appearing on the command line or being readable from the shell.
     env = {key: value for key, value in os.environ.items() if key in ENV_ALLOWLIST}
@@ -176,8 +176,8 @@ def execute_run(
     if run_id != store.run_id:
         raise ValueError("run ID must match the store")
     fetch_ref = validate_fetch_ref(fetch_ref)
-    # Resolve once before the launch snapshot; only host origins enter runtime.
-    # The full URLs and keys are still passed unchanged to the child.
+    # Resolve one time before the launch snapshot; only host origins enter runtime.
+    # But the full URLs and keys are passed unchanged to the child.
     if credential_env is None:
         credential_env = credentials.env_for_run(manifest, params)
     start = time.monotonic()

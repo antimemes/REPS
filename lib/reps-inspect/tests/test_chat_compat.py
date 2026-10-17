@@ -1,4 +1,4 @@
-"""Cheap drift check using the Inspect dependency this package already has."""
+"""Cheap drift check with the Inspect dependency this package already has."""
 
 import json
 from pathlib import Path

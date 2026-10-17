@@ -26,7 +26,7 @@ def replace_once(text, pattern, replacement):
 
 
 def add_dev_entry(text, package):
-    # uv sorts packages by name, so the experiment's own table is not necessarily first.
+    # uv sorts packages by name, thus the experiment's table is not necessarily first.
     blocks = re.split(r"(?m)(?=^\[\[package\]\]$)", text)
     for i, block in enumerate(blocks):
         if block.startswith("[[package]]") and tomllib.loads(block)["package"][0]["name"] == package:
@@ -91,7 +91,7 @@ in builtins.mapAttrs (_: exp: exp.source) {
     probe("lib/reps-inspect/reps_inspect/translate.py", {"inspect-hello", "impossiblebench-swebench"})
     probe("lib/reps-events/tests/test_emit.py", set())
     probe("experiments/govsim/README.md", set())
-    # Cover both explicit lock paths and locks inside a declared directory.
+    # Cover explicit lock paths and locks inside a declared directory.
     for family, experiment in (("govsim", "govsim"), ("impossiblebench", "impossiblebench-swebench")):
         relative = f"experiments/{family}/uv.lock"
         project = tomllib.loads((checkout / "experiments" / family / "pyproject.toml").read_text())["project"]["name"]

@@ -1,8 +1,8 @@
-"""The inspect bridge is a TENANT layer over the canonical provider registry
+"""The inspect bridge is a TENANT layer on the canonical provider registry
 (the reps-providers package): exceptions-only (identity is the default), referencing
-canonical names and env vars, never inventing them. This check keeps the remap from
+canonical names and env vars, not inventing them. This check keeps the remap from
 drifting away from the registry — a key that is not canonical, or a bridged env var
-the registry never declares, is a bug here, not a registry change. The TOML is read
+the registry does not declare, is a bug here, not a registry change. The TOML is read
 by path: a tenant check does not warrant a package dependency."""
 
 import tomllib

@@ -1,10 +1,10 @@
 {
   description = "REPS: replications of multi-agent safety experiments";
 
-  # channel tarball, not github: channels.nixos.org serves an immutable-link header, so
-  # the lock pins the permanent release URL (and it's what nix-channel users mirror).
+  # channel tarball, not github: channels.nixos.org serves an immutable-link header.
+  # Thus the lock pins the permanent release URL (the one nix-channel users mirror).
   # Stable, not unstable: experiment closures and env fingerprints should churn on
-  # NixOS releases (~6 months), not on every channel advance.
+  # NixOS releases (~6 months), not on each channel advance.
   inputs.nixpkgs.url = "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz";
 
   inputs.pyproject-nix = { url = "github:pyproject-nix/pyproject.nix"; flake = false; };
@@ -13,7 +13,7 @@
 
   # prose lint for comments/docstrings/docs. Pinned to the `latest` tag, which
   # upstream moves on each release (`nix flake update memelint` to bump); follows
-  # our nixpkgs so the build shares this toolchain. Source build, no cache.
+  # our nixpkgs, thus the build shares this toolchain. Source build, no cache.
   inputs.memelint = { url = "github:antimemes/memelint/latest"; inputs.nixpkgs.follows = "nixpkgs"; };
 
   outputs = { self, nixpkgs, pyproject-nix, uv2nix, pyproject-build-systems, memelint }:
@@ -25,7 +25,7 @@
     {
       # Namespace policy (nixpkgs-flat, like `nixpkgs#dig`): experiments get bare names —
       # they are the product and the headline oneliner (`nix run reps#inspect-hello`).
-      # REPS's own tools carry the `reps-` prefix (`reps-runner`), so the bare
+      # REPS's tools carry the `reps-` prefix (`reps-runner`). Thus the bare
       # namespace belongs to the registry and name collisions are a curation duty, as
       # in nixpkgs.
       apps = forAllSystems (pkgs:
@@ -39,7 +39,7 @@
           })
           repsPkgs.experiments
         # `nix run .#reps-runner -- credentials …` to manage local model credentials
-        # (endpoints + keys), which the runner injects into experiments so they never
+        # (endpoints + keys), which the runner injects into experiments, thus they do not
         # land in params or on the command line.
         // rec {
           reps-runner = {
@@ -63,7 +63,7 @@
 
       # lean by design: pure builds only (registry-wide manifest eval + the tools).
       # The impure entrypoint identity checks
-      # cannot be derivations (they invoke nix itself / need network) and live in
+      # cannot be derivations (they invoke nix / need network) and live in
       # scripts/ + CI instead.
       checks = forAllSystems (pkgs:
         let

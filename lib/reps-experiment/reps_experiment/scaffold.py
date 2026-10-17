@@ -2,11 +2,11 @@
 
 The protocol (runner side: reps_runner/protocol.py): realized params arrive as
 JSON on stdin, ``REPS_RUN_DIR``/``REPS_SEED`` ride in the env, events leave as
-JSON over the event socket, and execution failures return a nonzero exit code after
-emitting diagnostic evidence and any fallback summary. A config file named on
-argv overrides stdin — the hand-run/debug path, and the seam an
-adapter uses when it reshapes params first (concordia). Every experiment
-repeats that scaffold verbatim, so it lives here:
+JSON through the event socket, and execution failures return a nonzero exit code
+after emitting diagnostic evidence and the fallback summary. A config file that
+argv names overrides stdin — the hand-run/debug path, and the seam an
+adapter uses when it reshapes params first (concordia). Each experiment
+repeats that scaffold verbatim, thus it lives here:
 
     def main() -> int:
         return experiment_main(Params, run, prog="my-experiment",
@@ -42,8 +42,8 @@ def experiment_main(params_model: SupportsModelValidate,
                     description: str | None = None,
                     fallback_summary: dict[str, Any] | None = None,
                     argv: list[str] | None = None) -> int:
-    """The whole main(): read params (stdin, or a config file named on argv),
-    validate them (any object with a pydantic-style ``model_validate``), default
+    """The whole main(): read params (stdin, or a config file that argv names),
+    validate them (an object with a pydantic-style ``model_validate``), default
     ``REPS_RUN_DIR``, call ``run(params)``. If `run` raises, the traceback goes
     to stderr, each entry of `fallback_summary` is emitted as a result, and
     the exit code is 1. Successful execution returns 0."""

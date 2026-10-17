@@ -142,7 +142,7 @@ print(json.dumps({"params": json.load(sys.stdin), "seed": int(os.environ["REPS_S
         assert result.returncode == 0, result.stderr
         return result.stdout.strip()
 
-    # Commits are confined to this disposable test fixture, never the REPS checkout.
+    # Commits are confined to this disposable test fixture, not the REPS checkout.
     command("git", "init", "-q")
     command("git", "add", "flake.nix", "program.py")
     command("git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",

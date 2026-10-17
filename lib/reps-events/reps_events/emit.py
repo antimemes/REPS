@@ -13,7 +13,7 @@ from .models import CustomEvent, PRODUCER_ADAPTER, PRODUCER_MODELS, ProducerPayl
 
 
 def emit_producer() -> None:
-    """Record this interpreter. Call once per run, before other producer events."""
+    """Record this interpreter. Call one time for each run, before other producer events."""
     try:
         hash_seed = int(os.environ["PYTHONHASHSEED"])
     except (KeyError, ValueError):
@@ -35,10 +35,10 @@ def emit_producer() -> None:
 def emit(event: ProducerPayload | CustomEvent[Any]) -> None:
     """Validate and serialize an event, preserving open metadata verbatim.
 
-    Serialize once, validate the exact wire representation, then write those
-    same bytes. Validation may raise but its normalized result is discarded.
+    Serialize one time, validate the exact serialized form, then write those
+    same bytes. Validation can raise but its normalized result is discarded.
     Public producers and typed CustomEvent subclasses are accepted. Custom events
-    validate against their own model and the shared wire container. The runner
+    validate against their model and the shared envelope. The runner
     alone produces lifecycle events.
     """
     if type(event) not in PRODUCER_MODELS.values() and not isinstance(event, CustomEvent):

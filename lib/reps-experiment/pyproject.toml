@@ -1,8 +1,8 @@
 # Everything a Python REPS experiment needs beyond the event vocabulary: the
 # runner-protocol scaffold (scaffold.py), provider->endpoint routing (providers.py),
-# and the instrumented OpenAI-compat LLM client (llm.py, behind the [llm] extra so
-# the base install stays SDK-free). Split from reps-events so the vocabulary package
-# the runner depends on stays exactly that — the vocabulary.
+# and the instrumented OpenAI-compat LLM client (llm.py, behind the [llm] extra to
+# keep the base install SDK-free). Split from reps-events to keep the vocabulary
+# package the runner depends on exactly that — the vocabulary.
 [project]
 name = "reps-experiment"
 version = "0.1.0"
@@ -37,7 +37,7 @@ reps-events = { path = "../reps-events", editable = true }
 reps-providers = { path = "../reps-providers" }
 
 # Non-editable path-dep consumers rebuild only when the cache key changes, and uv's
-# default key is pyproject.toml alone — key on the sources so edits propagate.
+# default key is pyproject.toml alone — key on the sources to let edits propagate.
 [tool.uv]
 cache-keys = [{ file = "pyproject.toml" }, { file = "reps_experiment/**/*.py" }, { file = "reps_experiment/py.typed" }]
 

@@ -1,10 +1,10 @@
-"""Translator tests over REAL inspect_ai objects.
+"""Translator tests on REAL inspect_ai objects.
 
 These used to run on duck-typed fakes; they now construct the actual pydantic
-models (EvalLog, EvalSample, ModelEvent, …), so they double as contract tests
+models (EvalLog, EvalSample, ModelEvent, …), thus they double as contract tests
 against the PINNED inspect_ai version — a field the translator reads that
 upstream renames or retypes fails here at test time, not mid-eval. The cost is
-that construction states every required field; the fixtures below are the
+that construction states each required field; the fixtures below are the
 minimal honest instances.
 """
 
@@ -113,7 +113,7 @@ def test_full_translation_shape(event_capture):
     assert len([e for e in events if e.get("kind") == "inspect.sample"]) == 2
     assert len([e for e in ae if e["kind"] == "inspect.provenance"]) == 1
 
-    # Native model input/output, raw provider payload under call.
+    # Native model input/output, raw provider payload in call.
     calls = [e for e in events if e["type"] == "llm.call"]
     assert [_slim(m) for m in calls[0]["input"]] == [("user", "hi")]
     assert "params" not in calls[0]
@@ -129,7 +129,7 @@ def test_full_translation_shape(event_capture):
     assert calls[0]["output"]["usage"]["output_tokens"] == 33
 
     # per-instance scores ride the instance close-out, NOT result events (a result
-    # has no instance scope — N same-named metrics buried the run header)
+    # has no instance scope — N metrics with the same name buried the run header)
     inst = [e for e in events if e.get("kind") == "inspect.sample"]
     assert [e["data"]["scores"] for e in inst] == \
         [{"includes": "C"}, {"includes": "I"}]
@@ -219,13 +219,13 @@ def test_message_source_and_tool_view_survive_only_in_raw_event(event_capture):
     assert "view" not in tool and tool["parse_error"] == "invalid JSON"
 
 
-# --- error paths: only ever executed on real provider failure, so the tests are the
-# only coverage these branches get before live-fire ---------------------------------
+# --- error paths: only ever executed on real provider failure, thus the tests are
+# the only coverage these branches get before live-fire -----------------------------
 
 def test_errored_model_event_preserves_error(event_capture):
     """The live-fire regression: a failed call's ModelEvent carries `error` as a
     plain string, a placeholder empty output message, no usage, no working_time,
-    and the provider's error body under call.response (inspect_ai's error branch).
+    and the provider's error body in call.response (inspect_ai's error branch).
     The error stays a string, exactly as Inspect records it."""
     ev = _model_event(
         call=ModelCall.create({"vendor": "wire"}, {"error": "model call failed"}),
@@ -315,7 +315,7 @@ def test_future_model_event_fields_are_filtered_once_per_run(event_capture, monk
     assert all(p["output"]["choices"][0]["stop_reason"] == "future_stop" for p in dumped)
     assert all(p["metadata"] == {"keep": "evidence"} for p in dumped)
 
-    # A second run in this same process must receive its own warning.
+    # A second run in this same process must also receive a warning.
     with translate.drift_warnings():
         translate.emit_model_event(ev, "agent", "s3", 1)
     assert [e["type"] for e in _capture(event_capture)] == ["llm.call", "log"]

@@ -3,12 +3,13 @@
 ``hash`` (the keyless default): a deterministic sha256 → unit-vector embedder,
 duck-typing upstream's ``EmbeddingModel`` (``embed`` / ``embed_retrieve``).
 Explicit deviation from the paper: memory *relevance* becomes content-hash
-noise, so retrieval ranking is driven by recency (0.99^i, w=0.5) and LLM-rated
-importance (w=3); ``always_include`` nodes (agreed limits) are unaffected.
+noise. Thus retrieval ranking is driven by recency (0.99^i, w=0.5) and
+LLM-rated importance (w=3); ``always_include`` nodes (agreed limits) are
+unaffected.
 
 ``mxbai``: the paper's ``mixedbread-ai/mxbai-embed-large-v1``, pinned below, through
 sentence-transformers — needs network (HF download, ~1.3 GB) or a warm
-``HF_HOME``; never the prefilled path.
+``HF_HOME``; not the prefilled path.
 """
 
 from __future__ import annotations
@@ -23,8 +24,8 @@ if TYPE_CHECKING:
 MXBAI_MODEL = "mixedbread-ai/mxbai-embed-large-v1"
 MXBAI_REVISION = "b33106f585b9ce46904ad7443a3b52b7a63e231c"
 
-# upstream's dimension (mxbai-embed-large-v1); embeddings land in
-# embeddings.json through upstream's NumpyEncoder, so plain ndarrays are required
+# upstream's dimension (mxbai-embed-large-v1); plain ndarrays are required
+# because embeddings land in embeddings.json through upstream's NumpyEncoder
 _DIM = 1024
 _RETRIEVE_PREFIX = "Represent this sentence for searching relevant passages: "
 
@@ -42,8 +43,8 @@ class HashEmbedder:
         return vec / norm if norm else vec
 
     def embed_retrieve(self, text: str) -> np.ndarray:
-        # upstream's query prefix, kept so the hash space at least separates
-        # queries from passages the way mxbai's prompt does
+        # upstream's query prefix is kept; with it the hash space at least
+        # separates queries from passages the way mxbai's prompt does
         return self.embed(f"{_RETRIEVE_PREFIX}{text}")
 
 

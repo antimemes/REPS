@@ -53,7 +53,7 @@ def _tool_call(call: dict[str, Any]) -> ToolCall:
         if not isinstance(arguments, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
             raise ValueError("tool arguments must be a JSON object")
     except (ValueError, TypeError) as exc:
-        # The exact arguments stay in raw; malformed calls are still evidence.
+        # The exact arguments stay in raw; malformed calls are also evidence.
         return ToolCall(id=call["id"], function=function["name"],
                         arguments={}, parse_error=str(exc))
     return ToolCall(id=call["id"], function=function["name"], arguments=arguments)
@@ -110,11 +110,11 @@ def _stop_reason(value: str | None) -> StopReason:
 
 
 def chat_completion_output(body: dict[str, Any]) -> ModelOutput:
-    """Snapshot all choices and usage before any caller-facing text is changed.
+    """Snapshot all choices and usage before caller-facing text is changed.
 
     Accept a parsed provider body or an SDK model_dump. Incomplete usage stays
-    unknown: the usage model would invent zero for absent counts, so keep
-    partial usage only in the raw response instead of constructing that model.
+    unknown: the usage model invents zero for absent counts. Thus keep partial
+    usage only in the raw response instead of constructing that model.
     """
     choices = [ChatCompletionChoice(
         message=assistant_message(choice["message"]),

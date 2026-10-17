@@ -5,7 +5,7 @@ description = "REPS experiment runner: validation, condition hashing, the runner
 requires-python = ">=3.13"
 dependencies = [
     "rfc8785>=0.1.4",
-    # the event vocabulary lives in reps-events (one definition, shared with every
+    # the event vocabulary lives in reps-events (one definition, shared with each
     # Python experiment); it also supplies the reps-emit console command.
     "reps-events",
     # the canonical provider registry (names + credential templates); the runner
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 # Publishing stays optional for integrations that use the runner locally.
-# The shipped runner and its own tests always install this extra; keep its floors.
+# The shipped runner and its tests always install this extra; keep its floors.
 [project.optional-dependencies]
 publish = [
     "boto3>=1.43.97",

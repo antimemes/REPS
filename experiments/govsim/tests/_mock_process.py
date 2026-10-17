@@ -1,8 +1,8 @@
-"""A fresh interpreter warms upstream once, then forks an isolated case per request.
+"""A fresh interpreter warms upstream one time, then forks an isolated case for each request.
 
-Never fork the pytest worker: event_capture has a receiver thread. This parent
+Do not fork the pytest worker: event_capture has a receiver thread. This parent
 does no simulation work and uses one numeric thread before forking; each child
-still runs main(), including its own thread settings, seed and environment.
+runs main(), including its thread settings, seed and environment.
 """
 
 import contextlib

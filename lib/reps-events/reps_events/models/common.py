@@ -9,7 +9,7 @@ from ..render import RenderHint
 
 
 class ProducerPython(Event[Literal["producer.python"]]):
-    """The producing interpreter's toolchain, emitted once before its observations."""
+    """The producing interpreter's toolchain, emitted one time before its observations."""
 
     render: ClassVar[RenderHint] = RenderHint(icon="code", body="{implementation} {version}")
     type: Literal["producer.python"] = "producer.python"
@@ -62,7 +62,7 @@ class Result(Event[Literal["result"]]):
 
 
 class CustomEvent[Data = dict[str, JsonValue]](Event[Literal["custom"]]):
-    """Experiment-specific observations within the public wire vocabulary."""
+    """Experiment-specific observations within the public record vocabulary."""
 
     type: Literal["custom"] = "custom"
     kind: str

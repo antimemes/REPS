@@ -1,4 +1,4 @@
-"""The adapter's own pieces, without running upstream."""
+"""The adapter's pieces, without running upstream."""
 
 from __future__ import annotations
 
@@ -93,9 +93,9 @@ def test_summary_drops_null_score():
 
 
 def test_real_replies_carry_langchain_metadata(monkeypatch):
-    """A real SDK response goes through langchain-openai's own result builder, so
+    """A real SDK response goes through langchain-openai's result builder. Thus
     upstream's transcripts get the usage_metadata and response_metadata ChatOpenAI
-    would have written."""
+    writes."""
     import types
     from openai.types.chat import ChatCompletion
     from langchain_core.messages import HumanMessage

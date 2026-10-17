@@ -1,6 +1,6 @@
 """Where the adapter touches the authors' code, at import time, without editing it.
 
-Each item is a named replacement of an attribute on an upstream module. The
+Each item has a name and replaces an attribute on an upstream module. The
 tree on disk stays verbatim.
 
   swap-chat-model    LiteralMessagePassing.init_chat_model and .ChatOllama ->
@@ -9,23 +9,23 @@ tree on disk stays verbatim.
                      replacement as it did to the original (the ollama branch
                      has no retry wrapper upstream, and none here).
   no-throttle        upstream builds an InMemoryRateLimiter from a per-model-name
-                     table (KeyError for a name not in it) to pace its own API
-                     calls; pacing never changes a reply, so no limiter is used
-                     here for any model: the table answers {} for every name and
+                     table (KeyError for a name not in it) to pace its API
+                     calls; pacing does not change a reply, thus no model gets a
+                     limiter here: the table answers {} for each name and
                      .InMemoryRateLimiter returns None. REPS's client backs off
-                     on 429s itself.
+                     on 429s.
   env-ollama         upstream evaluates os.environ['OLLAMA_URI'] as the base_url
                      argument before the (replaced) ChatOllama is called; a
                      placeholder is set when absent, since routing is REPS's
                      (the ollama/ credential set), and the argument is ignored.
   dataset-pinned     main.load_dataset (Hugging Face Hub, network) -> a reader of
                      the parquet file package.nix pins by content; upstream's
-                     own row selection in main.get_graph runs unchanged.
+                     row selection in main.get_graph runs unchanged.
   seed-random        `random` and `numpy.random` seeded from REPS_SEED, as
-                     upstream's run() seeds `random` from --seed. Nothing that
+                     upstream's run() seeds `random` from --seed. No step that
                      affects a reply draws from them (graph names come from the
                      dataset; only retry back-off timing uses `random`).
-  seed-forwarded     every completion request carries the run seed (the REPS
+  seed-forwarded     each completion request carries the run seed (the REPS
                      client adds it); upstream sent none.
 
 The fixes behind the patch_crash_on_all_no and better_reprompting params are
@@ -50,7 +50,7 @@ def provider_of(model: str) -> str:
 
 
 class _NoLimits(dict):
-    """Stands in for upstream's per-model-name limiter table: every name gets {}."""
+    """Stands in for upstream's per-model-name limiter table: each name gets {}."""
 
     def __missing__(self, key: str) -> dict:
         return {}
@@ -62,7 +62,7 @@ def apply_dataset() -> None:
     path = upstream.dataset_path()
 
     def load_dataset(*_args: Any, **_kwargs: Any) -> pd.DataFrame:
-        return pd.read_parquet(path)       # main.get_graph wraps it in pd.DataFrame(...) itself
+        return pd.read_parquet(path)       # main.get_graph wraps it in pd.DataFrame(...)
     main.load_dataset = load_dataset
 
 

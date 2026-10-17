@@ -5,25 +5,25 @@ The shell lists runs from `/api/runs` and reads a run's `run.json` and `events.j
 straight from `/data/`; the embeddable `<reps-events>` element renders the stream.
 With `--manifests DIR` (the built catalog, `nix-build --no-out-link -A manifests`) the
 shell also lists the experiments, shows each one's params and results, and renders a
-command line for a condition; the server only hands the manifests over.
+command line for a condition; the server only supplies the manifests.
 
     /              static/index.html
     /static/…      this package's static/ directory
     /data/…        the data directory (files only; directories are 404)
-    /api/runs      every runs/*/*/run.json card, newest first
-    /api/manifests every <name>.json in the manifests directory, by name ([] without one)
+    /api/runs      each runs/*/*/run.json card, newest first
+    /api/manifests each <name>.json in the manifests directory, by name ([] without one)
     /api/runs/<condition_dir>/<run_id>/events?from=N
                  the complete lines of that run's events.jsonl with seq >= N, as
-                 ndjson; 204 when there are none, so a poll of a quiet run costs
-                 nothing. A trailing line without its newline is still being
-                 written and waits for the next poll; a complete line that is not
+                 ndjson; 204 when there are none, thus a poll of a quiet run has
+                 no cost. A trailing line without its newline is being written
+                 and waits for the next poll; a complete line that is not
                  a JSON object with an integer seq is skipped. Each record is
-                 migrated to the current vocabulary before it is sent, as every
+                 migrated to the current vocabulary before it is sent, as each
                  reader of the stream does (reps_events.read); the file on disk
                  is untouched, and a record that cannot be migrated is sent as
-                 written, its `v` showing which version it still speaks.
+                 written, its `v` showing which version it continues to speak.
 
-Path handling is the standard library's: `..` segments never leave the two roots.
+Path handling is the standard library's: `..` segments do not leave the two roots.
 """
 
 from __future__ import annotations
@@ -47,11 +47,11 @@ from reps_events.migrate import MigrationError, migrate_record
 from ..store import resolve_data_dir
 
 _EVENTS_ROUTE = re.compile(r"^/api/runs/([^/]+)/([^/]+)/events$")
-_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")   # one directory name; never "." or ".."
+_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")   # one directory name; not "." or ".."
 
 
 def list_runs(home: Path) -> list[dict[str, Any]]:
-    """Every readable card as written, plus the two directory names, newest first."""
+    """Each readable card as written, plus the two directory names, newest first."""
     cards: list[dict[str, Any]] = []
     for path in (home / "runs").glob("*/*/run.json"):
         try:
@@ -65,7 +65,7 @@ def list_runs(home: Path) -> list[dict[str, Any]]:
 
 
 def list_manifests(catalog: Path | None) -> list[dict[str, Any]]:
-    """Every readable manifest in the catalog directory as written, by name."""
+    """Each readable manifest in the catalog directory as written, by name."""
     if catalog is None:
         return []
     manifests: list[dict[str, Any]] = []
@@ -90,7 +90,7 @@ def read_events_from(run_dir: Path, start: int) -> bytes:
         return b""
     lines = data.split(b"\n")
     if not data.endswith(b"\n"):
-        lines.pop()  # still being written
+        lines.pop()  # write in progress
     out: list[bytes] = []
     for line in lines:
         if not line:

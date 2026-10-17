@@ -1,6 +1,6 @@
-"""Rebuildable run index card, derived only from the stream, never render hints.
+"""Rebuildable run index card, derived only from the stream, not from render hints.
 
-Never read this cache to execute an experiment.
+Do not read this cache to execute an experiment.
 """
 
 from collections.abc import Iterable

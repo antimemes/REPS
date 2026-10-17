@@ -1,7 +1,7 @@
 """End-to-end keyless pipeline: a real Concordia simulation on the mock backend.
 
-Skips if Concordia (or its heavy deps) will not import — the pure tests still cover the
-boundary. Runs the smallest scenario for one step so it stays fast.
+Skips if Concordia (or its heavy deps) will not import — the pure tests continue to
+cover the boundary. Runs the smallest scenario for one step to stay fast.
 """
 
 import json
@@ -58,9 +58,9 @@ def test_anthropic_without_key_fails_fast(event_capture, monkeypatch):
 
 
 def test_azureai_without_base_url_fails_fast(event_capture, monkeypatch):
-    # azureai's base has no registry default (per-resource endpoint), so a missing
-    # env var is caught at construction, before any turn runs. (openai/ falls back
-    # to api.openai.com/v1 — the registry default — so it no longer fails here.)
+    # azureai's base has no registry default (per-resource endpoint). Thus a missing
+    # env var is caught at construction, before a turn runs. (openai/ falls back
+    # to api.openai.com/v1 — the registry default — thus it no longer fails here.)
     monkeypatch.delenv("AZUREAI_BASE_URL", raising=False)
     monkeypatch.setenv("AZUREAI_API_KEY", "k")
     with pytest.raises(RuntimeError, match="AZUREAI_BASE_URL"):
@@ -91,12 +91,12 @@ def test_smoke_mock_run(event_capture, tmp_path, monkeypatch):
     assert metrics["agents"] == 2
     assert metrics["model_calls"] > 0
     # the run uses its full step budget — the dialogic game master cannot end the
-    # scene early (can_terminate_simulation=False), so max_steps is exact here
+    # scene early (can_terminate_simulation=False), thus max_steps is exact here
     assert metrics["steps"] == 2
     assert metrics["world_events"] > 1
 
-    # the semantic tier: observations delivered per agent (their memory writes,
-    # each exactly once) and per-turn perception state — no trawling llm.calls
+    # the semantic tier: observations delivered for each agent (their memory writes,
+    # each exactly one time) and per-turn perception state — no trawling llm.calls
     obs = [e for e in events if e["type"] == "custom" and e["kind"] == "concordia.observation"]
     assert obs and {e["data"]["agent"] for e in obs} <= {"Alice", "Bob"}
     per_agent = {}
@@ -107,7 +107,7 @@ def test_smoke_mock_run(event_capture, tmp_path, monkeypatch):
     percs = [e for e in events if e.get("kind") == "concordia.perception"]
     assert {e["data"]["agent"] for e in percs} <= {"Alice", "Bob"} and percs
 
-    # Concordia's own log viewer (memories, per-component reasoning) is deposited
+    # Concordia's log viewer (memories, per-component reasoning) is deposited
     # verbatim as an artifact rather than translated into events
     (art,) = [e for e in events if e.get("kind") == "concordia.artifact"]
     assert art["data"]["path"] == "artifacts/concordia_log.html"

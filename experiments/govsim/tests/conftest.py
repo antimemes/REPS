@@ -1,4 +1,4 @@
-"""Isolated mock cases share only imports, never mutable simulation state."""
+"""Isolated mock cases share only imports, not mutable simulation state."""
 
 import json
 import os

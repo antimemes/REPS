@@ -160,7 +160,7 @@ exec(script)
 
 
 def test_pre_hardware_stream_and_card_remain_verifiable(saved):
-    """Tier-1 schema 0 records omit hardware; reading must not add wire fields."""
+    """Tier-1 schema 0 records omit hardware; reading must not add serialized fields."""
     directory, manifest = saved
     def old_runtime(rows):
         runtime = rows[0]["event"]["runtime"]
@@ -281,7 +281,7 @@ def test_all_served_models_checked_once_per_pair_and_truncated_calls_counted(sav
     rewrite_stream(directory, insert)
     (directory / "run.json").write_text(json.dumps(derive_card(read_events(directory))))
     result = verify_run(directory, manifest=manifest, environment={})
-    assert result.max_tokens_stops == len(calls) - 1  # once per call, not per choice
+    assert result.max_tokens_stops == len(calls) - 1  # one time for each call, not for each choice
     assert result.content_filter_stops == 1
     expected = (("azure/gpt-5-nano", "gpt-4.1"), ("azure/gpt-5-nano", "gpt-5-mini")) if mismatch else ()
     assert result.model_mismatches == expected

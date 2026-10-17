@@ -1,4 +1,4 @@
-"""translate.py over hand-built data — pure, no Concordia import."""
+"""translate.py on hand-built data — pure, no Concordia import."""
 
 import json
 
@@ -67,12 +67,12 @@ def test_semantic_events_from_raw_log(event_capture):
 
     obs = [e for e in events if e["type"] == "custom" and e["kind"] == "concordia.observation"]
     assert [(e["data"]["agent"], e["data"]["text"]) for e in obs] == [
-        ("Alice", "Bob waves."), ("Alice", "Bob sits down.")]  # each exactly once
+        ("Alice", "Bob waves."), ("Alice", "Bob sits down.")]  # each exactly one time
 
     percs = [e for e in events if e.get("kind") == "concordia.perception"]
     assert [p["data"]["self"] for p in percs] == ["Alice is warm.", "Alice is curious."]
     assert percs[0]["data"]["situation"] == "Alice is in a cafe."
-    # GM bookkeeping never becomes a semantic event
+    # GM bookkeeping does not become a semantic event
     assert not any(e.get("agent") == "Game Master" for e in percs)
 
 

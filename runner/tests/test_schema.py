@@ -42,7 +42,7 @@ MANIFEST = {
                 "role": {"kind": "enum", "values": ["w", "v"]},
             }}},
             "minLen": 2,
-            "initial": PLAYERS,  # presentation only — never enters a binding
+            "initial": PLAYERS,  # presentation only — does not enter a binding
         },
         "rounds": {"type": {"kind": "int"}, "initial": 2},
         "goal": {"type": {"kind": "str"}},  # no initial: placeholder in suggestions
@@ -53,7 +53,7 @@ MANIFEST = {
 def test_every_param_must_be_bound_explicitly():
     bound = bind_params(MANIFEST, {"players": PLAYERS, "rounds": 5, "goal": "g"})
     assert bound == {"players": PLAYERS, "rounds": 5, "goal": "g"}
-    # `initial` is NOT a default: omitting a param that has one still errors
+    # `initial` is NOT a default: omitting a param that has one is an error
     with pytest.raises(MissingParamsError) as exc:
         bind_params(MANIFEST, {"goal": "g"})
     assert exc.value.missing == ["players", "rounds"]
@@ -110,6 +110,6 @@ def test_nullable_param_accepts_explicit_null():
     validate_realized({"subset": None, "plain": "x"}, manifest)
     with pytest.raises(SchemaError):  # null is only valid on nullable params
         validate_spec({"subset": None, "plain": None}, manifest)
-    validate_spec({"subset": "mmlu", "plain": "x"}, manifest)  # non-null still typed
+    validate_spec({"subset": "mmlu", "plain": "x"}, manifest)  # non-null stays typed
     with pytest.raises(SchemaError):
         validate_spec({"subset": 3, "plain": "x"}, manifest)

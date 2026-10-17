@@ -74,7 +74,7 @@ def select_runs(home: Path, stems: list[str], experiment: str | None) -> list[Pa
     if not stems:
         paths.update(p for p in (home / "runs").glob("*/*") if p.is_dir())
     if experiment is not None:
-        # Discovery reads identity, never parses the informational experiment suffix.
+        # Discovery reads identity, does not parse the informational experiment suffix.
         filtered: set[Path] = set()
         for path in paths:
             try:
@@ -82,7 +82,7 @@ def select_runs(home: Path, stems: list[str], experiment: str | None) -> list[Pa
                 if card["identity"]["experiment"] == experiment:
                     filtered.add(path)
             except (OSError, ValueError, KeyError, TypeError):
-                # Keep damaged candidates so the per-run gate reports them.
+                # Keep damaged candidates for the per-run gate to report.
                 filtered.add(path)
         paths = filtered
     return sorted(paths)

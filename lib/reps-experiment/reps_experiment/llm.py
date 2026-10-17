@@ -1,8 +1,8 @@
 """An OpenAI-SDK-shaped chat client with REPS instrumentation built in.
 
-For experiments that call models directly (their own loop, or a wrapped framework
+For experiments that call models directly (their loop, or a wrapped framework
 that accepts an OpenAI client): construct `ChatClient(model_id, ...)` and hand it
-wherever a `openai.OpenAI()` instance would go — it duck-types the one surface
+wherever a `openai.OpenAI()` instance goes — it duck-types the one surface
 frameworks actually use, ``.chat.completions.create``. In exchange:
 
   * the model id's provider prefix picks the endpoint and credential set
@@ -10,7 +10,7 @@ frameworks actually use, ``.chat.completions.create``. In exchange:
     openrouter, azure, azureai; each an OpenAI-compatible mount), and ``mock/...``
     runs keyless and offline with a deterministic responder — the smoke/CI path,
     uniform across experiments (the runner's mock convention);
-  * every call emits one ``llm.call`` event — the verbatim reply, token usage, and
+  * each call emits one ``llm.call`` event — the verbatim reply, token usage, and
     latency — attributed to the constructing `agent`;
   * run-level generation params apply uniformly: `temperature` overrides (it is the
     run's declared axis), `seed` fills in when the caller passes none, `max_tokens`
@@ -22,13 +22,13 @@ frameworks actually use, ``.chat.completions.create``. In exchange:
 
 A trailing assistant message is a prefill to continue. Mistral's serving API
 only accepts one flagged ``prefix: True`` (message-level, not a generation
-parameter), so the client adds the flag for the Mistral family before recording
-and sending. vLLM instead takes ``continue_final_message`` plus
+parameter). Thus the client adds the flag for the Mistral family before
+recording and sending. vLLM instead takes ``continue_final_message`` plus
 ``add_generation_prompt=false`` in the request body, whatever the family; other
 providers receive the message as given.
 
 Needs the ``openai`` SDK — depend on ``reps-experiment[llm]``. Import stays inside this
-module so the base package adds no requirement.
+module, thus the base package adds no requirement.
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion
 
 # neutral deterministic lines for the default mock responder — enough variety that
-# loops which detect repetition still make progress
+# loops which detect repetition continue to make progress
 _MOCK_LINES = (
     "That seems reasonable. Let's continue.",
     "Understood. Here is my considered response.",
@@ -98,13 +98,13 @@ def _tool_choice(value: Any) -> ToolChoice:
 class ServedModelMismatch(SystemExit):
     """Fatal routing error, deliberately outside harnesses' Exception fallbacks.
 
-    Continuing with a default answer would conceal that this condition ran the
+    Continuing with a default answer conceals that this condition ran the
     incorrect model. The original response and an error log are emitted before exit.
     """
 
 
 class EmptyResponse(RuntimeError):
-    """The provider returned no choices on every attempt."""
+    """The provider returned no choices on each attempt."""
 
 
 def _status_error_response(event: LLMCall, error: openai.APIStatusError) -> ChatCompletion | None:
@@ -176,7 +176,7 @@ class ChatClient:
         self._max_tokens = max_tokens
         self.is_mock = model_id.startswith("mock/")
         self._mock_responder = mock_responder or self._default_mock_responder
-        # one declared shape for both backends, so the lambda's param infers from it
+        # one declared shape for the two backends; the lambda's param infers from it
         self._request: Callable[[dict[str, Any]], Any]
         if self.is_mock:
             self.served_model = model_id.split("/", 1)[1]
@@ -202,15 +202,15 @@ class ChatClient:
                 http_client=openai.DefaultHttpxClient(event_hooks={"response": [count_retry]}),
             )
 
-            # closed over, so _create never handles an Optional client; a def (not a
-            # lambda) so the Any return is declared rather than inferred-unknown
+            # closed over, thus _create does not handle an Optional client; a def (not
+            # a lambda) for the Any return to be declared rather than inferred-unknown
             def request(kw: dict[str, Any]) -> Any:
                 # The SDK overloads cannot resolve a dynamic **kw; declare Any
                 # only where the SDK response enters the instrumentation.
                 return cast(Any, sdk.chat.completions.create(**kw))
 
             self._request = request
-        # the one surface frameworks use; duck-typed so no SDK subclassing is needed
+        # the one surface frameworks use; duck-typed, thus no SDK subclassing is needed
         self.chat = types.SimpleNamespace(
             completions=types.SimpleNamespace(create=self._create)
         )
@@ -259,7 +259,7 @@ class ChatClient:
                     break
                 if error is not None:
                     raise error
-                # Like the HTTP retry hook, count the final empty attempt too.
+                # Like the HTTP retry hook, count the last empty attempt too.
                 self._retry_count.set(self._retry_count.get() + 1)
                 if attempt == _MAX_RETRIES:
                     raise EmptyResponse(
@@ -280,8 +280,8 @@ class ChatClient:
                 self._emit(event)
         assert response is not None
         # Check the first successful response for each client/model in the run.
-        # The verifier checks every recorded call, including later alias drift.
-        # Serialize capture with the check so overlapping responses cannot race
+        # The verifier checks each recorded call, including later alias drift.
+        # Serialize capture with the check, thus overlapping responses cannot race
         # to mark the model checked between another call's emission and check.
         with self._model_lock:
             self._emit(event)

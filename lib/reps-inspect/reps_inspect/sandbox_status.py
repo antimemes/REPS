@@ -1,18 +1,18 @@
 """Surface inspect's silent docker provisioning as `status` events.
 
-Running under ``display="none"`` (which the JSONL event channel requires) makes
-inspect pass ``--progress quiet`` to every docker compose command and capture the
-output of the long ones, so a first run can sit minutes inside a multi-GB image
-pull with nothing on the stream — while the one thing compose still prints is a
-harmless "No services to build" warning on stderr. Every such subprocess is,
+Running with ``display="none"`` (which the JSONL event channel requires) makes
+inspect pass ``--progress quiet`` to each docker compose command and capture the
+output of the long ones. Thus a first run can sit minutes inside a multi-GB
+image pull with no events on the stream — while the one thing compose prints is
+a harmless "No services to build" warning on stderr. Each such subprocess is,
 however, wrapped in inspect's ``trace_action(logger, "Subprocess", cmd)``, which
 logs structured records (``action``/``detail``/``event``/``duration`` as record
 attributes — no message parsing) at TRACE level. This handler listens on the
-``inspect_ai`` package logger (it sets ``propagate=False``, so a root handler
-would never see these) and re-emits just the provisioning commands — docker
+``inspect_ai`` package logger (it sets ``propagate=False``, thus a root handler
+does not see these) and re-emits just the provisioning commands — docker
 build/pull, plain or compose — as status events with durations. Per-tool-call
 ``compose exec`` and ``compose up``/``down`` chatter is deliberately excluded:
-they fire per sample and the stream is already narrated at that level.
+they fire for each sample and the stream is already narrated at that level.
 """
 
 from __future__ import annotations
@@ -29,7 +29,8 @@ _VERBS = {"build", "pull"}
 
 def docker_verb(detail: str) -> str | None:
     """`"docker compose pull"` / `"docker build"` for a provisioning command,
-    None for anything else (including `compose exec`, the per-tool-call path)."""
+    None for all other commands (including `compose exec`, the per-tool-call
+    path)."""
     try:
         tokens = shlex.split(detail)
     except ValueError:
@@ -39,8 +40,8 @@ def docker_verb(detail: str) -> str | None:
     prefix, rest = "docker", tokens[1:]
     if rest and rest[0] == "compose":
         prefix, rest = "docker compose", rest[1:]
-        # skip compose global flags; every one inspect uses takes a separate
-        # value (-f, -p, --ansi, --progress), so consume flag + value pairs
+        # skip compose global flags; each one inspect uses takes a separate
+        # value (-f, -p, --ansi, --progress), thus consume flag + value pairs
         while rest and rest[0].startswith("-"):
             rest = rest[1:] if "=" in rest[0] else rest[2:]
     if rest and rest[0] in _VERBS:
@@ -68,7 +69,7 @@ class _ProvisioningHandler(logging.Handler):
                         detail=f"sandbox: {verb} {('done' if event == 'exit' else event)}{took}"
                     )
                 )
-        except Exception:  # feedback only — never let it touch the eval
+        except Exception:  # feedback only — do not let it touch the eval
             pass
 
 

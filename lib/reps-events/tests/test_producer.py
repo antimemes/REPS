@@ -1,4 +1,4 @@
-"""The producer describes its actual interpreter through the shared wire contract."""
+"""The producer describes its actual interpreter through the shared serialized record."""
 
 import json
 import locale

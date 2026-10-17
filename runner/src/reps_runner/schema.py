@@ -18,10 +18,10 @@ from reps_events import Json
 
 # ---------------------------------------------------------------------------------
 # The manifest vocabulary, in ONE place — the conformance sweep checks these
-# types against every real nix-built manifest, so drift fails tests.
+# types against each real nix-built manifest, thus drift fails tests.
 # TypedDicts, not loose dicts: the manifest is a GENERATED document (mkExperiment),
-# so the win worth buying is key-correctness — a typo'd key is a type error, not a
-# silent None. Param VALUES stay `Json` (the recursive union from reps_events):
+# thus the win worth buying is key-correctness — an incorrect key is a type error, not
+# a silent None. Param VALUES stay `Json` (the recursive union from reps_events):
 # they are author/user data, validated at runtime by this module.
 # ---------------------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ class ParamDecl(TypedDict):
     initial: NotRequired[Json]
     description: NotRequired[str]
     nullable: NotRequired[bool]
-    # presentation order (lower first, default 100) and section label
+    # presentation sequence (lower first, default 100) and section label
     order: NotRequired[int]
     group: NotRequired[str]
     suggestions: NotRequired[list[Suggestion]]
@@ -73,7 +73,7 @@ class ParamDecl(TypedDict):
 
 
 class ResultDecl(TypedDict):
-    """An ordered, named output declaration, not a runtime value constraint."""
+    """An ordered output declaration with a name, not a runtime value constraint."""
     name: str
     type: ParamType
     label: NotRequired[str]
@@ -144,11 +144,11 @@ class MissingParamsError(SchemaError):
 
 
 def bind_params(manifest: Manifest, overrides: Params) -> Params:
-    """Every param must be bound by the invocation — there are NO experiment-level
+    """Each param must be bound by the invocation — there are NO experiment-level
     defaults. A manifest's `initial` values are suggestions only (including the
-    suggested oneliner the CLI prints on this error): they never
-    silently enter a run, so an author changing one can never change what an
-    existing oneliner means."""
+    suggested oneliner the CLI prints on this error): they do not
+    silently enter a run, thus an author changing one cannot change the meaning of
+    an existing oneliner."""
     params_schema = manifest["params"]
     unknown = set(overrides) - set(params_schema)
     if unknown:

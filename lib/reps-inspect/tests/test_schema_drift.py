@@ -38,7 +38,7 @@ def _declared_fields(model):
 def test_inspect_data_schema_drift(capsys):
     installed = Version(version("inspect-ai"))
     # Since 0.3.184, input_tokens excludes cache reads/writes. The runner adds
-    # those counters to get total input; an older Inspect would double-count.
+    # those counters to get total input; an older Inspect double-counts.
     assert installed >= Version("0.3.184"), "Inspect input_tokens must exclude cached tokens"
     upstream_modules = [import_module(f"inspect_ai.{module}") for module in (
         "model._chat_message", "model._model_output", "model._model_call",

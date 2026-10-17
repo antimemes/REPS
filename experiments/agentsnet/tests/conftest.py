@@ -1,8 +1,8 @@
-"""Tests run the authors' code for real under the mock model, in-process, with
-the reps-testing `event_capture` receiver collecting every event. Each test gets
-its own run directory; the adapter copies the authors' tree, named by
-AGENTSNET_UPSTREAM (tests/default.nix sets it to the pinned repository), into it
-and reads the dataset named by AGENTSNET_DATASET.
+"""Tests run the authors' code for real with the mock model, in-process, and
+the reps-testing `event_capture` receiver collects each event. Each test gets
+a run directory; the adapter copies the authors' tree that AGENTSNET_UPSTREAM
+names (tests/default.nix sets it to the pinned repository) into it and reads the
+dataset that AGENTSNET_DATASET names.
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ def run_dir(tmp_path, monkeypatch) -> Path:
     cwd = os.getcwd()
     yield tmp_path
     os.chdir(cwd)
-    # upstream modules keep module-level state (patched attributes); drop them so
-    # the next test re-imports against its own run directory
+    # upstream modules keep module-level state (patched attributes); drop them,
+    # thus the next test re-imports against its run directory
     for name in ("main", "LiteralMessagePassing", "utils", "generate_graphs", "chat_tool"):
         sys.modules.pop(name, None)
     for entry in [p for p in sys.path if str(tmp_path) in p]:

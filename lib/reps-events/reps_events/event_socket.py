@@ -1,4 +1,4 @@
-"""Per-run Unix socket: validate a producer event, record it, acknowledge it."""
+"""One Unix socket for each run: validate a producer event, record it, acknowledge it."""
 
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
@@ -37,7 +37,7 @@ def event_socket(record: Callable[[ProducerPayload], None]) -> Generator[str]:
             try:
                 self.wfile.write(json.dumps(reply).encode("utf-8") + b"\n")
             except OSError:
-                # A disconnected client may not know that its event was recorded.
+                # A disconnected client cannot know that its event was recorded.
                 pass
 
     class Server(socketserver.ThreadingUnixStreamServer):
@@ -46,7 +46,7 @@ def event_socket(record: Callable[[ProducerPayload], None]) -> Generator[str]:
         block_on_close = True
         request_queue_size = 128
 
-    # /tmp keeps the pathname short on both macOS and Linux, even if the run
+    # /tmp keeps the pathname short on macOS and Linux, even if the run
     # directory or the platform's default temporary directory has a long name.
     with tempfile.TemporaryDirectory(prefix="reps-", dir="/tmp") as directory:
         path = str(Path(directory) / "events.sock")

@@ -1,10 +1,10 @@
-# The inspect_evals family: one REPS experiment per runnable task in the GENERATED
-# task_catalog.json (the task is the experiment, never a param) — regenerate with
-# `task tasks:update`; never add a catalog task by hand. Tasks whose eval declares a
+# The inspect_evals family: one REPS experiment for each runnable task in the GENERATED
+# task_catalog.json (the task is the experiment, not a param) — regenerate with
+# `task tasks:update`; do not add a catalog task by hand. Tasks whose eval declares a
 # pip extra we do not install get no experiment (degraded but correct — install the
 # extra in pyproject + relock + regen to enable them); sandbox needs come from the
-# eval's own declared runtime metadata. The bundled keyless `hello` smoke ships from
-# this family (hello_task/), so getting-started needs no key, network, or sandbox.
+# eval's declared runtime metadata. The bundled keyless `hello` smoke ships from
+# this family (hello_task/), thus getting-started needs no key, network, or sandbox.
 { reps, pkgs, lib, writeShellApplication, jq }:
 
 let
@@ -17,7 +17,7 @@ let
   catalog = builtins.fromJSON (builtins.readFile ./task_catalog.json);
   # the typed sub-form schema for generate_args, generated from the pinned
   # inspect_ai's GenerateConfig (shared infra, like the model catalog) —
-  # through `reps`, never a ../../ path, so the declaration uses the
+  # through `reps`, not a ../../ path, for the declaration to use the
   # schema provided by the selected reps package set
   genFields = reps.inspectGenerateFields;
 
@@ -52,8 +52,8 @@ let
   ];
 
   # Experiment-specific EXTRA hints only — the shared model catalog is attached by
-  # types.llm itself (mkExperiment), with extras prepended. The keyless mock leads:
-  # it's this family's getting-started story and works for every inspect task.
+  # types.llm (mkExperiment), with extras prepended. The keyless mock leads:
+  # it is this family's getting-started story and works for each inspect task.
   modelSuggestions = [
     { value = "mockllm/model"; description = "Inspect's built-in mock — keyless, offline, deterministic."; }
   ];
@@ -68,14 +68,14 @@ let
     src = [ ./package.nix ./pyproject.toml ./uv.lock ]
       ++ lib.optional keyless ./hello_task;
 
-    # presentation order (`order`/`group` hints): the task's own params first —
-    # they are what a researcher cares about — then model, then the inspect harness
+    # presentation order (`order`/`group` hints): the task's params first —
+    # the ones a researcher cares about — then model, then the inspect harness
     # knobs, then generation.
     params = with reps.types;
-      # the task's own kwargs, flattened to real typed params (catalog-generated:
+      # the task's kwargs, flattened to real typed params (catalog-generated:
       # concrete defaults become `initial`s; declared-None defaults become required
       # nullable params bound with `--set k=null`). Their `order` is the upstream
-      # signature's declared order — never alphabetized.
+      # signature's declared sequence — not alphabetized.
       lib.mapAttrs (_: p: p // { group = "task"; }) taskParams
       // {
         model = param llm ({
@@ -118,7 +118,7 @@ let
 
     # The adapter — the lift between the runner protocol (params JSON on stdin, seed
     # in $REPS_SEED) and the wrapper's interface (`reps-inspect-eval CONFIG.json`):
-    # every flattened task param regroups into inspect task_args under its real
+    # each flattened task param regroups into inspect task_args as its real
     # kwarg name (the catalog's kwarg map un-does the `task_` collision prefix);
     # explicit nulls pass through — the task is called with kwarg=None, exactly
     # its declared default.

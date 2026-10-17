@@ -1,6 +1,6 @@
 """The runner protocol, exercised against a real subprocess — a fixture script speaking
-the contract (params on stdin, event payloads on a Unix socket). This is the seam every
-experiment in any language crosses; no mocks, the fixture IS a minimal experiment."""
+the contract (params on stdin, event payloads on a Unix socket). This is the seam all
+experiments in all languages cross; no mocks, the fixture IS a minimal experiment."""
 
 import json
 import os
@@ -92,7 +92,7 @@ def test_protocol_end_to_end(tmp_path):
     result, envelopes, store = run_fixture(tmp_path)
 
     assert result.state == "completed"
-    # transport envelope: runner owns v/ts/run/seq; the payload rides under `event`
+    # transport envelope: runner owns v/ts/run/seq; the payload rides in `event`
     assert [e["seq"] for e in envelopes] == list(range(len(envelopes)))
     assert all(e["v"] == VOCABULARY_VERSION and e["run"] == "20260916t120000z-012345abcdef" and "event" in e for e in envelopes)
     assert all(len(e["ts"]) == 27 and e["ts"].endswith("Z") for e in envelopes)
@@ -118,7 +118,7 @@ def test_protocol_end_to_end(tmp_path):
     assert record["definitions"]["results"] == MANIFEST["results"]
 
     end = payloads[-1]
-    assert end["type"] == "run.end" and "fake" not in end  # the runner's own, last
+    assert end["type"] == "run.end" and "fake" not in end  # written by the runner, last
     assert set(end) == {"type", "state", "duration_s", "exit_code"}
     assert end["exit_code"] == record["lifecycle"]["exit_code"] == 0
     assert not {"summary", "usage_totals", "base_seed", "replicates", "realized_params", "spec_params"} & record.keys()
@@ -429,7 +429,7 @@ def test_child_env_is_constructed_not_inherited(monkeypatch):
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "aws-ambient")
     monkeypatch.setenv("DOCKER_HOST", "unix:///run/user/1000/docker.sock")
     env = child_env("rid", "/run/dir", 7, {"OPENAI_API_KEY": "sk-stored"})
-    assert env["OPENAI_API_KEY"] == "sk-stored"  # store wins over host
+    assert env["OPENAI_API_KEY"] == "sk-stored"  # store overrides host
     assert "OPENAI_BASE_URL" not in env
     assert "AWS_SECRET_ACCESS_KEY" not in env
     assert env["DOCKER_HOST"] == "unix:///run/user/1000/docker.sock"  # allowlisted

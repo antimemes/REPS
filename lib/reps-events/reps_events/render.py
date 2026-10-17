@@ -1,4 +1,4 @@
-"""Presentation metadata for schema readers; hints never enter event records.
+"""Presentation metadata for schema readers; hints do not enter event records.
 
 The former ``group`` hint was removed: viewers render rows in sequence and use
 facets to narrow the stream instead of folding records together.
@@ -33,7 +33,7 @@ class ActorRegistry(BaseModel):
 
 
 class RenderHint(BaseModel):
-    """Payload paths and literal text with {path} substitutions, never expressions.
+    """Payload paths and literal text with {path} substitutions, not expressions.
 
     A title/body consisting solely of a bare field path stays a path lookup.
     Missing substitutions are empty. Fields and badge always contain bare paths.
@@ -78,7 +78,7 @@ def export_schema(union: Any) -> dict[str, Any]:
 
 
 def hint_path_declared(schema: dict[str, Any], path: str, root: dict[str, Any]) -> bool:
-    """Every path segment must resolve to a declared JSON Schema property."""
+    """Each path segment must resolve to a declared JSON Schema property."""
     if "$ref" in schema:
         schema = root["$defs"][schema["$ref"].rsplit("/", 1)[-1]]
     for union_key in ("anyOf", "oneOf"):

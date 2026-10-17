@@ -43,10 +43,10 @@ def make_embedder():
 
 
 def build_simulation(params: Params):
-    """The upstream tutorial's assembly, param-driven. Imported lazily so a bad config
-    is reported before the heavy Concordia import chain runs. The one non-tutorial
-    ingredient is a model client per entity — that's what attributes each llm.call
-    event to its agent (client.PerEntitySimulation)."""
+    """The upstream tutorial's assembly, param-driven. Imported lazily to report a bad
+    config before the heavy Concordia import chain runs. The one non-tutorial
+    ingredient is a model client for each entity — it attributes each llm.call event
+    to its agent (client.PerEntitySimulation)."""
     import importlib
 
     from concordia.prefabs.entity import conversational
@@ -54,10 +54,10 @@ def build_simulation(params: Params):
 
     from .client import RepsLanguageModel, PerEntitySimulation
 
-    # the game master is any prefab under concordia.prefabs.game_master, imported by
+    # the game master is a prefab in concordia.prefabs.game_master, imported by
     # name. dialogic is a pure conversation: it hands control back to itself and cannot
     # end the scene; fixed acting order keeps turn-taking deterministic. Params a GM
-    # does not use are ignored (prefabs read through .get), so this is safe across GMs.
+    # does not use are ignored (prefabs read through .get), thus this is safe across GMs.
     gm_module = importlib.import_module(
         f"concordia.prefabs.game_master.{params.game_master}"
     )
@@ -105,9 +105,9 @@ def build_simulation(params: Params):
 
 def run(params: Params) -> None:
     # Concordia reaches for unseeded global RNG (numpy + random) in a few places; seed
-    # both so replicates do not share RNG state. (Full byte-reproducibility is not
-    # promised: the engine fans component calls over a thread pool, so memory-accrual
-    # order — and with it prompt contents — can change run to run.)
+    # the two. Thus replicates do not share RNG state. (Full byte-reproducibility is not
+    # promised: the engine fans component calls through a thread pool. Thus
+    # memory-accrual sequence — and with it prompt contents — can change run to run.)
     random.seed(params.seed)
     np.random.seed(params.seed & 0xFFFFFFFF)
 
@@ -130,7 +130,7 @@ def run(params: Params) -> None:
     try:
         sim_log = sim.play(premise=params.premise, max_steps=params.max_steps,
                            raw_log=turns.raw_log, step_callback=turns.step)
-        # Concordia's own log viewer — memories, per-component reasoning, the works —
+        # Concordia's log viewer — memories, per-component reasoning, the works —
         # deposited verbatim; the event stream stays the semantic tier + llm.calls
         deposit_artifact("concordia log", sim_log.to_html(), kind="concordia.artifact",
                          filename="concordia_log.html", media_type="text/html")

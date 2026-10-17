@@ -7,7 +7,7 @@ and copied into each run directory. One REPS run is one cell of the authors'
 sweep (`main.py --task T --graph_size N` loops graph families and instances;
 `main.sh` loops sizes and tasks): one task on one graph instance from their
 published dataset. The adapter stages the tree, loads the instance with
-upstream's own `main.get_graph` (pointed at the pinned parquet), fixes the round
+upstream's `main.get_graph` (pointed at the pinned parquet), fixes the round
 count with upstream's `determine_rounds`, swaps the model construction for a
 REPS-instrumented chat model (monkeypatches.py, llm.py), drives the task class
 exactly as upstream's `run()` does (bootstrap, pass_messages, get_score, with the
@@ -15,11 +15,11 @@ same error handling, plus upstream's one known uncaught crash, see `_drive`), ha
 upstream write its results JSON with `save_results`, ingests that file, and
 reports the paper's score and upstream's parsing counters from it. Upstream's
 prompts, parsing, scoring and bugs are untouched unless a fix switch is on
-(patches/); monkeypatches.py lists what the adapter replaces.
+(patches/); monkeypatches.py lists the attributes the adapter replaces.
 
 The program speaks the runner protocol (reps-experiment packages it): params
 arrive as JSON on stdin (or a config path on argv for hand-runs), events leave
-over the event socket. Any params or results change here must be mirrored in
+through the event socket. Each params or results change here must be mirrored in
 package.nix.
 """
 
@@ -47,7 +47,7 @@ Generator = Literal["ws", "ba", "dt"]
 class Params(BaseModel):
     """One cell of upstream main.py's loops: one task, one dataset instance."""
 
-    model: str                                  # provider/model for every agent
+    model: str                                  # provider/model for each agent
     task: Task
     graph_generator: Generator                  # upstream --graph_models, one of them
     graph_size: int = Field(ge=1)               # upstream --graph_size; must exist in the dataset
@@ -94,7 +94,7 @@ def _dataset_graph_seed(params: Params) -> int | None:
 def _empty_vertex_cover(model, answers, error: ZeroDivisionError) -> bool:
     """Upstream's vertex-cover scorer divides by the cover size, which is zero when
     no agent answered "Yes" (all "No", or unparseable). Only that case, raised in
-    that function, qualifies; any other ZeroDivisionError is not upstream's known
+    that function, qualifies; a different ZeroDivisionError is not upstream's known
     crash and must fail the run."""
     frame = error.__traceback__
     while frame is not None and frame.tb_next is not None:
@@ -110,11 +110,11 @@ async def _drive(model):
     error_message, crashed).
 
     Upstream does not catch the empty-cover ZeroDivisionError: its process dies and
-    no results file is written, so its own recovery tooling (--start_from_sample,
-    --missing_run_file) would rerun the instance. Here the run completes with score
-    0, which is what upstream's formula means (coverage 0 times an undefined
-    minimality share) and what the paper's definition gives for an empty cover, and
-    `crashed` marks it so analyses can drop it as the authors' reruns would."""
+    no results file is written. Thus its recovery tooling (--start_from_sample,
+    --missing_run_file) reruns the instance. Here the run completes with score 0,
+    the meaning of upstream's formula (coverage 0 times an undefined minimality
+    share) and the value the paper's definition gives for an empty cover, and
+    `crashed` marks it to let analyses drop it as the authors' reruns do."""
     await model.bootstrap()
     answers = None
     try:
@@ -167,7 +167,7 @@ def run(params: Params) -> None:
         emit(Log(level="warn", message=f"agentsnet: upstream's vertex-cover scorer raised {error_message} "
                                        "(no agent answered Yes); recorded as score 0, upstream_crashed true"))
 
-    # upstream's own record, then its ingestion
+    # upstream's record, then its ingestion
     up_main.save_results(
         answers=answers, transcripts=model.get_transcripts(), graph=model.graph, rounds=rounds,
         model_name=model.model_name, task=params.task, score=score,

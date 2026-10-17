@@ -1,16 +1,17 @@
 """EvalLog -> REPS event stream (docs/book/src/reference/events.md).
 
-Every native transcript event is retained as an inspect.event custom record.
+Each native transcript event is retained as an inspect.event custom record.
 Model events additionally derive llm.call immediately after their raw record;
 inspect.sample carries outcomes and result events carry aggregate results.
 
-Inspect telemetry is secondary data (transcript-derived), so callers may weigh
+Inspect telemetry is secondary data (transcript-derived), thus callers can weigh
 it accordingly — same posture as the harness normalizers in specs/harness.md.
 
 Annotations use the real pinned inspect types (TYPE_CHECKING only — importing
-inspect_ai at module scope would defeat main.py's lazy heavy-import posture);
-guards below mirror what those types actually promise: `output` and `eval` are
-required fields, so the empty-response case is `not output.choices`, never None.
+inspect_ai at module scope can defeat main.py's lazy heavy-import posture);
+guards below mirror the promises those types actually make: `output` and `eval`
+are required fields, thus the empty-response case is `not output.choices`, never
+None.
 """
 
 from __future__ import annotations
@@ -65,7 +66,7 @@ def _warn_drift(paths: set[str]) -> None:
 
 @contextmanager
 def drift_warnings() -> Generator[None]:
-    """Collect dropped paths across all samples and warn once when the run ends."""
+    """Collect dropped paths across all samples and warn one time when the run ends."""
     if _DRIFT.get() is not None:
         yield
         return
@@ -138,8 +139,8 @@ def _filter_fields(
             if (issubclass(model, ChatMessageBase) and name == "source"
                     or model is ToolCall and name == "view"):
                 continue  # Harness/viewer data, deliberately excluded from the boundary.
-            # Collapse list indices so the run summary grows with schema changes,
-            # not with the number of messages or model calls.
+            # Collapse list indices to let the run summary grow with schema
+            # changes, not with the number of messages or model calls.
             dropped.add(re.sub(r"\[\d+\]", "[]", child_path))
             continue
         normalize = (
@@ -238,11 +239,11 @@ def emit_model_event(ev: ModelEvent, agent: str,
 
 
 class SampleTranscript:
-    """Emit each sample's completed transcript prefix in its native order.
+    """Emit each sample's completed transcript prefix in its native sequence.
 
-    Inspect delivers hooks when events complete, which may differ from transcript
-    order under nesting. Wait behind pending events, then flush the whole prefix.
-    The final pass includes unfinished events and reconciles anything hooks missed.
+    Inspect delivers hooks when events complete, which can differ from transcript
+    sequence with nesting. Wait behind pending events, then flush the whole prefix.
+    The last pass includes unfinished events and reconciles anything hooks missed.
     """
 
     def __init__(self, sample_id: str | int, epoch: int) -> None:
@@ -267,7 +268,7 @@ _SCALAR = (int, float, str, bool)
 
 
 def _flat_scores(scores: Mapping[str, Value]) -> dict[str, int | float | str | bool]:
-    """Inspect Score.value per scorer → the spec's flat scalar map: dict-valued
+    """Inspect Score.value for each scorer → the spec's flat scalar map: dict-valued
     scorers (agentharm's combined_scorer) flatten with '/'-joined names; a
     non-scalar leaf stringifies (degraded-but-correct — the raw .eval artifact
     keeps the original)."""
@@ -307,7 +308,7 @@ def emit_sample(sample: EvalSample, agent: str, *,
 
 def headline(log: EvalLog) -> tuple[float, str]:
     """Pick the run's single reportable score: an `accuracy`-named aggregate result
-    if present, else the first numeric aggregate result. Returns (value, name)."""
+    if present; if not, the first numeric aggregate result. Returns (value, name)."""
     results = log.results
     if not results:
         return 0.0, ""
@@ -327,7 +328,7 @@ def headline(log: EvalLog) -> tuple[float, str]:
 
 def emit_aggregate(log: EvalLog, agent: str) -> dict[str, Any]:
     """The run-level tail: aggregate scorer metrics, token totals, and the scalar
-    results summary. Emitted once after the eval; model calls and inspect.event
+    results summary. Emitted one time after the eval; model calls and inspect.event
     and inspect.sample custom events stream separately as each sample completes."""
     results = log.results
     if results:
@@ -360,7 +361,7 @@ def emit_aggregate(log: EvalLog, agent: str) -> dict[str, Any]:
 
 
 def emit_all(log: EvalLog, agent: str) -> dict[str, Any]:
-    """Translate the whole EvalLog at once (the batch path — used by tests and any
+    """Translate the whole EvalLog at once (the batch path — used by tests and each
     caller that has a completed log). main.py streams instead: samples through a hook,
     then emit_aggregate."""
     with drift_warnings():

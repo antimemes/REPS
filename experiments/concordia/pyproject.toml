@@ -1,15 +1,15 @@
-# The importable package is `concordia_sim` — a top-level package named `concordia`
-# would shadow the upstream `concordia` library we import, so the dir name and the
-# experiment names (concordia-<scenario>) intentionally differ (same trick inspect
-# uses for the stdlib).
+# The importable package is `concordia_sim` — a top-level package with the name
+# `concordia` shadows the upstream `concordia` library we import. Thus the dir name
+# and the experiment names (concordia-<scenario>) intentionally differ (same trick
+# inspect uses for the stdlib).
 [project]
 name = "reps-concordia"
 version = "0.1.0"
 description = "Concordia (google-deepmind) generative agent simulations as REPS experiments — one experiment per scenario, REPS events out"
 requires-python = ">=3.13"
 dependencies = [
-    # bounded so a relock is a deliberate line-edit, not silent drift of the wrapped
-    # tool; the exact resolved version is in uv.lock and recorded per run as a
+    # bounded, thus a relock is a deliberate line-edit, not silent drift of the wrapped
+    # tool; the exact resolved version is in uv.lock and recorded for each run as a
     # provenance covariate
     "gdm-concordia~=2.4.0",
     # transport for real backends: concordia.contrib's BaseGPTModel drives an
@@ -34,8 +34,8 @@ reps-testing = { path = "../../lib/reps-testing", editable = true }
 reps-events = { path = "../../lib/reps-events", editable = true }
 reps-experiment = { path = "../../lib/reps-experiment" }
 
-# the console script cannot be `concordia` (it would collide with the upstream package's
-# own entry namespace and reads ambiguously); the binary is `concordia-sim`.
+# the console script cannot be `concordia` (it collides with the upstream package's
+# entry namespace and reads ambiguously); the binary is `concordia-sim`.
 [project.scripts]
 concordia-sim = "concordia_sim.main:main"
 

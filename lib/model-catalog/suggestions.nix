@@ -1,10 +1,10 @@
-# The `types.llm` combobox hints, generated — never edit a model id here by hand.
+# The `types.llm` combobox hints, generated — do not edit a model id here by hand.
 # Concrete ids come from model_catalog.json (regenerate with `task models:update`)
 # — PROVIDER knowledge, wrapper-agnostic. Value strings use REPS's canonical
 # provider prefixes; adapters translate them into their framework's names.
 # The static tail
 # covers pattern-style providers with no enumerable model list. Shared infra: a
-# catalog refresh changes manifests but never condition identity.
+# catalog refresh changes manifests but not condition identity.
 { lib }:
 
 let

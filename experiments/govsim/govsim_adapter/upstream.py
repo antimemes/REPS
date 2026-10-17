@@ -1,10 +1,10 @@
 """Ingest final upstream JSON files without projecting or coercing native rows.
 
 ``persona_*/embeddings.json`` is omitted: it is recomputable from node
-descriptions and the embedder named in ``govsim.config``. Each file's marker
+descriptions and the embedder in ``govsim.config``. Each file's marker
 hashes the original bytes, not a JSON reserialization. A malformed file has zero
 ingested records and keeps its text in
-``govsim.unparsed_log``; other files are still captured before the error is raised.
+``govsim.unparsed_log``; other files are captured before the error is raised.
 """
 
 import hashlib
@@ -35,7 +35,7 @@ def _ingest_file(path: Path, storage: Path, persona: str | None = None) -> list[
         rows = json.loads(raw.decode("utf-8"))
         if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
             raise ValueError(f"GovSim {source} must be a JSON array of records")
-        # Validate the whole file before emitting its marker or any of its rows.
+        # Validate the whole file before emitting its marker or its rows.
         records = [RecordData.model_validate(row) for row in rows]
     except ValueError as exc:
         emit(GovsimUpstreamLog(data=marker))
@@ -56,7 +56,7 @@ def _ingest_file(path: Path, storage: Path, persona: str | None = None) -> list[
 
 
 def ingest_storage(storage: Path) -> list[dict] | None:
-    """Capture the environment log then every persona's nodes, in file order.
+    """Capture the environment log then each persona's nodes, in file sequence.
 
     The returned environment rows feed result calculations. Report a missing log
     or missing nodes in an existing persona directory, then keep capturing other

@@ -1082,7 +1082,7 @@
     },
     "CustomEvent": {
       "additionalProperties": false,
-      "description": "Experiment-specific observations within the public wire vocabulary.",
+      "description": "Experiment-specific observations within the public record vocabulary.",
       "properties": {
         "type": {
           "const": "custom",
@@ -1860,7 +1860,7 @@
     },
     "ProducerPython": {
       "additionalProperties": false,
-      "description": "The producing interpreter's toolchain, emitted once before its observations.",
+      "description": "The producing interpreter's toolchain, emitted one time before its observations.",
       "properties": {
         "type": {
           "const": "producer.python",
@@ -2104,7 +2104,7 @@
     },
     "RunStart": {
       "additionalProperties": false,
-      "description": "A launch snapshot: identity, inputs, seed and provenance.\n\nWritten before starting the child; it does not assert successful execution.\nExperiment identity belongs to the envelope on every record.",
+      "description": "A launch snapshot: identity, inputs, seed and provenance.\n\nWritten before starting the child; it does not assert successful execution.\nExperiment identity belongs to the envelope on each record.",
       "properties": {
         "type": {
           "const": "run.start",
@@ -2251,7 +2251,7 @@
     },
     "StopDetails": {
       "additionalProperties": false,
-      "description": "Additional detail about why a model stopped generating (e.g. a content refusal).\n\n`categories` is the canonical list (always iterable; a single-category provider\nappears as one entry). `category` and `explanation` are a convenience high-level\nsummary derived from the same data \u2014 `category` is the primary category and\n`explanation` is human-readable (synthesized from `categories` when the provider\nsupplies no text). Read either way; both describe the same stop.",
+      "description": "More detail about why a model stopped generating (e.g. a content refusal).\n\n`categories` is the canonical list (always iterable; a single-category provider\nappears as one entry). `category` and `explanation` are a convenience high-level\nsummary derived from the same data \u2014 `category` is the primary category and\n`explanation` is human-readable (synthesized from `categories` when the provider\nsupplies no text). Read either way; the two describe the same stop.",
       "properties": {
         "type": {
           "anyOf": [

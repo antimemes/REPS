@@ -1,4 +1,4 @@
-"""One append-only stream per run."""
+"""One append-only stream for each run."""
 
 import json
 
@@ -29,7 +29,7 @@ def test_one_stream_preserves_all_records_in_order(tmp_path):
 
     assert sorted(p.name for p in s.dir.iterdir()) == ["events.jsonl", "workspace"]
     replayed = [json.loads(line) for line in (s.dir / "events.jsonl").read_text().splitlines()]
-    assert [e["seq"] for e in replayed] == list(range(20))  # nothing lost or reordered
+    assert [e["seq"] for e in replayed] == list(range(20))  # no event lost or reordered
 
 
 def test_condition_path_uses_both_fields_and_accepts_hyphenated_experiments(tmp_path):

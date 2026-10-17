@@ -21,7 +21,7 @@ build-backend = "hatchling.build"
 packages = ["reps_events"]
 
 # Consumers take this package as a non-editable path dep, and uv's default cache
-# key is pyproject.toml alone — a source-only edit here would leave every
+# key is pyproject.toml alone — a source-only edit here can leave each
 # consumer's venv running (and typechecking) a stale copy until the next relock.
 # Keying the built wheel on the sources makes `uv sync`/`uv run` pick edits up.
 [tool.uv]

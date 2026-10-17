@@ -25,7 +25,7 @@ def test_docker_verb_provisioning():
 
 
 def test_docker_verb_excludes_noise():
-    # per-tool-call and per-sample lifecycle commands stay out of the stream
+    # lifecycle commands for each tool call and each sample stay out of the stream
     assert docker_verb(f"{COMPOSE} exec -T default bash -c ls") is None
     assert docker_verb(f"{COMPOSE} up --detach --wait") is None
     assert docker_verb(f"{COMPOSE} down --volumes") is None

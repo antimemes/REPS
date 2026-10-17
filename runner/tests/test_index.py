@@ -623,7 +623,7 @@ def test_invalid_exclusions_fail_before_any_s3_call(tmp_path, catalog, monkeypat
 
 def test_catalog_only_indexes_selected_manifests_hints_and_dereferenced_assets(stores, catalog, tmp_path, monkeypatch):
     _, _, _, _, invoke = stores
-    # An unused registry entry must never be opened.
+    # An unused registry entry must not be opened.
     (catalog / "unindexed.json").write_text("not JSON")
     shared_reads = []
     read_bytes = Path.read_bytes
@@ -644,7 +644,7 @@ def test_catalog_only_indexes_selected_manifests_hints_and_dereferenced_assets(s
     for manifest in value["manifests"]:
         name = manifest["name"]
         original = json.loads((catalog / f"{name}.json").read_bytes())
-        assert "path" in original["schema"]  # Export never edits the source manifest.
+        assert "path" in original["schema"]  # Export does not edit the source manifest.
         del original["schema"]["path"]
         assert manifest == original
         assert (destination / f"catalog/assets/{name}/images/figure.svg").read_bytes() == b"<svg>figure</svg>"

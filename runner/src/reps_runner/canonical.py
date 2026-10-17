@@ -1,4 +1,4 @@
-"""Condition identity per docs/book/src/running/model.md.
+"""Condition identity as defined in docs/book/src/running/model.md.
 
 condition_id = first 40 hex characters of sha256(JCS({experiment, source, params})).
 """

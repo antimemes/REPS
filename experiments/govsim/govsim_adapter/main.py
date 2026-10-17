@@ -10,13 +10,13 @@ package with a seed-forwarding patch; this program mirrors upstream
 embedder substitution, wandb neutralization —
 and extracts the paper's metrics from the persisted ``log_env.json``.
 Persisted persona nodes are ingested too. ``persona_*/embeddings.json`` is
-recomputable from node descriptions and the embedder named in ``govsim.config``
-(``data.embedder``), so embeddings are left out of the event stream.
+recomputable from node descriptions and the embedder in ``govsim.config``
+(``data.embedder``), thus embeddings are left out of the event stream.
 
 The program speaks the runner protocol (reps-experiment packages it): params
 arrive as JSON on stdin (or a config path on argv for hand-runs), events leave
-as JSON over the event socket. Any params or results change here must be mirrored in
-package.nix.
+as JSON through the event socket. Each params or results change here must be
+mirrored in package.nix.
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ EXPERIMENTS = (
 
 class Params(BaseModel):
     experiment: str    # upstream experiment config id (the condition)
-    max_rounds: int = Field(ge=0)  # 0 = upstream per-experiment value
+    max_rounds: int = Field(ge=0)  # 0 = upstream value for each experiment
     model: str         # provider/model; mock/model = keyless offline
     embedder: Literal["hash", "mxbai"]      # hash | mxbai
     threads: int = Field(default=2, ge=1, strict=True)
@@ -77,9 +77,9 @@ class Params(BaseModel):
 
 
 def _compose(params: Params, seed: int):
-    """Hydra compose over the installed upstream conf packages. Package searchpath
+    """Hydra compose on the installed upstream conf packages. Package searchpath
     entries replace upstream's cwd-relative ones (no chdir needed); compose
-    strips the hydra node, so upstream's ``${uuid:}`` run-dir resolver is never
+    strips the hydra node, thus upstream's ``${uuid:}`` run-dir resolver is not
     consulted."""
     from hydra import compose, initialize_config_module
 
@@ -120,7 +120,7 @@ def run(params: Params) -> None:
     # Match the launcher's non-negative 31-bit range for provider seeds and
     # local RNGs; use this same value in cfg.seed, RNGs and ChatClient.
     seed = int(os.environ.get("REPS_SEED", "0")) & 0x7FFFFFFF
-    # belt and braces on top of RepsLogger's debug=True: wandb must never leave
+    # belt and braces on top of RepsLogger's debug=True: wandb must not leave
     # the run dir or touch the network — set before simulation.utils imports it
     os.environ.setdefault("WANDB_MODE", "disabled")
     os.environ.setdefault("WANDB_DIR", os.getcwd())
@@ -128,7 +128,7 @@ def run(params: Params) -> None:
     cfg = _compose(params, seed)
     # The composed upstream model path is bypassed by our injected backend.
     # Save the effective model in the simulation config. The runner records
-    # launch parameters, source identity and build provenance for every experiment.
+    # launch parameters, source identity and build provenance for each experiment.
     cfg.llm.path = params.model
     cfg.llm.backend = "reps-experiment.ChatClient"
     from omegaconf import OmegaConf
@@ -139,7 +139,7 @@ def run(params: Params) -> None:
 
     set_seed(seed)  # mirrored from upstream main.py (global python/numpy/torch)
 
-    # model: our pathfinder backend, wrapped in the upstream wrapper — never
+    # model: our pathfinder backend, wrapped in the upstream wrapper — not
     # pathfinder.get_model (its name-substring dispatch rejects REPS model ids).
     # Single-LLM only: upstream's mix_llm path is broken at these pins.
     from .backend import ChatClientBackend
@@ -189,7 +189,7 @@ def run(params: Params) -> None:
         "sheep": run_sheep,
         "pollution": run_pollution,
     }
-    scenario = str(cfg.experiment.scenario)  # a declared field, never inferred
+    scenario = str(cfg.experiment.scenario)  # a declared field, not inferred
     if scenario not in scenarios:
         raise ValueError(f"unknown experiment.scenario: {scenario}")
 
@@ -204,8 +204,8 @@ def run(params: Params) -> None:
             cfg.experiment, logger, wrappers, wrapper, embedding_model, storage,
         )
     finally:
-        # Capture every completed native file even when the simulation fails.
-        # Ingestion precedes Pandas so native values stay unchanged.
+        # Capture each completed native file even when the simulation fails.
+        # Ingestion precedes Pandas, thus native values stay unchanged.
         simulation_error = sys.exception()
         try:
             rows = ingest_storage(Path(storage))

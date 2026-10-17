@@ -28,7 +28,7 @@ import typing
 from pathlib import Path
 
 EXCLUDE = {
-    # transport/reliability/caching/batching: environment, never condition
+    # transport/reliability/caching/batching: environment, not condition
     "max_retries", "timeout", "attempt_timeout", "max_connections",
     "adaptive_connections", "cache", "cache_prompt", "batch", "extra_headers",
     "fallback_models",

@@ -40,10 +40,10 @@ class Verification:
     filtered_identity_unavailable: bool
 
 
-# Invoke only the manifest build's interpreter and declared union, never code paths
+# Invoke only the manifest build's interpreter and declared union, not code paths
 # supplied by run.json or event payloads. Capture diagnostics: Pydantic's normal
 # error output includes input values and must not echo a leaked credential.
-# Validate raw lines with the build's own reps_events: retained v0 builds use
+# Validate raw lines with the build's reps_events: retained v0 builds use
 # their v0 Envelope, independently of the current reader's migrations.
 _VALIDATE_UNION = '''
 import importlib, json, sys
@@ -111,14 +111,14 @@ def _manifest_path(experiment: str, *, manifest: Path | None, catalog: Path | No
         if built.returncode:
             raise VerificationError("could not build the manifest catalog; pass --manifest/--catalog from a successful build")
         catalog = Path(built.stdout.strip())
-    # Names come from records; they are never treated as paths or Nix expressions.
+    # Names come from records; they are not treated as paths or Nix expressions.
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", experiment):
         raise VerificationError("invalid experiment identifier")
     return catalog / f"{experiment}.json"
 
 
 def _records(run_dir: Path) -> list[Envelope[Any]]:
-    """Validate migrated records and their structure, order, and identity."""
+    """Validate migrated records and their structure, sequence, and identity."""
     records: list[Envelope[Any]] = []
     try:
         for record in read_events(run_dir):
@@ -222,7 +222,7 @@ def verify_run(run_dir: Path, *, manifest: Path | None = None, catalog: Path | N
 
     Terminal failed/interrupted runs can also be audited, but missing declared
     results and failed model observations are findings. This checks evidence,
-    not scientific outcomes. Never repairs records or the card. Checks all
+    not scientific outcomes. Does not repair records or the card. Checks all
     local profiles matching the recorded endpoints.
     """
     records = _records(run_dir)
@@ -246,8 +246,8 @@ def verify_run(run_dir: Path, *, manifest: Path | None = None, catalog: Path | N
     except (OSError, ValueError):
         raise VerificationError("run.json is missing or unreadable") from None
     expected = derive_card(records)
-    # A saved v0 cache may predate the new reading. Accept it only if it exactly
-    # matches the original stream projection; never ignore arbitrary card drift.
+    # A saved v0 cache can predate the new reading. Accept it only if it exactly
+    # matches the original stream projection; do not ignore arbitrary card drift.
     if card != expected:
         original_projection = CardProjection()
         legacy = False

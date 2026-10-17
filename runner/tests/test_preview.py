@@ -14,7 +14,7 @@ from reps_events import VOCABULARY_VERSION
 from reps_runner import cli, preview
 
 RUN_A = "20260916t120000z-0123456789ab"   # older, completed
-RUN_B = "20260917t080000z-fedcba987654"   # newer, still being written
+RUN_B = "20260917t080000z-fedcba987654"   # newer, write in progress
 COND_A = "a" * 40 + "-fixture"
 COND_B = "b" * 40 + "-other-exp"
 
@@ -42,7 +42,7 @@ def home(tmp_path):
     (a / "run.json").write_text(json.dumps(_card(RUN_A, "fixture", "2026-09-16T12:00:00Z", "completed",
                                                  note="card-only field")))
     (b / "events.jsonl").write_text(_line(RUN_B, 0, {"type": "status", "detail": "live"})
-                                    + '{"v":1,"ts":"2026-09-17T08:00:02Z","seq":1,"ev')  # still being written
+                                    + '{"v":1,"ts":"2026-09-17T08:00:02Z","seq":1,"ev')  # write in progress
     (b / "run.json").write_text(json.dumps(_card(RUN_B, "other-exp", "2026-09-17T08:00:00Z", "running")))
     bad = tmp_path / "runs" / COND_A / "20260919t000000z-aaaaaaaaaaaa"
     bad.mkdir()
@@ -112,7 +112,7 @@ def test_manifests_are_served_as_written_by_name(server, catalog):
     assert [m["name"] for m in manifests] == ["alpha", "zeta"]       # the damaged and nameless files skipped
     assert manifests[0] == json.loads((catalog / "alpha.json").read_text())
     assert get(server, "/api/manifests/../alpha.json")[0] == 404
-    assert get(server, "/manifests/alpha.json")[0] == 404           # only the JSON list, never the directory
+    assert get(server, "/manifests/alpha.json")[0] == 404           # only the JSON list, not the directory
 
 
 def test_manifests_are_empty_without_a_catalog(home):
@@ -282,7 +282,7 @@ def test_shell_references_the_element_and_the_element_defines_its_surface():
     assert "/static/reps-events.js" in shell and "<reps-events" in shell
     assert "/events?from=" in shell and "204" in shell     # the shell polls incrementally
     assert "/api/manifests" in shell                          # the experiment view reads the catalog
-    assert "$(nix-build --no-out-link -A exec." in shell     # and renders the CLI's own command shape
+    assert "$(nix-build --no-out-link -A exec." in shell     # and renders the CLI's command shape
     element = (static / "reps-events.js").read_text()
     assert 'customElements.define("reps-events"' in element
     for method in ("append(records)", "replace(seq, record)", "clear()"):

@@ -453,7 +453,7 @@ def test_prefill_keeps_non_string_content(event_capture, content):
     ("<think>reasoning</think>", [ContentReasoning(reasoning="reasoning"), ContentText(text="")], ""),
     ("</think>answer", "</think>answer", "</think>answer"),
     # Unmatched closing tags stay literal text. The former stripper removed
-    # every closing tag, including these mid-prose and quoted occurrences.
+    # all closing tags, including these mid-prose and quoted occurrences.
     pytest.param("Before </think> after", "Before </think> after", "Before </think> after",
                  id="unmatched-close-mid-prose"),
     pytest.param("</think>", "</think>", "</think>", id="unmatched-close-only"),

@@ -18,7 +18,7 @@ CELL = dict(model="mock/model", task="coloring", graph_generator="ws", graph_siz
 
 
 def _last_prompts(events, agent):
-    """The final message of every request one agent received, as text."""
+    """The last message of each request one agent received, as text."""
     def text(message):
         content = message.get("content")
         return content if isinstance(content, str) else json.dumps(content)
@@ -26,7 +26,7 @@ def _last_prompts(events, agent):
 
 
 def _garbling(name):
-    """The mock, except `name` never writes JSON messages or a parseable answer."""
+    """The mock, except `name` does not write JSON messages or a parseable answer."""
     from agentsnet_adapter.mock import mock_responder
 
     def make(seed):
@@ -39,7 +39,7 @@ def _garbling(name):
 
 
 def _all_no(seed):
-    """The mock, except every final answer is No."""
+    """The mock, except each final answer is No."""
     from agentsnet_adapter.mock import mock_responder
     respond = mock_responder(seed)
     def reply(messages):
@@ -61,14 +61,14 @@ def test_coloring_ws4(run_dir, event_capture):
     assert 0.0 <= r["score"] <= 1.0 and r["solved"] == (r["score"] == 1.0)
     assert r["fallbacks"] == 0 and r["unparsed_messages"] == 0 and r["unparsed_answers"] == 0
     assert r["upstream_crashed"] is False
-    # ws/4/0 is the complete graph on 4 nodes: every agent messages 3 neighbours in each of 2 rounds
+    # ws/4/0 is the complete graph on 4 nodes: each agent messages 3 neighbours in each of 2 rounds
     assert r["messages_sent"] == 4 * 3 * 2
     calls = events_of(events, "llm.call")
-    # 4 agents x (bootstrap + rounds), the last round being the final answer; every call attributed to a named agent
+    # 4 agents x (bootstrap + rounds), the last round being the final answer; each call attributed to an agent by name
     assert len(calls) == 4 * (1 + 2)
     assert {c["agent"] for c in calls} == {"Jason", "Sara", "Marilyn", "Samantha"}
     assert all(c["model"] == "mock/model" and c["input"] for c in calls)
-    # the final call of every agent carries the agent's whole conversation (langgraph's checkpointer)
+    # the last call of each agent carries the agent's whole conversation (langgraph's checkpointer)
     assert max(len(c["input"]) for c in calls) == 2 + 1 + 2 * 1 + 1  # system, ask, reply, (round, reply) x 1, final ask
     messages = events_of(events, "custom", "agentsnet.message")
     assert len(messages) == 24 and all(m["data"]["delivered"] for m in messages)
@@ -131,7 +131,7 @@ def test_matching_valid_answers_are_neighbours(run_dir, event_capture):
 
 
 def test_vertex_cover(run_dir, event_capture):
-    # seed 7: at least one agent picks "Yes", so upstream's scorer does not divide by zero
+    # seed 7: at least one agent picks "Yes", thus upstream's scorer does not divide by zero
     run(Params(**CELL | dict(task="vertex_cover", graph_generator="ba", graph_size=4, graph_index=0, rounds=1)))
     r = results_of(event_capture.read())
     assert r["successful"] is True and 0.0 <= r["score"] <= 1.0 and r["upstream_crashed"] is False
@@ -159,7 +159,7 @@ def test_invalid_params(bad):
 
 
 def test_unparseable_agent_still_scores(run_dir, event_capture, monkeypatch):
-    """One agent never writes JSON messages or a parseable final answer: upstream
+    """One agent does not write JSON messages or a parseable final answer: upstream
     re-prompts it, silences it, scores its answer as None, and the run completes."""
     import agentsnet_adapter.main as adapter
     monkeypatch.setattr(adapter, "mock_responder", _garbling("Jason"))
@@ -168,9 +168,9 @@ def test_unparseable_agent_still_scores(run_dir, event_capture, monkeypatch):
     r = results_of(events)
     assert r["successful"] is True and r["score"] == 0.0 and r["solved"] is False   # coloring: a None answer scores 0
     assert r["unparsed_answers"] == 1 and r["unparsed_messages"] == 2 and r["fallbacks"] == 3
-    assert r["messages_sent"] == 3 * 3 * 2                                       # Jason's rounds deliver nothing
+    assert r["messages_sent"] == 3 * 3 * 2                                       # Jason's rounds deliver no message
     answers = {a["data"]["agent"]: a["data"] for a in events_of(events, "custom", "agentsnet.answer")}
-    assert answers["Jason"].get("answer") is None and answers["Jason"]["valid"] is False   # omitted on the wire
+    assert answers["Jason"].get("answer") is None and answers["Jason"]["valid"] is False   # omitted when serialized
     assert all(a["valid"] for name, a in answers.items() if name != "Jason")
     typed = {e.data.agent: e.data for e in _typed(events) if getattr(e, "kind", None) == "agentsnet.answer"}
     assert typed["Jason"].answer is None
@@ -182,7 +182,7 @@ def test_unparseable_agent_still_scores(run_dir, event_capture, monkeypatch):
 
 
 def test_empty_vertex_cover_records_score_zero(run_dir, event_capture, monkeypatch):
-    """Every agent answers No: upstream's scorer divides by the empty cover's size
+    """Each agent answers No: upstream's scorer divides by the empty cover's size
     and raises. The run completes with score 0 and upstream_crashed set."""
     import agentsnet_adapter.main as adapter
     monkeypatch.setattr(adapter, "mock_responder", _all_no)
@@ -217,7 +217,7 @@ def test_patch_crash_on_all_no(run_dir, event_capture, monkeypatch):
 
 
 def test_better_reprompting(run_dir, event_capture, monkeypatch):
-    """With the fix on, both re-prompts restate the format; counting is upstream's."""
+    """With the fix on, the two re-prompts restate the format; counting is upstream's."""
     import agentsnet_adapter.main as adapter
     monkeypatch.setattr(adapter, "mock_responder", _garbling("Jason"))
     run(Params(**CELL | dict(better_reprompting=True)))

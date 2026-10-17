@@ -1,7 +1,7 @@
 # The dev shell — imported by the flake (devShells.default), also usable standalone
 # through legacy `nix-shell` (default.nix supplies the SAME flake.lock-pinned nixpkgs).
-# Toolchains only: per-project Python deps come from each project's pyproject/uv.lock
-# through `uv run`; the shell never duplicates dependency lists.
+# Toolchains only: Python deps come from each project's pyproject/uv.lock
+# through `uv run`; the shell does not duplicate dependency lists.
 { pkgs ? (import ./. { }).pkgs
 , memelintSrc ? (import ./pkgs/locked-sources.nix { }).memelint
 }:
@@ -25,9 +25,9 @@ pkgs.mkShell {
     # python typechecker (task typecheck): pyright at STRICT (per-package
     # pyrightconfig.json) — chosen over ty for its annotation-completeness rules
     # (no implicit Unknown, no bare generics); from nixpkgs, NOT a per-project dev dep —
-    # per-project npm copies would drift, and one pinned copy
+    # per-project npm copies can drift, and one pinned copy
     # beats five. CI runs task typecheck through this same shell (ci.yml, nix job),
-    # so the flake pin is the single source of the version.
+    # thus the flake pin is the single source of the version.
     pkgs.pyright
 
     pkgs.mdbook
@@ -38,7 +38,7 @@ pkgs.mkShell {
     # sandboxed experiments (inspect's docker sandbox) need a Docker daemon; the
     # devshell ships the whole engine (client + compose plugin + dockerd) and
     # `task docker:up` sudo-starts the daemon on the default socket.
-    # fuse-overlayfs: dockerd's wrapper does not bundle it, and it's the only
+    # fuse-overlayfs: dockerd's wrapper does not bundle it, and it is the only
     # storage driver that works when data-root sits on virtiofs (kernel overlayfs
     # refuses a virtiofs upperdir).
     pkgs.docker
@@ -46,14 +46,15 @@ pkgs.mkShell {
   ];
 
   env = {
-    # never let uv download a standalone interpreter — use the nix one
+    # do not let uv download a standalone interpreter — use the nix one
     UV_PYTHON_PREFERENCE = "only-system";
   };
 
-  # manylinux wheels (numpy/pandas under inspect_ai, …) dlopen the C++
-  # runtime and zlib; nix's bare interpreter has neither on the loader path, so plain
-  # `uv run` in a uv2nix-less venv fails with `libstdc++.so.6: cannot open`. Put them
-  # on LD_LIBRARY_PATH so `uv run pytest` etc. work without a manual export.
+  # manylinux wheels (numpy/pandas in inspect_ai, …) dlopen the C++
+  # runtime and zlib; nix's bare interpreter has neither on the loader path, thus
+  # plain `uv run` in a uv2nix-less venv fails with `libstdc++.so.6: cannot open`.
+  # Put them on LD_LIBRARY_PATH to let `uv run pytest` etc. work without a manual
+  # export.
   shellHook = ''
     export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib pkgs.zlib ]}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
   '';

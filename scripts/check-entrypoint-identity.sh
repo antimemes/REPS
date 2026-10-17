@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# Every entrypoint — nix run (flakes), nix run -f (flakes CLI over classic attrs),
+# Each entrypoint — nix run (flakes), nix run -f (flakes CLI on classic attrs),
 # $(nix-build …) (classic), and nix-run — must mint IDENTICAL condition identity
 # (source content hash + condition id) for the same experiment and params on the
 # same tree. This guards against eval-path drift (flake store copies, path
 # filtering, arg plumbing) silently fragmenting conditions by entrypoint.
-# Keyless: --dry-run only (nothing executes, nothing is written to the databank).
+# Keyless: --dry-run only (no experiment executes, no file is written to the
+# databank).
 #
 #   check-entrypoint-identity.sh [--dir DIR] [--exp NAME] [-- --set k=v …]
 #
 # Default: inspect-hello on mockllm in the reps checkout — four doors. The flake
-# door sees git-TRACKED files only, so a mismatch there can also mean a file that
-# should be tracked is not yet. --dir can select another REPS checkout.
+# door sees git-TRACKED files only. Thus a mismatch there can also mean a file
+# that should be tracked is not yet. --dir can select another REPS checkout.
 set -euo pipefail
 
 dir="$(cd "$(dirname "$0")/.." && pwd)"

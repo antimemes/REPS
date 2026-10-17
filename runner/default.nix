@@ -1,6 +1,6 @@
 # The shipped CLI includes publishing; fixture consumers can use the base library.
-# reps-runner, packaged from its own uv.lock with the shared locked Python toolchain.
-# The interpreter is selected here, per project.
+# reps-runner, packaged from its uv.lock with the shared locked Python toolchain.
+# The interpreter is selected here, for each project.
 { pkgs, pyproject-nix, uv2nix, pyproject-build-systems }:
 
 let
@@ -12,7 +12,7 @@ let
   # ./. stays a LIVE path, not a filtered store import (cf. reps.cleanImport): the
   # lock path-deps on ../lib/*, which loadWorkspace must resolve at eval — from a
   # store-imported root, `../lib` normalizes to the malformed store path
-  # /nix/store/lib and eval dies. Costs importing the runner's own .venv (small).
+  # /nix/store/lib and eval dies. Costs importing the runner's .venv (small).
   workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
 
   pythonSet =
@@ -23,7 +23,7 @@ let
       ]);
 in
 # mainProgram: the venv carries several bins (reps-runner, reps-emit, python…) —
-# name the canonical one so lib.getExe (and anything mainProgram-aware) resolves
-# to reps-runner instead of guessing from the derivation name
+# name the canonical one to let lib.getExe (and anything mainProgram-aware)
+# resolve to reps-runner instead of guessing from the derivation name
 (pythonSet.mkVirtualEnv "reps-runner-env" { reps-runner = [ "publish" ]; }).overrideAttrs
   (old: { meta = (old.meta or { }) // { mainProgram = "reps-runner"; }; })

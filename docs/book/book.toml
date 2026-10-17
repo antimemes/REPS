@@ -9,7 +9,7 @@ src = "src"
 create-missing = false
 
 # expands {{repo}} to the owner/name slug derived from git-repository-url below —
-# the ONE place the repository is named (vars.py; reps-commands.js necessarily
+# the ONE place that names the repository (vars.py; reps-commands.js necessarily
 # repeats it as its GITHUB/TARBALL constants)
 [preprocessor.vars]
 command = "python3 vars.py"

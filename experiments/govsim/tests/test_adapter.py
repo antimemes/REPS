@@ -166,7 +166,7 @@ def test_backend_forwards_sampling_and_caps_tokens(monkeypatch, event_capture, t
     from govsim_adapter.backend import ChatClientBackend
     backend = ChatClientBackend("mock/model", 42, temperature=0.2, max_tokens=64)
     # Replace transport only: exercise the real adapter and shared client's
-    # generation policy without making any network request.
+    # generation policy with no network request.
     captured = {}
     def transport(kw):
         captured.update(kw)
@@ -491,7 +491,7 @@ def _assert_no_null(value):
 
 
 def test_resolved_config_copies_no_secrets(tmp_path, monkeypatch, event_capture, warmed_run):
-    # Replace credential-shaped host variables too, so the test never forwards
+    # Replace credential-shaped host variables too, so the test does not forward
     # real keys and short shell settings cannot accidentally match ordinary data.
     credentials = {
         name: f"fixture-env-{name}-" + "h" * 40 for name in os.environ

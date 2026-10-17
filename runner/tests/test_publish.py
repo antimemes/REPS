@@ -41,7 +41,7 @@ def bucket(tmp_path, monkeypatch):
 @pytest.fixture
 def publication(saved, tmp_path, monkeypatch):
     directory, manifest = saved
-    # Publishable evidence records a pinned revision in both the stream and card.
+    # Publishable evidence records a pinned revision in the stream and the card.
     rewrite_stream(directory, lambda rows: rows[0]["event"].update(fetch_ref="github:owner/repo/" + "a" * 40))
     (directory / "run.json").write_text(json.dumps(derive_card(read_events(directory))))
     home = tmp_path / "data dir's"
@@ -109,7 +109,7 @@ def test_publish_preserves_records_and_refuses_overwrite_per_run(publication, bu
     assert not any("workspace/" in key or "conditions/" in key for key in result)
     assert set(result) == {f"{base}/events.jsonl.zst", f"{base}/run.json"}
     assert digest_files(directory.parents[2]) == before
-    # Overwrite refusal is per run: a later run still uploads.
+    # Overwrite refusal applies to each run: a later run uploads.
     third = clone(directory, 3)
     previous = result[f"{base}/run.json"]
     assert invoke() == 1

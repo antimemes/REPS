@@ -1,14 +1,14 @@
 """ChatClientBackend — REPS's instrumented ChatClient as a pathfinder backend.
 
-pathfinder's ModelAPI already emulates gen/find/select over one buffered chat
+pathfinder's ModelAPI already emulates gen/find/select on one buffered chat
 completion; ``request_api`` is its single abstract hook. Subclassing it (library
-use, never a fork) routes every GovSim model call through REPS's ChatClient:
-``mock/...`` runs keyless and offline, any provider prefix reaches its
+use, not a fork) routes each GovSim model call through REPS's ChatClient:
+``mock/...`` runs keyless and offline, each provider prefix reaches its
 OpenAI-compatible mount, and each completion emits one ``llm.call`` event.
 
-Everything else — the roles state machine, ``text_to_consume`` caching (one
+All other parts — the roles state machine, ``text_to_consume`` caching (one
 completion shared by a chain's gen→find→select), stop-regex parsing, prefix
-stripping — is inherited unchanged. Parse failures raise here; upstream's
+stripping — are inherited unchanged. Parse failures raise here; upstream's
 ``ModelWandbWrapper`` catches them and substitutes ``default_value`` (upstream
 robustness semantics, kept verbatim).
 """
@@ -32,9 +32,9 @@ def _strip_prefill_ws(messages: list[dict]) -> list[dict]:
 
 
 class ChatClientBackend(ModelAPI):
-    """One shared backend serves every persona plus the framework (upstream's
-    single-LLM shape). ``client.agent`` is read at emit time, so the RepsLogger
-    hook re-points it per persona for llm.call attribution."""
+    """One shared backend serves each persona plus the framework (upstream's
+    single-LLM shape). ``client.agent`` is read at emit time. Thus the
+    RepsLogger hook re-points it for each persona for llm.call attribution."""
 
     def __init__(
         self,
@@ -65,7 +65,7 @@ class ChatClientBackend(ModelAPI):
             mock_responder=mock_responder,
         )
 
-    # upstream hook (ModelAPI.run / run_find call this; the typo'd parameter name
+    # upstream hook (ModelAPI.run / run_find call this; the incorrect parameter name
     # is upstream's positional signature)
     def request_api(self, chat, tmeperature, top_p, max_tokens):
         generation = {}

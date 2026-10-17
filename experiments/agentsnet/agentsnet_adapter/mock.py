@@ -1,12 +1,12 @@
 """The keyless mock responder for the authors' prompts (the smoke/CI path).
 
-It plays a cooperative but unthinking agent against upstream's own prompts: it
+It plays a cooperative but unthinking agent against upstream's prompts: it
 reads its name and neighbours from the system prompt, sends one short message to
-every neighbour each round in the JSON shape the prompt asks for, and answers
+each neighbour each round in the JSON shape the prompt asks for, and answers
 the final question with one of the valid options the prompt lists, chosen
-deterministically from the run seed and its own name. It is a pure function of
+deterministically from the run seed and its name. It is a pure function of
 the message list. It exercises upstream's loop, parsing and scoring; its replies
-always parse, so re-prompts and unparseable answers are tested by wrapping it
+always parse. Thus re-prompts and unparseable answers are tested by wrapping it
 (tests/test_cells.py). It says nothing about any real model.
 """
 

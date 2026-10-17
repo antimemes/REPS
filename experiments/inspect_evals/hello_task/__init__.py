@@ -1,10 +1,11 @@
 """A trivial two-sample task: say hello to your model.
 
-Instruction-following samples scored with `includes()`, chosen so BOTH types of
-model pass deterministically: any real instruct model includes the requested word,
-and the targets are also substrings of mockllm's fixed reply ("Default output from
-mockllm/model") — so `--set model=mockllm/model` runs the same task keyless and
-offline (CI, no-key smoke) with the same 1.0 score. No dataset download either way.
+Instruction-following samples scored with `includes()`, chosen to let BOTH types
+of model pass deterministically: each real instruct model includes the requested
+word, and the targets are also substrings of mockllm's fixed reply ("Default
+output from mockllm/model") — thus `--set model=mockllm/model` runs the same task
+keyless and offline (CI, no-key smoke) with the same 1.0 score. No dataset
+download either way.
 """
 
 from __future__ import annotations

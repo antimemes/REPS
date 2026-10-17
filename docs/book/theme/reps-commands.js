@@ -1,6 +1,6 @@
 // Command settings for the REPS user guide.
 //
-// Every runnable command is authored in the canonical local form `nix run .#<name> …`.
+// Each runnable command is authored in the canonical local form `nix run .#<name> …`.
 // This rewrites those occurrences to match the reader's setup, controlled from a gear
 // menu in the toolbar and persisted in localStorage. In-page links to
 // #reps-cmd-settings open the same menu.
@@ -22,10 +22,10 @@
   var DEFAULTS = {
     // mode tabs: "nix-build" (stock-nix $(nix-build …)/exec one-liner), "flakes"
     // (nix run, armored until flakes are global), "nix-run" (classic runner;
-    // nixRun = installed globally, else nix-shell-wrapped)
+    // nixRun = installed globally; if not, nix-shell-wrapped)
     mode: "nix-build",
     source: "github", flakes: false, registry: false, nixRun: false,
-    // github source only: bypass Nix's download cache so a rerun picks up new
+    // github source only: bypass Nix's download cache to let a rerun pick up new
     // commits on main (tarball-ttl 0 / --refresh). Inert for a local checkout.
     latest: true,
   };
@@ -46,11 +46,11 @@
   }
   // flakeless heads (running/nix.md), two flavors:
   //  nix-run:   `nix-run <src> -A experiment-<name> -- args` — resolves
-  //             meta.mainProgram itself, takes program args after `--` (which our
-  //             commands already carry, so only the head token changes)
+  //             meta.mainProgram, takes program args after `--` (which our
+  //             commands already carry, thus only the head token changes)
   //  nix-build: `$(nix-build --no-out-link [<src>] -A exec.<name>) args` — the
-  //             exec.* output IS the executable, so the `--` separator is dropped
-  // The tarball URL is long enough to push the -A target off-screen, so the
+  //             exec.* output IS the executable, thus the `--` separator is dropped
+  // The tarball URL is long enough to push the -A target off-screen. Thus the
   // github-source forms continue onto a fresh line before it (backslash-newline
   // holds inside $(…) and inside the nix-shell --run double quotes alike).
   function flakelessHead(cmd, p) {
@@ -79,7 +79,7 @@
     if (p.mode === "nix-build" || p.mode === "nix-run") return before + flakelessHead(cmd, p);
     cmd = cmd.replace(/^nix run \.#(\S+)/, function (_, name) {
       var head = "nix run " + ref(p) + "#" + name;
-      // the flags trail the installable (before any `--`), so the command reads
+      // the flags trail the installable (before a `--`), thus the command reads
       // action-first: `nix run reps#inspect-hello --extra-experimental-features … -- …`
       if (!p.flakes) head += ARMOR;
       if (p.source === "github" && p.latest) head += " --refresh";
@@ -89,10 +89,10 @@
   }
   // The `--run "…"` payload is read twice: the shell you paste into resolves the
   // double-quoted string, then nix-shell hands the result to another shell to run.
-  // So everything the outer pass would eat ($ ` " \) has to be escaped for the
+  // Thus everything the outer pass eats ($ ` " \) has to be escaped for the
   // inner command to arrive intact. The one exception is a backslash that continues
   // a line: it stays live, and the outer pass folding the span back into one line
-  // is exactly what the inner shell wants.
+  // is exactly the thing the inner shell wants.
   var CONTINUATION = /\\\s*$/;
   function dqEscape(text) {
     return text.split("\n").map(function (line) {
@@ -104,7 +104,7 @@
   // Block-level pass: commands span multiple lines through trailing backslashes, and
   // the no-nix-run-installed form must wrap the WHOLE span in
   //   nix-shell -p nix-run --run "…"
-  // with the span dq-escaped so the nesting is paste-safe.
+  // with the span dq-escaped, thus the nesting is paste-safe.
   function rewrite(text, p) {
     var lines = text.split("\n");
     var out = [];
@@ -157,7 +157,7 @@
       code.textContent = fn(code.getAttribute("data-reps-orig"), p);
     });
     // prose variants (reps-commands.css): .reps-when-flakes / .reps-when-flakeless
-    // divs swap with the With tab, so pages can e.g. drop flake.nix from the
+    // divs swap with the With tab, thus pages can e.g. drop flake.nix from the
     // story fully for plain-Nix readers (the no-JS/default state)
     document.documentElement.classList.toggle("reps-flakes", p.mode === "flakes");
   }
@@ -199,7 +199,7 @@
     function update(patch) { Object.assign(p, patch); save(p); apply(p); previewEl.textContent = preview(p); render(); }
 
     function render() {
-      // re-append previewEl every render: innerHTML = "" detaches it, which is
+      // re-append previewEl on each render: innerHTML = "" detaches it, which is
       // exactly the "preview vanishes after the first toggle" bug
       pop.innerHTML = "";
       pop.appendChild(el("div", { class: "reps-pop-title" }, ["Commands adapt to your setup"]));
@@ -215,8 +215,8 @@
 
       if (p.source === "github") {
         // a cached main.tar.gz can lag behind new commits; this adds
-        // --tarball-ttl 0 / --refresh so every run re-checks. Inert for a
-        // local checkout, so the row hides with it.
+        // --tarball-ttl 0 / --refresh for each run to re-check. Inert for a
+        // local checkout, thus the row hides with it.
         var r4 = el("div", { class: "reps-row" });
         r4.appendChild(check("always fetch latest", p.latest, function (v) { update({ latest: v }); }));
         pop.appendChild(r4);
@@ -298,7 +298,7 @@
 
   function init() {
     var p = load();
-    apply(p);            // rewrite commands on every page, regardless of the menu
+    apply(p);            // rewrite commands on each page, regardless of the menu
     injectMenu(p);
   }
 

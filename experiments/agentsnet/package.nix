@@ -5,19 +5,19 @@
 # driven by a thin adapter in ./agentsnet_adapter, the way prompt-infection wraps
 # its authors' tree. One run is one cell of the authors' sweep: one task on one
 # graph instance from their published dataset (Hugging Face disco-eth/AgentsNet,
-# pinned by content in dataset.json), with every node's model calls routed
+# pinned by content in dataset.json), with each node's model calls routed
 # through REPS and recorded.
 #
 # The adapter swaps the LangChain model construction for a REPS-instrumented
 # chat model, points the dataset loader at the pinned file, and reads the
-# authors' own results JSON; monkeypatches.py lists every touch. The authors' files are
+# authors' results JSON; monkeypatches.py lists each touch. The authors' files are
 # edited only by the fixes in ./patches, each applied to the run's copy when its
 # param is true.
 { reps, pkgs, lib }:
 let
-  # The authors' code, pinned by revision. upstream.json stays out of src so
+  # The authors' code, pinned by revision. upstream.json stays out of src, thus
   # moving the mirror does not change condition identity; the fetched tree is in
-  # src, so a new revision does.
+  # src, thus a new revision does.
   pin = builtins.fromJSON (builtins.readFile ./upstream.json);
   upstream = builtins.fetchGit { inherit (pin) url ref rev; };
   # The graph instances, one parquet file fetched by content hash. Same rule:

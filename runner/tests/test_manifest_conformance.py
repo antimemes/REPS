@@ -1,9 +1,9 @@
-"""Manifest conformance sweep — every real nix-built manifest against the schema
+"""Manifest conformance sweep — each real nix-built manifest against the schema
 vocabulary in reps_runner.schema.
 
 Full structural validation, driven by the TypedDicts themselves (annotations are
-introspected, so there is no second schema to drift): at every level, keys must
-be declared, required keys present, and every VALUE must match its annotated
+introspected, thus there is no second schema to drift): at each level, keys must
+be declared, required keys present, and each VALUE must match its annotated
 type — a manifest with `order: "1"` or a string where a list belongs fails here
 with the file and path in the message. The walker checks the generated manifest
 directly against the declared TypedDict vocabulary.
@@ -33,7 +33,7 @@ KINDS = {"llm", "str", "int", "float", "bool", "enum", "list", "struct", "object
 def _check(value: object, ann: object, path: str) -> None:
     """Assert `value` matches the annotation — TypedDicts (keys + required +
     recursive field types), list/dict generics, unions (first matching arm),
-    scalars. `Json` means any JSON: it IS the deliberate don't-care."""
+    scalars. `Json` matches all JSON: it IS the deliberate don't-care."""
     if ann is Json:
         return
     if isinstance(ann, typing.TypeAliasType):  # `type X = ...` statements
@@ -119,7 +119,7 @@ def test_every_shipped_manifest_conforms():
 
 
 def test_walker_rejects_wrong_types():
-    """The walker itself must catch value-type drift, not just keys."""
+    """The walker must catch value-type drift, not just keys."""
     good = {"name": "x", "params": {"p": {"type": {"kind": "int"}, "order": 1}}}
     _check(good, Manifest, "good")
     _check({**good, "readme": "# Experiment\n\nDocumentation."}, Manifest, "readme")
@@ -163,7 +163,7 @@ def test_shipped_readmes_follow_presentation_format():
     assert not any(path.is_file() for path in (catalog / "assets/govsim").rglob("*"))
     assert govsim["schema"]["version"] == 0
     assert govsim["schema"]["models"] == "govsim_adapter.models:Payload"
-    # Resolve through the built experiment's interpreter, never by importing its
+    # Resolve through the built experiment's interpreter, not by importing its
     # adapter into the runner's test environment.
     subprocess.run([
         str(Path(govsim["schema"]["path"]).parent / "python"), "-c",

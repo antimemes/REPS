@@ -5,9 +5,9 @@ description = "GovSim (Cooperate or Collapse, NeurIPS 2024) as a REPS experiment
 requires-python = ">=3.13"
 # The run-path closure is declared HERE, not inherited from upstream's
 # requirements.txt (its pins predate Python 3.13). Upstream's analysis stack
-# (dash, lifelines, statsmodels, ...) is never imported by the run path and is
+# (dash, lifelines, statsmodels, ...) is not imported by the run path and is
 # dropped. torch is imported by pathfinder/transformers but undeclared by
-# pathfinder, so it is declared explicitly.
+# pathfinder, thus it is declared explicitly.
 dependencies = [
     "reps-events",
     "reps-experiment[llm]",

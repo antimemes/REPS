@@ -3,21 +3,21 @@ experiment params and off the command line.
 
 The split (docs/book/src/running/model.md): a model *name* is the condition (a `param llm`,
 e.g. ``openai/qwen3.5-9b``); *where* it is served and *which key* reaches it are
-environment, not a condition. So the runner resolves each `llm`-typed param's provider
+environment, not a condition. Thus the runner resolves each `llm`-typed param's provider
 prefix — the segment before the first ``/`` — to a credential set and injects that set's
 stored env vars (``OPENAI_API_KEY``, ``OPENAI_BASE_URL``, …) into the experiment
 subprocess. Experiments read the standard env var names they already use (litellm /
-inspect_ai / concordia's client all do); they never see this module.
+inspect_ai / concordia's client all do); they do not see this module.
 
 Storage: ``~/.config/reps/credentials.toml`` (0600). A credential set holds one or more
 named PROFILES — ``[openai.default]``, ``[openai.work]`` — each an atomic free-form
 field map (env var → value; no field-level fallback between profiles). The default
 profile is used silently; named profiles are offered at an interactive picker, and a
-choice can be remembered per experiment in ``~/.config/reps/preferences.toml`` (names
-only — never secret, so not 0600). Managed with ``reps-runner credentials set
-<name>[.<profile>]``, which prompts for every value — secrets through a hidden prompt,
-NEVER argv (argv is visible in ``ps`` and shell history, so there deliberately is no
-``KEY=VALUE`` form). Scripted use pipes one line per prompt on stdin.
+choice can be remembered for each experiment in ``~/.config/reps/preferences.toml`` (names
+only — not secrets, thus not 0600). Managed with ``reps-runner credentials set
+<name>[.<profile>]``, which prompts for each value — secrets through a hidden prompt,
+NEVER argv (argv is visible in ``ps`` and shell history, thus there deliberately is no
+``KEY=VALUE`` form). Scripted use pipes one line for each prompt on stdin.
 """
 
 from __future__ import annotations
@@ -61,11 +61,11 @@ def load() -> dict[str, dict[str, dict[str, str]]]:
 
     A bare value directly in a set's section (the pre-profiles flat layout) reads as
     a field of the ``default`` profile — the two shapes are structurally distinct in
-    TOML, so no guessing is involved. Writes always produce explicit profiles.
+    TOML, thus no guessing is involved. Writes always produce explicit profiles.
 
     A store readable by group or others is REFUSED, not warned about (ssh/pgpass
-    precedent): every other path here keeps secrets unexposed, and reading a leaky
-    file would quietly tolerate the one exposure that matters. Uniform rule — CI
+    precedent): all other paths here keep secrets unexposed, and reading a leaky
+    file quietly tolerates the one exposure that matters. Uniform rule — CI
     materializing the file adds one chmod. Non-regular files (a process-substitution
     pipe) are exempt: their permission bits are meaningless."""
     path = config_path()
@@ -130,7 +130,7 @@ def save(data: dict[str, dict[str, dict[str, str]]]) -> Path:
 
 
 def _load_prefs() -> dict[str, dict[str, str]]:
-    """experiment name -> set name -> profile name (names only, never values)."""
+    """experiment name -> set name -> profile name (names only, not values)."""
     path = prefs_path()
     if not path.exists():
         return {}
@@ -165,7 +165,7 @@ def _save_prefs(prefs: dict[str, dict[str, str]]) -> Path:
 # -- resolution (used by the runner before launching an experiment) --------------------
 
 def _iter_model_ids(value: Json, tdesc: ParamType) -> Iterator[str]:
-    """Yield every model-id string sitting at an `llm`-typed position in a realized value
+    """Yield each model-id string sitting at an `llm`-typed position in a realized value
     (handles bare llm, listOf llm, and structs/lists nesting llm — e.g. werewolf's
     players = listOf (struct { model = llm; }))."""
     kind = tdesc.get("kind")
@@ -188,8 +188,8 @@ def section_for(model_id: str) -> str | None:
     """The credential set a model id routes to. Normally the provider prefix before
     the first `/`; for inspect's OpenAI-compatible services — `openai-api/<service>/
     <model>`, which read `<SERVICE>_API_KEY` / `<SERVICE>_BASE_URL` — it is the
-    *service* segment, so a named credential set (e.g. `credentials set llama`) serves
-    exactly the ids that name it. Mocks route nowhere."""
+    *service* segment, thus a credential set with that name (e.g.
+    `credentials set llama`) serves exactly the ids that name it. Mocks route nowhere."""
     head, sep, rest = model_id.partition("/")
     if not sep or not head or head in MOCK_PREFIXES:
         return None
@@ -228,11 +228,11 @@ def env_for_run(manifest: Manifest, realized_params: Params,
 def missing_sets(manifest: Manifest, realized_params: Params) -> list[str]:
     """Credential sets this run's model ids route to with no section in the store. The
     store is the ONLY source of credentials — a key exported in the shell neither
-    reaches a run nor suppresses this gate (it would silently skip the setup prompt
-    while the run still launched keyless). Only built-in names the registry knows need
-    credentials are reported: an unknown prefix (a custom service) may
-    legitimately need nothing, and blocking on a guess would be inferred-but-wrong.
-    A run naming a built-in with zero configuration can only fail, so the runner
+    reaches a run nor suppresses this gate (a suppressed gate silently skips the
+    setup prompt while the run launches keyless). Only built-in names the registry
+    knows need credentials are reported: an unknown prefix (a custom service) can
+    legitimately need no credentials, and blocking on a guess is inferred-but-wrong.
+    A run naming a built-in with zero configuration can only fail, thus the runner
     refuses it up front with the fix in hand."""
     store = load()
     return [
@@ -242,22 +242,22 @@ def missing_sets(manifest: Manifest, realized_params: Params) -> list[str]:
     ]
 
 
-# -- the interactive ladder (used by the runner CLI once per invocation) ---------------
+# -- the interactive ladder (used by the runner CLI one time for each invocation) -----
 
 def resolve_run_credentials(manifest: Manifest, realized_params: Params, *,
                             experiment: str, interactive: bool,
                             selections: dict[str, str] | None = None) -> dict[str, str]:
-    """The env to inject for this run, resolving a profile for every credential set
+    """The env to inject for this run, resolving a profile for each credential set
     the run routes to. An explicit selection (`--credential SET=NAME`) is the top of
     the ladder: it must name an existing profile of a set this run routes to (a typo
-    guard on both halves), beats a remembered choice, and skips the picker AND the
+    guard on the two halves), beats a remembered choice, and skips the picker AND the
     remember question — an explicit flag is a statement, not a conversation opener.
-    Below that, interactively this may prompt: first-use setup (with the save/[Y/n]
+    Below that, interactively this can prompt: first-use setup (with the save/[Y/n]
     and profile-name questions) for unconfigured built-ins, and the profile picker
-    (with the remember question) for sets with named profiles. Headless it never
-    prompts: remembered choice, else default profile, else raises ValueError with
-    the fix. Values never touch argv anywhere on these paths — scripted input pipes
-    one line per prompt on stdin. Profile NAMES are argv-safe; values never are."""
+    (with the remember question) for sets with named profiles. Headless it does not
+    prompt: remembered choice, then default profile, then raises ValueError with
+    the fix. Values do not touch argv anywhere on these paths — scripted input pipes
+    one line for each prompt on stdin. Profile NAMES are argv-safe; values are not."""
     selections = dict(selections or {})
     used = sets_used(manifest, realized_params)
     for sel_set in sorted(selections):
@@ -292,7 +292,7 @@ def resolve_run_credentials(manifest: Manifest, realized_params: Params, *,
             continue
         if not profiles:
             if name not in PROVIDERS:
-                continue  # unknown prefix (a local server) may legitimately need nothing
+                continue  # unknown prefix (a local server) can legitimately need no credentials
             print(f"reps: this run needs credential set {name!r} — setting it up now "
                   f"(stored 0600 in {config_path()}; change later with "
                   f"`nix run .#reps-runner -- credentials set {name}`)", file=sys.stderr)
@@ -306,7 +306,7 @@ def resolve_run_credentials(manifest: Manifest, realized_params: Params, *,
 
 def _first_use(name: str) -> dict[str, str]:
     """Interactive first-use setup: prompt the template's values, offer to save.
-    Declining still feeds the values to THIS run — they are returned either way."""
+    Declining feeds the values to THIS run — they are returned either way."""
     vals = _prompt_values(name, current=None)
     if vals is None:
         raise ValueError(f"invalid input while setting up credential set {name!r}")
@@ -326,7 +326,7 @@ def _pick_profile(name: str, profiles: dict[str, dict[str, str]], *,
                   experiment: str, interactive: bool,
                   prefs: dict[str, dict[str, str]]) -> str:
     """The per-set ladder: remembered choice -> lone default -> picker (interactive)
-    or default-else-refuse (headless). May write a remembered choice to prefs."""
+    or default-else-refuse (headless). Can write a remembered choice to prefs."""
     remembered = (prefs.get(experiment) or {}).get(name)
     if remembered is not None:
         if remembered in profiles:
@@ -346,12 +346,12 @@ def _pick_profile(name: str, profiles: dict[str, dict[str, str]], *,
             f"remembered choice for {experiment!r} — run interactively once to "
             f"choose, or `credentials set {name}.default` to create a default")
     has_default = "default" in profiles
-    # A numbered list, one entry per line, with "set up a new profile" as an ordinary
+    # A numbered list, one entry on each line, with "set up a new profile" as an ordinary
     # numbered entry rather than a keyword sitting among the profile names (gcloud's
-    # shape). Every legal answer is then a number, so nothing y/n-shaped is ever valid
-    # here -- the confusion is structurally impossible instead of diagnosed after the
-    # fact. Static text only: these lines interleave with build/status output on stderr,
-    # so nothing may redraw or assume it owns the terminal.
+    # shape). Each legal answer is then a number, thus no y/n-shaped answer is ever
+    # valid here -- the confusion is structurally impossible instead of diagnosed after
+    # the fact. Static text only: these lines interleave with build/status output on
+    # stderr, thus no line can redraw or assume it owns the terminal.
     ordered = (["default"] if has_default else []) + [n for n in names if n != "default"]
     new_index = len(ordered) + 1
     block = ["", f"reps: this run needs {name!r} credentials", ""]
@@ -359,11 +359,11 @@ def _pick_profile(name: str, profiles: dict[str, dict[str, str]], *,
     block.append(f" [{new_index}] set up a new profile")
     block.append("")
     print("\n".join(block), file=sys.stderr)
-    # `[N]` means "menu entry N" everywhere, so a pre-filled bracket on the prompt line
-    # is what Enter gives you -- no second sentence needed to say so (update-alternatives
-    # puts its Enter hint in the prompt line for the same reason).
+    # `[N]` means "menu entry N" everywhere, thus a pre-filled bracket on the prompt
+    # line is the value Enter gives you -- no second sentence needed to say it
+    # (update-alternatives puts its Enter hint in the prompt line for the same reason).
     prompt = "choice [1]: " if has_default else "choice: "
-    # restates the constraint; says nothing about what the rejected answer was (that
+    # restates the constraint; does not refer to the rejected answer (that
     # belongs in the raised error, where a scripted caller reads it)
     constraint = f"enter a number between 1 and {new_index}, or a profile name"
     while True:
@@ -376,10 +376,10 @@ def _pick_profile(name: str, profiles: dict[str, dict[str, str]], *,
             if not sys.stdin.isatty():
                 raise ValueError(f"credential set {name!r} needs a choice -- {constraint}")
             continue
-        # the number wins over a same-named profile: a numbered menu whose numbers can
-        # be shadowed is a menu that lies. `new` stays typeable (it is reserved, so no
-        # profile can take it) -- scripted callers written against the old picker keep
-        # working, and the reserved-name check keeps it unambiguous.
+        # the number wins, not a profile with the same name: a numbered menu whose
+        # numbers can be shadowed is a menu that lies. `new` stays typeable (it is
+        # reserved, thus no profile can take it) -- scripted callers written against the
+        # old picker keep working, and the reserved-name check keeps it unambiguous.
         selected: str | None = None
         if answer.isdigit():
             index = int(answer)
@@ -429,9 +429,9 @@ def _is_secret(name: str, key: str) -> bool:
 
 
 def _url_problem(key: str, value: str) -> str | None:
-    """A base-URL env var must be a full http(s) URL. A bare host fails inside every
+    """A base-URL env var must be a full http(s) URL. A bare host fails inside each
     client — urllib raises "unknown url type", SDKs hang against the incorrect port — long
-    after this command succeeded, so catch it here where the fix is one retype. Empty
+    after this command succeeded, thus catch it here where the fix is one retype. Empty
     passes (it clears the key). Returns the complaint, or None if the value is fine."""
     if not value or not (key.endswith("_BASE_URL") or key.endswith("_API_BASE")):
         return None
@@ -459,7 +459,7 @@ def _template_rows(name: str) -> tuple[tuple[str, bool, str], ...]:
         return ((provider.api_key.name, True, ""),
                 (provider.base_url.name, False, provider.base_url.default))
     # not a built-in: a NAMED credential set with the standard env var names —
-    # exactly what `openai-api/<name>/<model>` ids read
+    # exactly the names `openai-api/<name>/<model>` ids read
     prefix = re.sub(r"[^A-Za-z0-9]+", "_", name).upper()
     print(f"{name!r} isn't a built-in name (built-ins: "
           f"{', '.join(sorted(PROVIDERS))}) — storing it as a named credential set "
@@ -531,9 +531,9 @@ def _cmd_list() -> int:
 def masked_store(
     store: dict[str, dict[str, dict[str, str]]],
 ) -> dict[str, dict[str, dict[str, str | bool]]]:
-    """The store with every secret value replaced by literal True — the type change
+    """The store with each secret value replaced by literal True — the type change
     (str -> bool) makes accidental round-tripping impossible: a consumer that tried
-    to write the masked value back would fail loudly, not save the string "true"."""
+    to write the masked value back fails loudly; it does not save the string "true"."""
     return {
         name: {
             profile: {
@@ -546,7 +546,7 @@ def masked_store(
     }
 
 def inventory() -> dict[str, Json]:
-    """One self-describing document: what exists (masked), what's remembered, and the
+    """One self-describing document: the stored sets (masked), the remembered choices, and the
     prompt templates for tools, without duplicating the provider registry.
     A leaky store file is reported as `problem` (with the chmod fix) instead of an
     exception: the consumer's job is to SHOW the problem."""
@@ -579,7 +579,7 @@ def _set_json(arg: str) -> int:
     on stdin, applied with the SAME semantics as the prompts — start from the current
     profile, non-empty values overwrite, empty/absent keep, explicit null deletes.
     That merge lets a tool edit a base URL without ever having held the key
-    (list --json masks secrets, so it cannot send them back). Output is one JSON line;
+    (list --json masks secrets, thus it cannot send them back). Output is one JSON line;
     validation (profile name rules, URL shape) matches the interactive face."""
     name, dot, profile = arg.partition(".")
     profile = profile if dot else "default"
@@ -592,7 +592,7 @@ def _set_json(arg: str) -> int:
     except json.JSONDecodeError as exc:
         print(f"stdin is not valid JSON: {exc}", file=sys.stderr)
         return 2
-    # parse-don't-validate: the typed document is BUILT by the shape check, so the
+    # parse-don't-validate: the typed document is BUILT by the shape check, thus the
     # rest of the function works on dict[str, str | None], not raw JSON
     if not isinstance(body, dict):
         print("expected one JSON object of env var -> string (null deletes a key)",
@@ -628,9 +628,9 @@ def _set_json(arg: str) -> int:
 
 def _cmd_remember(argv: list[str]) -> int:
     """`credentials remember <experiment> <set> <profile>` — the picker's `always
-    use …?` answer as a command, using the SAME preference file as the interactive
-    prompt. Names only, never values; the profile must
-    exist (a remembered typo would silently re-ask forever)."""
+    use …?` answer as a command, with the SAME preference file as the interactive
+    prompt. Names only, not values; the profile must
+    exist (a remembered typo silently re-asks forever)."""
     if len(argv) != 3:
         print("usage: reps-runner credentials remember <experiment> <set> <profile>",
               file=sys.stderr)
@@ -652,7 +652,7 @@ def prompt_set(arg: str) -> int:
     """`credentials set <name>` prompts values then a profile name ([default]);
     `credentials set <name>.<profile>` targets that profile directly — the ONE path
     a credential ever enters the store by, besides the runner's ask-on-first-use.
-    Scripted use pipes one line per prompt on stdin (non-tty)."""
+    Scripted use pipes one line for each prompt on stdin (non-tty)."""
     name, dot, profile = arg.partition(".")
     if dot and (profile in _RESERVED_PROFILES or not _PROFILE_RE.match(profile)):
         print(f"profile names are [a-z0-9_-], lowercase, not "
@@ -676,9 +676,9 @@ def prompt_set(arg: str) -> int:
 
 
 def _cmd_set(argv: list[str]) -> int:
-    # values are ONLY ever prompted (or piped line-per-prompt on stdin; or, --json,
-    # one JSON object on stdin): a KEY=VALUE argv form would put secrets in `ps`
-    # output and shell history, so it does not exist
+    # values are ONLY ever prompted (or piped one line for each prompt on stdin; or, --json,
+    # one JSON object on stdin): a KEY=VALUE argv form puts secrets in `ps`
+    # output and shell history, thus it does not exist
     as_json = "--json" in argv
     argv = [a for a in argv if a != "--json"]
     if len(argv) != 1:

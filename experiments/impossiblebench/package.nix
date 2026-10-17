@@ -2,11 +2,11 @@
 # "impossible" test variants (oneoff / conflicting) can only be passed by
 # specification-violating shortcuts — passing IS the reward-hacking signal.
 #
-# One experiment per upstream @task (the task is the experiment, never a param):
+# One experiment for each upstream @task (the task is the experiment, not a param):
 #   impossiblebench-livecodebench → impossiblebench.impossible_livecodebench
 #   impossiblebench-swebench      → impossiblebench.impossible_swebench
 #
-# Both run agentic coding loops inside an inspect sandbox: docker must be on the
+# The two run agentic coding loops inside an inspect sandbox: docker must be on the
 # host PATH (SWE-bench pulls per-instance images; the runner forwards PATH into the
 # experiment). VM-isolated execution (forest.nix) is the planned replacement.
 { reps, pkgs, lib, writeShellApplication, jq }:
@@ -16,9 +16,9 @@ let
     name = "reps-impossiblebench-env";
     workspaceRoot = ./.;
     python = pkgs.python313;
-    # the two git deps build from source (no wheels) and both use setuptools —
+    # the two git deps build from source (no wheels) with setuptools —
     # impossiblebench ships a legacy setup.py, inspect-evals declares the backend
-    # without it being provided — so inject setuptools as their build system
+    # without it being provided — thus inject setuptools as their build system
     overrides = final: prev:
       lib.genAttrs [ "impossiblebench" "inspect-evals" ] (name:
         prev.${name}.overrideAttrs (old: {
@@ -37,8 +37,8 @@ let
     { name = "tokens_output"; type = int; }
   ];
 
-  # hints come from types.llm itself (mkExperiment attaches the shared model
-  # catalog to every llm-typed param); nothing to declare here
+  # hints come from types.llm (mkExperiment attaches the shared model
+  # catalog to each llm-typed param); no hints to declare here
   modelParam = with reps.types; param llm {
     description = "Inspect model id (provider/model), resolved through inspect's own provider layer. Required: there is deliberately no default real model.";
     order = 1000;
@@ -68,7 +68,7 @@ let
       description = "Generation config overrides; leave a field unset to keep the provider's default.";
       initial = { };
       # typed sub-form generated from the pinned inspect_ai's GenerateConfig —
-      # through `reps`, never a ../../ path, so the declaration uses the
+      # through `reps`, not a ../../ path, for the declaration to use the
       # schema provided by the selected reps package set
       fields = reps.inspectGenerateFields;
       order = 1020;
@@ -78,13 +78,13 @@ let
 
   # the lift between the runner protocol (flat params on stdin, seed in $REPS_SEED)
   # and the wrapper's config: named params regroup into inspect task_args; the task
-  # spec is baked per experiment.
+  # spec is baked for each experiment.
   mkAdapter = name: taskFn: jqTaskArgs: writeShellApplication {
     name = "${name}-adapter";
     runtimeInputs = [ jq ];
     # limit goes to the task too, not just eval-level: inspect's limit truncates
     # after the task fn has already built its dataset, and swebench prepares a
-    # docker image per sample in there — eval-level alone means images for the
+    # docker image for each sample in there — eval-level alone means images for the
     # whole split. 0 (= whole split) must stay absent: upstream slices
     # samples[:limit] when its arg is non-null.
     text = ''

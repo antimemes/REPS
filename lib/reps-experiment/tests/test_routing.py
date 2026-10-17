@@ -63,7 +63,7 @@ def test_first_success_records_mismatch_then_fails_without_harness_fallback(even
     client._request = lambda kw: reply
     original = reply.model_dump(mode="json")
     with pytest.raises(ServedModelMismatch, match=f"mock/{requested}.*{served}"):
-        # A harness may recover ordinary API failures, but not a misrouted model.
+        # A harness can recover ordinary API failures, but not a misrouted model.
         try:
             client.chat.completions.create(model=requested, messages=[])
         except Exception:

@@ -1,40 +1,39 @@
 """The LangChain chat model that stands in for upstream's model construction.
 
-Upstream builds its model once per run in `LiteralMessagePassing.__init__`:
+Upstream builds its model one time for each run in `LiteralMessagePassing.__init__`:
 `init_chat_model(model_name, model_provider=..., rate_limiter=..., **chat_kwargs)
 .with_retry(stop_after_attempt=10)`, or `ChatOllama(model, base_url)` for the
-ollama provider. Every node then calls that one object through a langgraph
-`StateGraph` with a `MemorySaver`, one `thread_id` per node, so the full
-conversation of each agent is replayed on every call.
+ollama provider. Each node then calls that one object through a langgraph
+`StateGraph` with a `MemorySaver`, one `thread_id` for each node. Thus the full
+conversation of each agent is replayed on each call.
 
 `RepsChatModel` is a `BaseChatModel` whose completions go through REPS's
-`ChatClient`, so every call is one `llm.call` event with the full message list
+`ChatClient`. Thus each call is one `llm.call` event with the full message list
 and the verbatim reply, the provider is chosen by the run's model id, and
 `mock/` runs keyless. The node a call belongs to arrives as the langgraph
-`thread_id` in the callback metadata; the model keeps one `ChatClient` per node
-so the event's `agent` is that node's name.
+`thread_id` in the callback metadata; the model keeps one `ChatClient` for each
+node, thus the event's `agent` is that node's name.
 
-What is sent, compared with the LangChain classes upstream would have built at
-the pinned versions: the same message dicts (langchain-openai's own converters);
+The request contents, compared with the LangChain classes upstream builds at
+the pinned versions: the same message dicts (langchain-openai's converters);
 no `temperature` for OpenAI and Anthropic (their classes send none),
 `temperature` 0.7 for Google (langchain-google-genai's class default); and
 `max_tokens` 1024 for Anthropic (langchain-anthropic's class default) unless
-upstream passes its own. The run's seed on every request (the REPS client adds
+upstream passes one. The run's seed on each request (the REPS client adds
 it; upstream sent none). Upstream's thinking variants pass `thinking`,
 `thinking_budget` and `include_thoughts` kwargs that have no OpenAI-protocol
 form; they are recorded as request metadata and not forwarded.
 
-A real reply is turned into LangChain messages by langchain-openai's own
-`_create_chat_result`, so the AIMessage carries the same `usage_metadata` and
-`response_metadata` (token usage, model name, finish reason, response id) that
-ChatOpenAI would have given it, and upstream's transcripts record them as they
-would have. Two things differ from ChatOpenAI and are REPS-wide: the client
-lifts an inline <think> block out of the text into a reasoning part before
-upstream parses the reply, and a content-filter 400 whose body carries
-`choices` is returned as an empty reply (ChatOpenAI raises; upstream's
-with_retry would then re-raise after ten same attempts and the run would
-die). Retries compound: with_retry's ten attempts wrap the REPS client's own
-eight.
+A real reply is turned into LangChain messages by langchain-openai's
+`_create_chat_result`. Thus the AIMessage carries the same `usage_metadata` and
+`response_metadata` (token usage, model name, finish reason, response id) as
+ChatOpenAI's, and upstream's transcripts record them unchanged. Two things
+differ from ChatOpenAI and are REPS-wide: the client lifts an inline <think>
+block out of the text into a reasoning part before upstream parses the reply,
+and a content-filter 400 whose body carries `choices` is returned as an empty
+reply (ChatOpenAI raises; upstream's with_retry then re-raises after ten same
+attempts and the run dies). Retries compound: with_retry's ten attempts wrap
+the REPS client's eight.
 """
 
 from __future__ import annotations
@@ -53,7 +52,7 @@ from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_openai.chat_models.base import (BaseChatOpenAI, _convert_dict_to_message,
                                                _convert_message_to_dict)
 
-# what the LangChain class upstream would have constructed sends by default
+# default fields sent by the LangChain class that upstream constructs
 PROVIDER_DEFAULTS: dict[str, dict[str, Any]] = {
     "google": {"temperature": 0.7},        # ChatGoogleGenerativeAI.temperature = 0.7
     "anthropic": {"max_tokens": 1024},     # ChatAnthropic.max_tokens = 1024
@@ -62,7 +61,7 @@ PROVIDER_DEFAULTS: dict[str, dict[str, Any]] = {
 # has no field for; recorded, not sent
 UNFORWARDED_KWARGS = ("thinking", "thinking_budget", "include_thoughts")
 
-# every model the run constructs, so model_calls can be summed at the end
+# all models the run constructs, thus model_calls can be summed at the end
 MODELS: list["RepsChatModel"] = []
 
 
@@ -85,7 +84,7 @@ class RepsChatModel(BaseChatModel):
     agent_names: dict[str, str]
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
-    upstream_kwargs: dict[str, Any] = {}       # what upstream passed to init_chat_model / ChatOllama
+    upstream_kwargs: dict[str, Any] = {}       # the kwargs upstream passed to init_chat_model / ChatOllama
     mock_responder: Any = None                 # (messages) -> str, for mock/ ids
     _clients: dict[Optional[str], ChatClient] = PrivateAttr(default_factory=dict)
     _lock: threading.Lock = PrivateAttr(default_factory=threading.Lock)
@@ -140,7 +139,7 @@ class RepsChatModel(BaseChatModel):
             if not isinstance(message, AIMessage):
                 message = AIMessage(content=str(message.content))
             return ChatResult(generations=[ChatGeneration(message=message)])
-        # the SDK response, through langchain-openai's own converter: message, usage_metadata,
+        # the SDK response, through langchain-openai's converter: message, usage_metadata,
         # response_metadata and llm_output exactly as ChatOpenAI builds them (its only use of
         # `self` is the model name fallback)
         return BaseChatOpenAI._create_chat_result(

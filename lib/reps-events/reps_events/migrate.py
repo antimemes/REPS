@@ -19,7 +19,7 @@ class MigrationError(ValueError):
 
 
 def migrate_record(record: dict[str, Any]) -> dict[str, Any]:
-    """Update a decoded record in place, one block per RFC 0002 changelog entry."""
+    """Update a decoded record in place, one block for each RFC 0002 changelog entry."""
     written_v = record.get("v")
     if type(written_v) is not int or written_v < 0:
         raise MigrationError("record v must be a non-negative integer")

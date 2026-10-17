@@ -29,10 +29,10 @@ from .run import (
 )
 
 
-# Presentation lives outside the LLM wire models.
+# Presentation lives outside the serialized LLM models.
 LLMCall.render = RenderHint(icon="sparkles", actor="agent")
 
-# These unions are the authority. The registry used for per-type schema export
+# These unions are the authority. The registry used for each type's schema export
 # is derived from their literal tags, rather than maintaining a second list.
 type ProducerPayload = Annotated[
     ProducerPython
@@ -81,7 +81,7 @@ class Envelope[EventPayload = Payload](Model):
     ts: UtcDatetime
     run: RunId
     experiment: str
-    # BaseModel.schema is a deprecated method; keep the wire name through an alias.
+    # BaseModel.schema is a deprecated method; keep the serialized name through an alias.
     schema_: NonNegativeInt = Field(alias="schema")
     seq: NonNegativeInt
     event: EventPayload

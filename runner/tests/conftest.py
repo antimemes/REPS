@@ -3,7 +3,7 @@ import pytest
 
 @pytest.fixture(scope="module")
 def saved_template(tmp_path_factory):
-    """Build once per test module; saved gives every test its own disposable copy."""
+    """Build one time for each test module; saved gives each test its disposable copy."""
     from test_verify import _build_saved
 
     root = tmp_path_factory.mktemp("saved-template")

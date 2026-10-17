@@ -44,7 +44,7 @@ class UpstreamLogData(Model):
 class RecordData(RootModel[dict[str, JsonValue]]):
     """An open native row: upstream keys change by action and are not stable.
 
-    Keep every field and value, including unfamiliar actions and nested data.
+    Keep each field and value, including unfamiliar actions and nested data.
     """
 
     model_config = ConfigDict(strict=True, allow_inf_nan=False)
@@ -88,7 +88,7 @@ class GovsimUpstreamLog(CustomEvent[UpstreamLogData]):
 
 
 class GovsimMemory(CustomEvent[MemoryData]):
-    """A persona's persisted memory node, retaining every native field."""
+    """A persona's persisted memory node, retaining each native field."""
 
     render: ClassVar[RenderHint] = RenderHint(
         icon="brain", actor="data.persona", title="{data.node.type}", body="data.node.description",

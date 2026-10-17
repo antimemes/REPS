@@ -3,7 +3,7 @@
 # Distribution: https://pypi.org/project/inspect-ai/0.3.263/
 # Source archive: inspect_ai-0.3.263.tar.gz
 # SHA256: 54553ca8bfe711853414b49d962e492a60fd4cac8df935be47287a4b719f92b1
-# Source files (under src/inspect_ai): model/_chat_message.py,
+# Source files (in src/inspect_ai): model/_chat_message.py,
 # _util/content.py, _util/citation.py, tool/_tool_call.py, _util/url.py,
 # model/_model_output.py, model/_model_call.py, tool/_tool_info.py,
 # tool/_tool_choice.py, _util/dateutil.py.
@@ -582,7 +582,7 @@ class StopDetails(_Model):
     appears as one entry). `category` and `explanation` are a convenience high-level
     summary derived from the same data — `category` is the primary category and
     `explanation` is human-readable (synthesized from `categories` when the provider
-    supplies no text). Read either way; both describe the same stop.
+    supplies no text). Read either way; the two describe the same stop.
     """
     type: str | None = Field(default=None)
     """Kind of stop detail when reported (e.g. "refusal", or a provider finish/stop reason)."""

@@ -44,7 +44,7 @@ class LLMCall(Event[Literal["llm.call"]]):
 
     @property
     def retries(self) -> int | None:
-        """Prefer the wire count; legacy client markers distinguish zero from unknown."""
+        """Prefer the count in the serialized response; legacy client markers distinguish zero from unknown."""
         if self.retries_ is not None:
             return self.retries_
         meta = self.metadata or {}
