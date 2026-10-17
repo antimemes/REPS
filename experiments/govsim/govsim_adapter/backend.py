@@ -1,6 +1,6 @@
 """ChatClientBackend — REPS's instrumented ChatClient as a pathfinder backend.
 
-pathfinder's ModelAPI already emulates gen/find/select on one buffered chat
+pathfinder's ModelAPI emulates gen/find/select on one buffered chat
 completion; ``request_api`` is its single abstract hook. Subclassing it (library
 use, not a fork) routes each GovSim model call through REPS's ChatClient:
 ``mock/...`` runs keyless and offline, each provider prefix reaches its
@@ -10,7 +10,7 @@ All other parts — the roles state machine, ``text_to_consume`` caching (one
 completion shared by a chain's gen→find→select), stop-regex parsing, prefix
 stripping — are inherited unchanged. Parse failures raise here; upstream's
 ``ModelWandbWrapper`` catches them and substitutes ``default_value`` (upstream
-robustness semantics, kept verbatim).
+robustness semantics, kept with no change).
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ def _strip_prefill_ws(messages: list[dict]) -> list[dict]:
 class ChatClientBackend(ModelAPI):
     """One shared backend serves each persona plus the framework (upstream's
     single-LLM shape). ``client.agent`` is read at emit time. Thus the
-    RepsLogger hook re-points it for each persona for llm.call attribution."""
+    RepsLogger hook points it at each persona for llm.call attribution."""
 
     def __init__(
         self,
@@ -48,7 +48,7 @@ class ChatClientBackend(ModelAPI):
         mock_responder: Callable[[list[dict]], str] | None = None,
     ) -> None:
         # api_assistant=True: upstream's assistant prefills are sent as a trailing
-        # assistant message; ChatClient adds Mistral's prefix flag where required.
+        # assistant message; ChatClient adds Mistral's prefix flag where necessary.
         super().__init__(model_id, seed, api_assistant=True)
         # The upstream wrapper replaces top_p=None with 1.0 (and select uses
         # fixed sampling values). Honor explicit run-level omission here.

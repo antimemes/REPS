@@ -34,7 +34,7 @@ class GraphData(Model):
     num_edges: NonNegativeInt
     diameter: NonNegativeInt
     max_degree: NonNegativeInt
-    graph_seed: int | None = None      # the generator seed the dataset row carries
+    graph_seed: int | None = None      # the generator seed in the dataset row
     nodes: list[GraphNode]
     edges: list[GraphEdge]
 
@@ -63,7 +63,7 @@ class MessageData(Model):
 
 class AnswerData(Model):
     agent: str
-    answer: str | None = None          # None (omitted when serialized): unparseable after the re-prompt; upstream scores it as None
+    answer: str | None = None          # None (omitted when serialized): unparseable after the second prompt; upstream scores it as None
     valid: bool                        # among upstream's valid answers for that agent
 
 

@@ -14,7 +14,7 @@ def saved_template(tmp_path_factory):
 
 @pytest.fixture
 def data_directory(request, tmp_path, monkeypatch):
-    """Run each CLI with competing directory settings, including a relative flag."""
+    """Run each CLI with competing directory settings (a relative flag is one)."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("HOME", str(tmp_path / "user"))
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "xdg"))

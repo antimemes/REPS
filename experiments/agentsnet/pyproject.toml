@@ -10,7 +10,7 @@ requires-python = ">=3.13"
 # the code was written against (`langchain.schema`, `langchain.chat_models.
 # init_chat_model`, langgraph's MessagesState/MemorySaver) resolve as they did
 # then; langchain 1.0 removed `langchain.schema`. numpy 1.26.4 has no Python
-# 3.13 wheel (the REPS libraries need 3.13) and floats to 2.x; the code uses
+# 3.13 wheel (the REPS libraries must have 3.13) and floats to 2.x; the code uses
 # numpy only through networkx and scipy. langchain-google-genai and
 # langchain-anthropic are not installed: upstream reaches them only through
 # init_chat_model, which the adapter replaces (monkeypatches.py). langchain-ollama is
@@ -27,7 +27,7 @@ dependencies = [
     "datasets==4.0.0",
     "pandas==2.3.1",
     "pyarrow>=15",                 # pandas.read_parquet of the pinned dataset file
-    "networkx==3.5",               # json_graph.node_link_graph(edges="links") needs >=3.4
+    "networkx==3.5",               # json_graph.node_link_graph(edges="links") must have >=3.4
     "scipy==1.16.0",               # utils.py imports scipy.spatial at module level
     "numpy>=2",
     "regex==2024.11.6",

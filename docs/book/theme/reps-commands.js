@@ -17,8 +17,8 @@
   // zero configuration, and the exec one-liner is the only form that does.
   // flakes:false likewise (armor flag until the reader enables them globally);
   // nixRun:false (the wrapped nix-shell form works without anything installed).
-  // latest:true — a stale cached main.tar.gz silently running old code is worse
-  // than a redundant HEAD check.
+  // latest:true — a stale cached main.tar.gz running old code with no warning
+  // is worse than a redundant HEAD check.
   var DEFAULTS = {
     // mode tabs: "nix-build" (stock-nix $(nix-build …)/exec one-liner), "flakes"
     // (nix run, armored until flakes are global), "nix-run" (classic runner;
@@ -47,12 +47,12 @@
   // flakeless heads (running/nix.md), two flavors:
   //  nix-run:   `nix-run <src> -A experiment-<name> -- args` — resolves
   //             meta.mainProgram, takes program args after `--` (which our
-  //             commands already carry, thus only the head token changes)
+  //             commands carry, thus only the head token changes)
   //  nix-build: `$(nix-build --no-out-link [<src>] -A exec.<name>) args` — the
   //             exec.* output IS the executable, thus the `--` separator is dropped
   // The tarball URL is long enough to push the -A target off-screen. Thus the
   // github-source forms continue onto a fresh line before it (backslash-newline
-  // holds inside $(…) and inside the nix-shell --run double quotes alike).
+  // holds in $(…) and in the nix-shell --run double quotes alike).
   function flakelessHead(cmd, p) {
     // "always fetch latest" spellings: nix-build takes the setting as a flag;
     // nix-run only documents --option. Only the github tarball is ever cached.
@@ -92,7 +92,7 @@
   // Thus everything the outer pass eats ($ ` " \) has to be escaped for the
   // inner command to arrive intact. The one exception is a backslash that continues
   // a line: it stays live, and the outer pass folding the span back into one line
-  // is exactly the thing the inner shell wants.
+  // is the thing the inner shell wants.
   var CONTINUATION = /\\\s*$/;
   function dqEscape(text) {
     return text.split("\n").map(function (line) {
@@ -199,8 +199,8 @@
     function update(patch) { Object.assign(p, patch); save(p); apply(p); previewEl.textContent = preview(p); render(); }
 
     function render() {
-      // re-append previewEl on each render: innerHTML = "" detaches it, which is
-      // exactly the "preview vanishes after the first toggle" bug
+      // append previewEl again on each render: innerHTML = "" detaches it, which
+      // is the "preview vanishes after the first toggle" bug
       pop.innerHTML = "";
       pop.appendChild(el("div", { class: "reps-pop-title" }, ["Commands adapt to your setup"]));
       pop.appendChild(previewEl);
@@ -215,7 +215,7 @@
 
       if (p.source === "github") {
         // a cached main.tar.gz can lag behind new commits; this adds
-        // --tarball-ttl 0 / --refresh for each run to re-check. Inert for a
+        // --tarball-ttl 0 / --refresh for each run to check again. Inert for a
         // local checkout, thus the row hides with it.
         var r4 = el("div", { class: "reps-row" });
         r4.appendChild(check("always fetch latest", p.latest, function (v) { update({ latest: v }); }));

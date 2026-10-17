@@ -82,7 +82,7 @@ def requested_model_name(model_id: str) -> str:
     """Remove routing prefixes, preserving slashes within the model name.
 
     Inspect's openai-api/SERVICE/MODEL form has two routing components.
-    Bare names are already model names.
+    Bare names are model names.
     """
     if model_id.startswith("openai-api/"):
         return model_id.split("/", 2)[-1]
@@ -101,7 +101,7 @@ def snapshot_stem(provider: str | None, name: str) -> str:
 
     All providers allow -YYYY-MM-DD, -YYYYMMDD, @YYYYMMDD, -YYYY-MM,
     and -latest. Only mistral allows the ambiguous four-digit -YYMM form.
-    Names here have already had their routing prefixes removed.
+    Names here have had their routing prefixes removed.
     """
     if match := _SNAPSHOT_SUFFIX.fullmatch(name):
         return match["stem"]

@@ -10,12 +10,12 @@ from ..render import RenderHint
 
 class RunEnvironment(Model):
     platform: str
-    # Absent on older records; new runners record the available hardware.
+    # Missing on older records; new runners record the available hardware.
     cpu_model: str | None = None
     cpu_count: int | None = None
     experiment_bin: str | None = None
     runner_python_version: str
-    # Supplied by the Nix launcher; absent for direct, unpackaged runner calls.
+    # Supplied by the Nix launcher; missing for direct, unpackaged runner calls.
     runner_bin: str | None = None
     endpoints: dict[str, str] = Field(default_factory=dict)
 

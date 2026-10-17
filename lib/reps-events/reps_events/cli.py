@@ -32,7 +32,7 @@ from reps_events import (
 
 # CLI surface for each type: (flag-name, field-name, type) where type ∈
 # str | json (value parsed as JSON) | jsonish (JSON if it parses, raw string if not)
-# Required-ness is the model's job, not argparse's.
+# Which fields are required is the model's job, not argparse's.
 FIELDS: dict[str, list[tuple[str, str, str]]] = {
     "status": [("--detail", "detail", "str")],
     "log": [("--message", "message", "str"), ("--level", "level", "str")],

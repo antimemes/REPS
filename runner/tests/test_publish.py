@@ -102,7 +102,7 @@ def test_publish_preserves_records_and_refuses_overwrite_per_run(publication, bu
     assert zstandard.ZstdDecompressor().decompress(result[f"{base}/events.jsonl.zst"]) == (directory / "events.jsonl").read_bytes()
     decoder = zstandard.ZstdDecompressor().decompressobj()
     decoder.decompress(result[f"{base}/events.jsonl.zst"])
-    assert decoder.eof and not decoder.unused_data  # exactly one frame
+    assert decoder.eof and not decoder.unused_data  # one frame only
     assert result[f"{base}/run.json"] == (directory / "run.json").read_bytes()
     headers = bucket.head_object(Bucket="throwaway", Key=f"{base}/events.jsonl.zst")
     assert headers["ContentType"] == "application/zstd" and "ContentEncoding" not in headers

@@ -2,7 +2,7 @@
 
     concordia-sim CONFIG.json
 
-One run = one Concordia `Simulation.play()`, assembled exactly as upstream's tutorial
+One run = one Concordia `Simulation.play()`, assembled as upstream's tutorial
 notebook does it: prefabs + instances + Config + Simulation + play. Everything beyond
 that assembly lives at the edges — params in (models.py), the instrumented model client
 (client.py), the transcript out (translate.py). A plain program: no REPS imports beyond
@@ -30,7 +30,7 @@ from .translate import (GM_NAME, TurnEmitter, emit_provenance, emit_scene,
 def make_embedder():
     """A deterministic hash -> unit-vector embedder for Concordia's associative memory.
     Avoids pulling sentence-transformers/torch; retrieval is arbitrary but stable, which
-    is all a smoke-scale simulation needs."""
+    is all a smoke-scale simulation must have."""
 
     def embed(text: str) -> np.ndarray:
         digest = hashlib.sha256(text.encode("utf-8")).digest()
@@ -131,7 +131,7 @@ def run(params: Params) -> None:
         sim_log = sim.play(premise=params.premise, max_steps=params.max_steps,
                            raw_log=turns.raw_log, step_callback=turns.step)
         # Concordia's log viewer — memories, per-component reasoning, the works —
-        # deposited verbatim; the event stream stays the semantic tier + llm.calls
+        # deposited with no change; the event stream stays the semantic tier + llm.calls
         deposit_artifact("concordia log", sim_log.to_html(), kind="concordia.artifact",
                          filename="concordia_log.html", media_type="text/html")
     except Exception as exc:  # preserve the partial transcript before reporting failure

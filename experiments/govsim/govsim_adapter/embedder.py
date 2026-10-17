@@ -8,7 +8,7 @@ LLM-rated importance (w=3); ``always_include`` nodes (agreed limits) are
 unaffected.
 
 ``mxbai``: the paper's ``mixedbread-ai/mxbai-embed-large-v1``, pinned below, through
-sentence-transformers — needs network (HF download, ~1.3 GB) or a warm
+sentence-transformers — must have network (HF download, ~1.3 GB) or a warm
 ``HF_HOME``; not the prefilled path.
 """
 
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 MXBAI_MODEL = "mixedbread-ai/mxbai-embed-large-v1"
 MXBAI_REVISION = "b33106f585b9ce46904ad7443a3b52b7a63e231c"
 
-# upstream's dimension (mxbai-embed-large-v1); plain ndarrays are required
+# upstream's dimension (mxbai-embed-large-v1); plain ndarrays are necessary
 # because embeddings land in embeddings.json through upstream's NumpyEncoder
 _DIM = 1024
 _RETRIEVE_PREFIX = "Represent this sentence for searching relevant passages: "

@@ -60,7 +60,7 @@ from pathlib import Path
 # names + credential templates) — this catalog is a LAYER above it: foreign catalog
 # spellings and /models endpoints are declared here; provider names, env var
 # names, and hints are the registry's facts. Read directly (this script runs as
-# bare python3, deliberately dependency-free).
+# bare python3, dependency-free).
 _REGISTRY = tomllib.loads(
     (Path(__file__).resolve().parents[1]
      / "reps-providers" / "reps_providers" / "providers.toml").read_text()
@@ -236,7 +236,7 @@ def live_provider_ids(prefix: str, stored: dict[str, str]) -> list[str]:
 def openrouter_models() -> list[dict]:
     """OpenRouter's public /models list (keyless) — the ids its API accepts.
 
-    Ids arrive already org-scoped (moonshotai/kimi-k3), and there is no
+    Ids arrive org-scoped (moonshotai/kimi-k3), and there is no
     dated-snapshot scheme, thus none of the lineup/snapshot machinery applies.
     `~`-prefixed ids are OpenRouter's retired/rerouted aliases — excluded like
     -latest aliases elsewhere. `:free` variants stay: a distinct serving tier is
@@ -355,7 +355,7 @@ def main() -> int:
             by_stem[stem_of(prefix, m["id"])] = m
         # ... then expand each model to EVERY dated snapshot the provider serves
         # (gpt-4o has three; each is a distinct pinned artifact and a legitimate
-        # condition) — the model's entry above already carries the newest
+        # condition) — the model's entry above holds the newest
         for stem, m in list(by_stem.items()):
             for date, snap_id in sorted(set(snapshots.get(stem, [])), reverse=True):
                 if snap_id != m["id"]:
@@ -368,7 +368,7 @@ def main() -> int:
         # the user's job, not the catalog's), sorted newest first
         models = sorted(by_stem.values(), key=lambda m: (m["release_date"], m["id"]), reverse=True)
         # visibility tripwire: an id the provider's list does not contain is
-        # either lag in models.dev or a bogus community id — print a note
+        # lag in models.dev or a bogus community id — print a note
         fp_set = set(first_party)
         for m in models:
             if fp_set and m["id"] not in fp_set:

@@ -68,7 +68,7 @@ def test_coloring_ws4(run_dir, event_capture):
     assert len(calls) == 4 * (1 + 2)
     assert {c["agent"] for c in calls} == {"Jason", "Sara", "Marilyn", "Samantha"}
     assert all(c["model"] == "mock/model" and c["input"] for c in calls)
-    # the last call of each agent carries the agent's whole conversation (langgraph's checkpointer)
+    # the last call of each agent has the agent's full conversation (langgraph's checkpointer)
     assert max(len(c["input"]) for c in calls) == 2 + 1 + 2 * 1 + 1  # system, ask, reply, (round, reply) x 1, final ask
     messages = events_of(events, "custom", "agentsnet.message")
     assert len(messages) == 24 and all(m["data"]["delivered"] for m in messages)
@@ -160,7 +160,7 @@ def test_invalid_params(bad):
 
 def test_unparseable_agent_still_scores(run_dir, event_capture, monkeypatch):
     """One agent does not write JSON messages or a parseable final answer: upstream
-    re-prompts it, silences it, scores its answer as None, and the run completes."""
+    prompts it again, silences it, scores its answer as None, and the run completes."""
     import agentsnet_adapter.main as adapter
     monkeypatch.setattr(adapter, "mock_responder", _garbling("Jason"))
     run(Params(**CELL))

@@ -13,7 +13,7 @@
 #     contract, or a specified third-party typing gap. Adding a rule here is a policy
 #     change; make it in this file, in a reviewed diff, with the reason.
 #   * `cast()` is allowlisted BY FILE: it is only sanctioned at declared dynamic
-#     third-party boundaries. A new cast in a different file fails here — either
+#     third-party boundaries. A new cast in a different file fails here —
 #     give the value a real type, or argue the file into the list.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -42,7 +42,7 @@ while IFS= read -r hit; do
   say "banned '# type: ignore' (use a rule-scoped '# pyright: ignore[rule]'): $hit"
 done < <(grep -rn '# *type: *ignore' "${PY_ROOTS[@]}" --include='*.py' || true)
 
-# 2. `# pyright:` comments must be exactly rule-scoped ignores
+# 2. `# pyright:` comments must be rule-scoped ignores only
 while IFS= read -r hit; do
   say "banned pyright directive (only '# pyright: ignore[rule]' is allowed): $hit"
 done < <(grep -rn '# *pyright:' "${PY_ROOTS[@]}" --include='*.py' \

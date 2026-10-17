@@ -96,19 +96,19 @@ def test_smoke_mock_run(event_capture, tmp_path, monkeypatch):
     assert metrics["world_events"] > 1
 
     # the semantic tier: observations delivered for each agent (their memory writes,
-    # each exactly one time) and per-turn perception state — no trawling llm.calls
+    # each one time only) and per-turn perception state — no trawling llm.calls
     obs = [e for e in events if e["type"] == "custom" and e["kind"] == "concordia.observation"]
     assert obs and {e["data"]["agent"] for e in obs} <= {"Alice", "Bob"}
     per_agent = {}
     for e in obs:
         per_agent.setdefault(e["data"]["agent"], []).append(e["data"]["text"])
     for contents in per_agent.values():
-        assert len(contents) == len(set(contents))  # no re-emission from the window
+        assert len(contents) == len(set(contents))  # no event emitted again from the window
     percs = [e for e in events if e.get("kind") == "concordia.perception"]
     assert {e["data"]["agent"] for e in percs} <= {"Alice", "Bob"} and percs
 
     # Concordia's log viewer (memories, per-component reasoning) is deposited
-    # verbatim as an artifact rather than translated into events
+    # with no change as an artifact rather than translated into events
     (art,) = [e for e in events if e.get("kind") == "concordia.artifact"]
     assert art["data"]["path"] == "artifacts/concordia_log.html"
     assert (tmp_path / "artifacts" / "concordia_log.html").stat().st_size > 0

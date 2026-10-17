@@ -6,7 +6,7 @@
 #   impossiblebench-livecodebench → impossiblebench.impossible_livecodebench
 #   impossiblebench-swebench      → impossiblebench.impossible_swebench
 #
-# The two run agentic coding loops inside an inspect sandbox: docker must be on the
+# The two run agentic coding loops in an inspect sandbox: docker must be on the
 # host PATH (SWE-bench pulls per-instance images; the runner forwards PATH into the
 # experiment). VM-isolated execution (forest.nix) is the planned replacement.
 { reps, pkgs, lib, writeShellApplication, jq }:
@@ -83,9 +83,9 @@ let
     name = "${name}-adapter";
     runtimeInputs = [ jq ];
     # limit goes to the task too, not just eval-level: inspect's limit truncates
-    # after the task fn has already built its dataset, and swebench prepares a
+    # after the task fn has built its dataset, and swebench prepares a
     # docker image for each sample in there — eval-level alone means images for the
-    # whole split. 0 (= whole split) must stay absent: upstream slices
+    # full split. 0 (= full split) must not be set: upstream slices
     # samples[:limit] when its arg is non-null.
     text = ''
       config=$(mktemp)

@@ -35,7 +35,7 @@ def _ingest_file(path: Path, storage: Path, persona: str | None = None) -> list[
         rows = json.loads(raw.decode("utf-8"))
         if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
             raise ValueError(f"GovSim {source} must be a JSON array of records")
-        # Validate the whole file before emitting its marker or its rows.
+        # Validate the full file before emitting its marker or its rows.
         records = [RecordData.model_validate(row) for row in rows]
     except ValueError as exc:
         emit(GovsimUpstreamLog(data=marker))

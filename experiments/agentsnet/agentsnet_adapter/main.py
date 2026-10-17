@@ -10,7 +10,7 @@ published dataset. The adapter stages the tree, loads the instance with
 upstream's `main.get_graph` (pointed at the pinned parquet), fixes the round
 count with upstream's `determine_rounds`, swaps the model construction for a
 REPS-instrumented chat model (monkeypatches.py, llm.py), drives the task class
-exactly as upstream's `run()` does (bootstrap, pass_messages, get_score, with the
+as upstream's `run()` does (bootstrap, pass_messages, get_score, with the
 same error handling, plus upstream's one known uncaught crash, see `_drive`), has
 upstream write its results JSON with `save_results`, ingests that file, and
 reports the paper's score and upstream's parsing counters from it. Upstream's

@@ -2,7 +2,7 @@
 
 A model id's provider prefix (``anthropic/claude-…``, ``groq/llama-…``) picks which
 credential set to read and which endpoint to speak to; each provider here serves the
-OpenAI **/chat/completions** protocol, either natively or through a compatibility
+OpenAI **/chat/completions** protocol, natively or through a compatibility
 mount. Each mapping is declared in ``PROVIDERS`` — explicit for each provider, not
 inferred from the id's shape. The runner injects the env vars from its credential
 store (``reps-runner credentials``); this module only reads them.
@@ -51,7 +51,7 @@ def resolve(model_id: str, env: Mapping[str, str] = os.environ) -> Endpoint:
     actionable message. Each error names the env var or credential set to fix.
 
     The env var overrides the registry default (proxies, regional endpoints,
-    self-hosted servers); a `_MOUNT_SUFFIX` entry is appended to either."""
+    self-hosted servers); a `_MOUNT_SUFFIX` entry is appended in each case."""
     provider, sep, served = model_id.partition("/")
     p = PROVIDERS.get(provider) if sep else None
     if p is None:

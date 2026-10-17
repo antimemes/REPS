@@ -2,9 +2,10 @@
 # task_catalog.json (the task is the experiment, not a param) — regenerate with
 # `task tasks:update`; do not add a catalog task by hand. Tasks whose eval declares a
 # pip extra we do not install get no experiment (degraded but correct — install the
-# extra in pyproject + relock + regen to enable them); sandbox needs come from the
-# eval's declared runtime metadata. The bundled keyless `hello` smoke ships from
-# this family (hello_task/), thus getting-started needs no key, network, or sandbox.
+# extra in pyproject + relock + regen to enable them); what the sandbox must have
+# comes from the eval's declared runtime metadata. The bundled keyless `hello` smoke
+# ships from this family (hello_task/), thus getting-started works without a key,
+# network, or sandbox.
 { reps, pkgs, lib, writeShellApplication, jq }:
 
 let
@@ -73,9 +74,9 @@ let
     # knobs, then generation.
     params = with reps.types;
       # the task's kwargs, flattened to real typed params (catalog-generated:
-      # concrete defaults become `initial`s; declared-None defaults become required
-      # nullable params bound with `--set k=null`). Their `order` is the upstream
-      # signature's declared sequence — not alphabetized.
+      # concrete defaults become `initial`s; declared-None defaults become
+      # required nullable params bound with `--set k=null`). Their `order` is the
+      # upstream signature's declared sequence — not alphabetized.
       lib.mapAttrs (_: p: p // { group = "task"; }) taskParams
       // {
         model = param llm ({
@@ -120,8 +121,8 @@ let
     # in $REPS_SEED) and the wrapper's interface (`reps-inspect-eval CONFIG.json`):
     # each flattened task param regroups into inspect task_args as its real
     # kwarg name (the catalog's kwarg map un-does the `task_` collision prefix);
-    # explicit nulls pass through — the task is called with kwarg=None, exactly
-    # its declared default.
+    # explicit nulls pass through — the task is called with kwarg=None, its
+    # declared default.
     program =
       let
         regroup = "{" + lib.concatStringsSep ", "

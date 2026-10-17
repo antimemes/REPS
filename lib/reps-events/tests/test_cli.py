@@ -95,7 +95,7 @@ def test_schema_output_is_json_schema(capsys):
     code, out, _ = emit(capsys, None, "schema", "custom")
     assert code == 0
     schema = json.loads(out)
-    # Resolve either a referenced or inline JSON Schema definition.
+    # Resolve a referenced or inline JSON Schema definition.
     defn = schema.get("$defs", {}).get("CustomEvent", schema)
     assert "properties" in defn and "data" in defn["properties"]
     code, out, _ = emit(capsys, None, "schema")

@@ -136,7 +136,7 @@ def cache_path(cache: Path | None, store: Store, key: str, etag: str) -> Path | 
     profile = "default" if store.profile is None else store.profile
     parts = f"{profile}/{store.target.bucket}/{key}".split("/")
     # Reject ambiguous segments instead of normpath, which can merge distinct
-    # S3 keys into one cache entry. ETags need not be unique across objects, thus
+    # S3 keys into one cache entry. ETags can be the same across objects, thus
     # bypass the cache for these keys.
     if "/" in profile or any(part in {"", ".", ".."} for part in parts):
         return None

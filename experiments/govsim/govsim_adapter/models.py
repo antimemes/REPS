@@ -44,7 +44,7 @@ class UpstreamLogData(Model):
 class RecordData(RootModel[dict[str, JsonValue]]):
     """An open native row: upstream keys change by action and are not stable.
 
-    Keep each field and value, including unfamiliar actions and nested data.
+    Keep each field and value, also unfamiliar actions and nested data.
     """
 
     model_config = ConfigDict(strict=True, allow_inf_nan=False)

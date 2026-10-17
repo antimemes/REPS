@@ -9,7 +9,7 @@ conversation of each agent is replayed on each call.
 
 `RepsChatModel` is a `BaseChatModel` whose completions go through REPS's
 `ChatClient`. Thus each call is one `llm.call` event with the full message list
-and the verbatim reply, the provider is chosen by the run's model id, and
+and the reply as written, the provider is chosen by the run's model id, and
 `mock/` runs keyless. The node a call belongs to arrives as the langgraph
 `thread_id` in the callback metadata; the model keeps one `ChatClient` for each
 node, thus the event's `agent` is that node's name.
@@ -25,13 +25,13 @@ it; upstream sent none). Upstream's thinking variants pass `thinking`,
 form; they are recorded as request metadata and not forwarded.
 
 A real reply is turned into LangChain messages by langchain-openai's
-`_create_chat_result`. Thus the AIMessage carries the same `usage_metadata` and
-`response_metadata` (token usage, model name, finish reason, response id) as
+`_create_chat_result`. Thus the AIMessage has the same `usage_metadata` and
+`response_metadata` (token counts, model name, finish reason, response id) as
 ChatOpenAI's, and upstream's transcripts record them unchanged. Two things
 differ from ChatOpenAI and are REPS-wide: the client lifts an inline <think>
 block out of the text into a reasoning part before upstream parses the reply,
-and a content-filter 400 whose body carries `choices` is returned as an empty
-reply (ChatOpenAI raises; upstream's with_retry then re-raises after ten same
+and a content-filter 400 whose body includes `choices` is returned as an empty
+reply (ChatOpenAI raises; upstream's with_retry then raises again after ten same
 attempts and the run dies). Retries compound: with_retry's ten attempts wrap
 the REPS client's eight.
 """
@@ -134,13 +134,13 @@ class RepsChatModel(BaseChatModel):
                   **kwargs: Any) -> ChatResult:
         client = self.client_for(self._agent(run_manager))
         response = client.chat.completions.create(**self._request(client, messages, stop))
-        if client.is_mock:   # a bare text reply (the mock backend has no usage or ids)
+        if client.is_mock:   # a bare text reply (the mock backend has no token counts or ids)
             message = _convert_dict_to_message({"role": "assistant", "content": response.choices[0].message.content or ""})
             if not isinstance(message, AIMessage):
                 message = AIMessage(content=str(message.content))
             return ChatResult(generations=[ChatGeneration(message=message)])
         # the SDK response, through langchain-openai's converter: message, usage_metadata,
-        # response_metadata and llm_output exactly as ChatOpenAI builds them (its only use of
+        # response_metadata and llm_output as ChatOpenAI builds them (its only use of
         # `self` is the model name fallback)
         return BaseChatOpenAI._create_chat_result(
             types.SimpleNamespace(model_name=client.served_model), response)  # type: ignore[arg-type]

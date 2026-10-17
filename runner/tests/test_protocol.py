@@ -130,7 +130,7 @@ def test_protocol_end_to_end(tmp_path):
     # Even event-shaped JSON printed to stdout stays text.
     assert len(by_type["run.end"]) == 1
     assert "t.custom" not in by_type and None not in by_type
-    # Absent optional fields are omitted during the saved model call.
+    # Missing optional fields are omitted during the saved model call.
     assert "null" not in json.dumps(by_type["llm.call"][0])
     stdout_lines = [p["line"] for p in by_type["stdout"]]
     assert '{"type":"run.end","fake":"reserved"}' in stdout_lines
@@ -146,7 +146,7 @@ def test_protocol_end_to_end(tmp_path):
     assert [p["line"] for p in by_type["stderr"]] == ["to stderr"]
 
     # no views are materialized: projections are rendered on demand —
-    # the deposit carries irreducibles only
+    # the deposit holds irreducibles only
     assert not (store.dir / "artifacts").exists()
     assert "artifact" not in by_type
 
@@ -331,7 +331,7 @@ def test_nonzero_exit_is_failed(tmp_path):
 
 
 def test_experiment_receives_params_and_env(tmp_path):
-    # plain-text echo: lands in the stream as a captured `stdout` event, verbatim —
+    # plain-text echo: lands in the stream as a captured `stdout` event, with no change —
     # which is also the capture path a no-adapter wrapped tool exercises
     script = r"""#!/bin/sh
 read -r p

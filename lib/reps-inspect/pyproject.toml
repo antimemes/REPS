@@ -17,7 +17,7 @@ dependencies = [
     # providers (and mixed-provider multiagent runs). Thus the environment does not vary
     # with the model param. Lower bounds mirror inspect's runtime version checks
     # (model/_providers/providers.py at the locked inspect-ai). Local-inference
-    # providers (hf, vllm, sglang, llama-cpp-python, transformer_lens) are deliberately
+    # providers (hf, vllm, sglang, llama-cpp-python, transformer_lens) are
     # excluded — they pull torch-scale stacks and change machine requirements; a family
     # that wants one must declare it explicitly in its pyproject.
     # `openai` also powers all OpenAI-compatible providers (openai-api, openrouter,

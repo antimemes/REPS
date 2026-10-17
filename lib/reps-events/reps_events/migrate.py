@@ -39,7 +39,7 @@ def _migrate_v0_call(event: dict[str, Any]) -> None:
     output: dict[str, Any] | None = event.get("output")
     call: dict[str, Any] | None = event.get("call")
     if not isinstance(call, dict):
-        call = None  # Leave absent or malformed fields for the current model.
+        call = None  # Leave missing or malformed fields for the current model.
     if error is None:
         if isinstance(output, dict) and output.get("choices", []) == []:
             event["error"] = f"Empty choices for model '{event.get('model')}' (version 0 record, not retried)"

@@ -66,10 +66,11 @@ def read_events(source: str | Path, *, payload: Any) -> Iterator[Envelope[Any]]:
 def read_events(source: str | Path, *, payload: Any = None) -> Iterator[Envelope[Any]]:
     """Read one JSONL file or a run directory, yielding current-vocabulary envelopes.
 
-    A run directory contains exactly events.jsonl. Unknown types, invalid fields, and
-    truncated JSON raise EventReadError rather than silently dropping evidence.
-    A valid partial run need not contain run.end. Each JSON record is migrated
-    before validation; its returned v is current, while source files stay untouched.
+    A run directory contains only events.jsonl. Unknown types, invalid fields, and
+    truncated JSON raise EventReadError rather than dropping evidence with no warning.
+    It is not necessary for a valid partial run to contain run.end. Each JSON
+    record is migrated before validation; its returned v is current, while source
+    files stay untouched.
     Pass an experiment's payload union or TypeAdapter to decode its custom events.
     An explicitly typed TypeAdapter also preserves its union in static type checking.
     """

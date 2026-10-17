@@ -63,7 +63,7 @@
 
       # lean by design: pure builds only (registry-wide manifest eval + the tools).
       # The impure entrypoint identity checks
-      # cannot be derivations (they invoke nix / need network) and live in
+      # cannot be derivations (they invoke nix / must have network) and live in
       # scripts/ + CI instead.
       checks = forAllSystems (pkgs:
         let

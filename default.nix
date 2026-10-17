@@ -44,9 +44,9 @@ runnables
 
 
   # `exec.<name>`: the classic mirror of the flake's APP namespace — bare names for
-  # experiments, reps- prefix for tools, exactly like `nix run .#<name>`. The output
+  # experiments, reps- prefix for tools, like `nix run .#<name>`. The output
   # IS the executable (a symlink resolved through lib.getExe, i.e. meta.mainProgram).
-  # Thus the flakeless one-liner needs no binary-name knowledge:
+  # Thus no binary-name knowledge is necessary for the flakeless one-liner:
   #   $(nix-build --no-out-link -A exec.inspect-hello) --set …
   exec = lib.mapAttrs
     (name: drv: pkgs.runCommand "exec-${name}" { } "ln -s ${lib.getExe drv} $out")

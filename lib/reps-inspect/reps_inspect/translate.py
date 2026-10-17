@@ -2,7 +2,7 @@
 
 Each native transcript event is retained as an inspect.event custom record.
 Model events additionally derive llm.call immediately after their raw record;
-inspect.sample carries outcomes and result events carry aggregate results.
+inspect.sample holds outcomes and result events hold aggregate results.
 
 Inspect telemetry is secondary data (transcript-derived), thus callers can weigh
 it accordingly — same posture as the harness normalizers in specs/harness.md.
@@ -116,7 +116,7 @@ def _filter_fields(
     ]
     if len(models) > 1:
         # Vendored unions discriminate chat messages by role and content/citations
-        # by type. Preserve new upstream variants without losing the whole call.
+        # by type. Preserve new upstream variants without losing the full call.
         discriminator = next((key for key in ("role", "type") if all(
             key in model.model_fields and _literals(model.model_fields[key].annotation)
             for model in models
@@ -138,7 +138,7 @@ def _filter_fields(
         if field is None:
             if (issubclass(model, ChatMessageBase) and name == "source"
                     or model is ToolCall and name == "view"):
-                continue  # Harness/viewer data, deliberately excluded from the boundary.
+                continue  # Harness/viewer data, excluded from the boundary.
             # Collapse list indices to let the run summary grow with schema
             # changes, not with the number of messages or model calls.
             dropped.add(re.sub(r"\[\d+\]", "[]", child_path))
@@ -242,7 +242,7 @@ class SampleTranscript:
     """Emit each sample's completed transcript prefix in its native sequence.
 
     Inspect delivers hooks when events complete, which can differ from transcript
-    sequence with nesting. Wait behind pending events, then flush the whole prefix.
+    sequence with nesting. Wait behind pending events, then flush the full prefix.
     The last pass includes unfinished events and reconciles anything hooks missed.
     """
 
@@ -361,7 +361,7 @@ def emit_aggregate(log: EvalLog, agent: str) -> dict[str, Any]:
 
 
 def emit_all(log: EvalLog, agent: str) -> dict[str, Any]:
-    """Translate the whole EvalLog at once (the batch path — used by tests and each
+    """Translate the full EvalLog at once (the batch path — used by tests and each
     caller that has a completed log). main.py streams instead: samples through a hook,
     then emit_aggregate."""
     with drift_warnings():

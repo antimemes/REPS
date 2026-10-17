@@ -9,8 +9,8 @@ provider routing from the model id's prefix, one ``llm.call`` event for each cal
 usage and latency, reasoning-tag stripping, and the keyless ``mock/`` backend.
 
 The mock rides the same BaseGPTModel path as real models — only the responder is
-swapped (deterministic scripted lines; exact-option answers for choice prompts; a
-valid action spec when the game master asks for one). Thus the smoke/CI run
+swapped (deterministic scripted lines; exact-option answers for prompts that list
+options; a valid action spec when the game master asks for one). Thus the smoke/CI run
 exercises upstream's prompt assembly too.
 
 Each call — mock or real — emits one ``llm.call`` event. Thus the event stream has
@@ -51,7 +51,7 @@ _MOCK_ACTION_SPEC = (
 )
 
 # BaseGPTModel.sample_choice's phrasing — the mock answers those prompts with one
-# of the listed options verbatim. Thus upstream's exact-match loop accepts it.
+# of the listed options as written. Thus upstream's exact-match loop accepts it.
 _CHOICE_MARKER = "Respond EXACTLY with one of the following strings:"
 
 
@@ -149,7 +149,7 @@ class RepsLanguageModel(language_model.LanguageModel):
 class PerEntitySimulation(generic_simulation.Simulation):
     """Upstream's Simulation is multi-model at three grains — default,
     `override_agent_model` (all entities), `override_game_master_model` — but
-    `add_entity` builds each entity with the one shared `_agent_model`. We need
+    `add_entity` builds each entity with the one shared `_agent_model`. We must have
     per-entity grain for two REPS reasons upstream does not have: llm.call attribution
     requires one client for each entity (Concordia gives the model no calling-entity
     context), and the roster's per-agent model override is a treatment axis riding

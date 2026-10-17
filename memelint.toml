@@ -5,7 +5,7 @@
 # bundled lists of memelint do not have it; a vague word is prose work, not list
 # work. An experiment's names live in its memes.txt and apply to its directory.
 subtree-word-lists = ["experiments/*/memes.txt"]
-ignore = [".cache/"]
+ignore = [".cache/", "lib/reps-events/reps_events/inspect_chat.py"]   # vendored Inspect AI text, not ours to rewrite
 
 words = [
   # REPS terms
@@ -43,9 +43,9 @@ words = [
   "identity",          # the facts that make runs poolable: experiment, source fingerprint and params (condition identity)
   "instrumentation",   # the event-recording hooks built into the REPS chat client
   "interactive",       # a run with a terminal where the runner can prompt (opposite of headless)
-  "keyless",           # a configuration that needs no API key (mock model, offline)
+  "keyless",           # a configuration for which no API key is necessary (mock model, offline)
   "knob",              # a parameter a user can change on an experiment; changing one changes the condition id
-  "ladder",            # the ordered credential-profile resolution steps (remembered choice, lone default, picker)
+  "ladder",            # the ordered credential-profile resolution steps (remembered selection, lone default, picker)
   "loopback",          # the local-only network interface (127.0.0.1) the preview serves on
   "manifest",          # the generated description of an experiment's parameters, results and metadata (manifest.json)
   "metric",            # one declared, measured result of a run (the paper's headline metric); the base of the bundled plural
@@ -178,3 +178,6 @@ words = [
 
 [languages.nix]
 words = ["uv"]   # the Python package manager; the bundled python list covers .py files only
+
+[languages.python]
+words = ["required"]   # pydantic's and TypedDict's term: a field a record must contain

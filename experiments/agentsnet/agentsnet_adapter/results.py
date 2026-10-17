@@ -6,8 +6,8 @@ Upstream keeps, for each node, the full LangChain conversation (`chat_history`, 
 writes the former as `transcripts` in its results JSON. The per-round messages
 are reconstructed by walking each transcript the way upstream's
 `chat_tool.py` reads it: each AI reply that follows a round prompt is parsed
-with upstream's `parse_messages`, and a reply to a re-prompt replaces the one
-that failed. Thus each round's object is the one upstream delivered.
+with upstream's `parse_messages`, and a reply to a second prompt replaces the
+one that failed. Thus each round's object is the one upstream delivered.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ def round_messages(history: list[dict], parse: Callable[[str], Optional[dict]]) 
     """`history[i]` is a LangChain message dict ({"type": "human"|"ai"|"system",
     "data": {"content": ...}}). Returns one object for each message round
     (index 0 = round 1), {} where upstream parsed no object even after the
-    re-prompt."""
+    second prompt."""
     rounds: list[dict[str, str]] = []
     phase = None   # "messages" | "final" | None
     for entry in history:

@@ -49,7 +49,7 @@ reps-emit custom --kind t.usage --data '{"usage":{"input_tokens":99999}}'
 
 
 def test_agent_counts_use_only_model_calls_without_loading_schema(tmp_path):
-    # A consumer-only schema export need not be available on the launching machine.
+    # A consumer-only schema export is not necessary on the launching machine.
     manifest = {**MANIFEST, "schema": {"version": 0, "models": "unused:Payload",
                                      "path": str(tmp_path / "missing-schema.json")}}
     script = '''#!/bin/sh

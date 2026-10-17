@@ -18,7 +18,7 @@ let
   # The fetchable reproducibility ref: the pinned rev spliced into the origin ref (in
   # front of a ?dir=... query). This is NOT condition identity (see mkExperiment's
   # per-experiment content `source` below) — it is recorded for each run, thus a run can be
-  # re-run from a pinned source.
+  # run again from a pinned source.
   refParts = lib.splitString "?" origin;
   fetchRef =
     if rev != null && rev != "" then
@@ -33,7 +33,7 @@ let
   # experiment-specific EXTRAS, prepended (e.g. hello's keyless mock) — not a
   # replacement. Presentation only: hints are not identity.
   llmSuggestions = import ../../lib/model-catalog/suggestions.nix { inherit lib; };
-  # Applies to top-level params AND llm-typed fields inside listOf(struct) params
+  # Applies to top-level params AND llm-typed fields in listOf(struct) params
   # (e.g. a roster's model cell for each agent) — a struct field is a bare type or a
   # param-wrapped one; only fields that actually get hints are rewrapped.
   addHints = p: p // { suggestions = (p.suggestions or [ ]) ++ llmSuggestions; };
@@ -55,8 +55,8 @@ let
   # Dev-loop artifacts (a `uv run` .venv, __pycache__, build dists, direnv state)
   # are neither identity nor build input: they must not mint new conditions
   # (mkExperiment's `source` hash) and must not be imported into the store at
-  # eval time — re-hashing a multi-hundred-MB .venv on each fresh eval was the
-  # dominant cost of a classic-door eval.
+  # eval time — hashing a multi-hundred-MB .venv again on each fresh eval was
+  # the dominant cost of a classic-door eval.
   isDevArtifact = base:
     builtins.elem base [ ".venv" "__pycache__" "node_modules" "dist" ".direnv" ".pytest_cache" ".mypy_cache" ".ruff_cache" ]
     || base == "result" || lib.hasPrefix "result-" base;
@@ -136,7 +136,7 @@ in
     struct = fields: { kind = "struct"; inherit fields; };
     # free-form JSON object — arbitrary keys/values, for a wrapped tool's passthrough
     # args (inspect's -T/generate config). The GUI renders it as a JSON editor; the
-    # whole object is materialized into the condition hash as written.
+    # full object is materialized into the condition hash as written.
     object = { kind = "object"; };
 
     # param wraps a type with defaults/instantiation-checks/presentation hints.
@@ -156,7 +156,7 @@ in
     , extraPackages ? [ ]
     , groups ? [ ]
       # extra pythonSet overlay for per-experiment-directory fixes (e.g. a git dep that ships a
-      # legacy setup.py and needs setuptools injected as a build system). Receives
+      # legacy setup.py and must have setuptools injected as a build system). Receives
       # (`final: prev: …`) with uv2nix's pythonSet, where `final.resolveBuildSystem`
       # is available.
     , overrides ? (_final: _prev: { })
@@ -266,8 +266,8 @@ in
 
       # Content identity for each experiment. The condition hash's `source` is a content
       # hash of this experiment's declared sources and shared Python package sources,
-      # each re-imported through builtins.path
-      # for its hash to depend ONLY on that subtree's content, not on the whole-repo
+      # each imported again through builtins.path
+      # for its hash to depend ONLY on that subtree's content, not on the full-repo
       # rev. Thus editing one experiment's directory cannot change another's condition_id.
       # Interpreter declarations are source; platform and runner closures,
       # web, docs and repeated lock dev metadata are outside identity.

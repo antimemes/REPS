@@ -6,18 +6,19 @@ e.g. ``openai/qwen3.5-9b``); *where* it is served and *which key* reaches it are
 environment, not a condition. Thus the runner resolves each `llm`-typed param's provider
 prefix — the segment before the first ``/`` — to a credential set and injects that set's
 stored env vars (``OPENAI_API_KEY``, ``OPENAI_BASE_URL``, …) into the experiment
-subprocess. Experiments read the standard env var names they already use (litellm /
+subprocess. Experiments read the standard env var names they use (litellm /
 inspect_ai / concordia's client all do); they do not see this module.
 
 Storage: ``~/.config/reps/credentials.toml`` (0600). A credential set holds one or more
 named PROFILES — ``[openai.default]``, ``[openai.work]`` — each an atomic free-form
 field map (env var → value; no field-level fallback between profiles). The default
-profile is used silently; named profiles are offered at an interactive picker, and a
-choice can be remembered for each experiment in ``~/.config/reps/preferences.toml`` (names
-only — not secrets, thus not 0600). Managed with ``reps-runner credentials set
-<name>[.<profile>]``, which prompts for each value — secrets through a hidden prompt,
-NEVER argv (argv is visible in ``ps`` and shell history, thus there deliberately is no
-``KEY=VALUE`` form). Scripted use pipes one line for each prompt on stdin.
+profile is used with no message; named profiles are offered at an interactive picker,
+and a selection can be remembered for each experiment in
+``~/.config/reps/preferences.toml`` (names only — not secrets, thus not 0600). Managed
+with ``reps-runner credentials set <name>[.<profile>]``, which prompts for each value —
+secrets through a hidden prompt, NEVER argv (argv is visible in ``ps`` and shell
+history, thus there is no ``KEY=VALUE`` form). Scripted use pipes one line for each
+prompt on stdin.
 """
 
 from __future__ import annotations
@@ -189,7 +190,7 @@ def section_for(model_id: str) -> str | None:
     the first `/`; for inspect's OpenAI-compatible services — `openai-api/<service>/
     <model>`, which read `<SERVICE>_API_KEY` / `<SERVICE>_BASE_URL` — it is the
     *service* segment, thus a credential set with that name (e.g.
-    `credentials set llama`) serves exactly the ids that name it. Mocks route nowhere."""
+    `credentials set llama`) serves only the ids that name it. Mocks route nowhere."""
     head, sep, rest = model_id.partition("/")
     if not sep or not head or head in MOCK_PREFIXES:
         return None
@@ -228,10 +229,11 @@ def env_for_run(manifest: Manifest, realized_params: Params,
 def missing_sets(manifest: Manifest, realized_params: Params) -> list[str]:
     """Credential sets this run's model ids route to with no section in the store. The
     store is the ONLY source of credentials — a key exported in the shell neither
-    reaches a run nor suppresses this gate (a suppressed gate silently skips the
-    setup prompt while the run launches keyless). Only built-in names the registry
-    knows need credentials are reported: an unknown prefix (a custom service) can
-    legitimately need no credentials, and blocking on a guess is inferred-but-wrong.
+    reaches a run nor suppresses this gate (a suppressed gate skips the setup
+    prompt with no warning while the run launches keyless). Only built-in names
+    the registry knows must have credentials are reported: an unknown prefix (a
+    custom service) can legitimately operate with no credentials, and blocking on
+    a guess is inferred-but-wrong.
     A run naming a built-in with zero configuration can only fail, thus the runner
     refuses it up front with the fix in hand."""
     store = load()
@@ -250,12 +252,12 @@ def resolve_run_credentials(manifest: Manifest, realized_params: Params, *,
     """The env to inject for this run, resolving a profile for each credential set
     the run routes to. An explicit selection (`--credential SET=NAME`) is the top of
     the ladder: it must name an existing profile of a set this run routes to (a typo
-    guard on the two halves), beats a remembered choice, and skips the picker AND the
+    guard on the two halves), beats a remembered selection, and skips the picker AND the
     remember question — an explicit flag is a statement, not a conversation opener.
     Below that, interactively this can prompt: first-use setup (with the save/[Y/n]
     and profile-name questions) for unconfigured built-ins, and the profile picker
     (with the remember question) for sets with named profiles. Headless it does not
-    prompt: remembered choice, then default profile, then raises ValueError with
+    prompt: remembered selection, then default profile, then raises ValueError with
     the fix. Values do not touch argv anywhere on these paths — scripted input pipes
     one line for each prompt on stdin. Profile NAMES are argv-safe; values are not."""
     selections = dict(selections or {})
@@ -292,7 +294,7 @@ def resolve_run_credentials(manifest: Manifest, realized_params: Params, *,
             continue
         if not profiles:
             if name not in PROVIDERS:
-                continue  # unknown prefix (a local server) can legitimately need no credentials
+                continue  # unknown prefix (a local server) can legitimately have no credentials
             print(f"reps: this run needs credential set {name!r} — setting it up now "
                   f"(stored 0600 in {config_path()}; change later with "
                   f"`nix run .#reps-runner -- credentials set {name}`)", file=sys.stderr)
@@ -306,7 +308,7 @@ def resolve_run_credentials(manifest: Manifest, realized_params: Params, *,
 
 def _first_use(name: str) -> dict[str, str]:
     """Interactive first-use setup: prompt the template's values, offer to save.
-    Declining feeds the values to THIS run — they are returned either way."""
+    Declining feeds the values to THIS run — they are returned in each case."""
     vals = _prompt_values(name, current=None)
     if vals is None:
         raise ValueError(f"invalid input while setting up credential set {name!r}")
@@ -325,8 +327,8 @@ def _first_use(name: str) -> dict[str, str]:
 def _pick_profile(name: str, profiles: dict[str, dict[str, str]], *,
                   experiment: str, interactive: bool,
                   prefs: dict[str, dict[str, str]]) -> str:
-    """The per-set ladder: remembered choice -> lone default -> picker (interactive)
-    or default-else-refuse (headless). Can write a remembered choice to prefs."""
+    """The per-set ladder: remembered selection -> lone default -> picker (interactive)
+    or default-else-refuse (headless). Can write a remembered selection to prefs."""
     remembered = (prefs.get(experiment) or {}).get(name)
     if remembered is not None:
         if remembered in profiles:
@@ -429,7 +431,7 @@ def _is_secret(name: str, key: str) -> bool:
 
 
 def _url_problem(key: str, value: str) -> str | None:
-    """A base-URL env var must be a full http(s) URL. A bare host fails inside each
+    """A base-URL env var must be a full http(s) URL. A bare host fails in each
     client — urllib raises "unknown url type", SDKs hang against the incorrect port — long
     after this command succeeded, thus catch it here where the fix is one retype. Empty
     passes (it clears the key). Returns the complaint, or None if the value is fine."""
@@ -459,7 +461,7 @@ def _template_rows(name: str) -> tuple[tuple[str, bool, str], ...]:
         return ((provider.api_key.name, True, ""),
                 (provider.base_url.name, False, provider.base_url.default))
     # not a built-in: a NAMED credential set with the standard env var names —
-    # exactly the names `openai-api/<name>/<model>` ids read
+    # the names `openai-api/<name>/<model>` ids read
     prefix = re.sub(r"[^A-Za-z0-9]+", "_", name).upper()
     print(f"{name!r} isn't a built-in name (built-ins: "
           f"{', '.join(sorted(PROVIDERS))}) — storing it as a named credential set "
@@ -472,7 +474,7 @@ def _template_rows(name: str) -> tuple[tuple[str, bool, str], ...]:
 def _prompt_values(name: str, current: dict[str, str] | None) -> dict[str, str] | None:
     """Prompt a set's template values. Secrets are hidden; non-secret prompts show
     the current value or the known default (Enter uses it). Returns None when
-    scripted input cannot satisfy validation (a retype needs a human)."""
+    scripted input cannot satisfy validation (a human must do the retype)."""
     vals = dict(current or {})
     for var, secret, default in _template_rows(name):
         existing = vals.get(var, "")
@@ -630,7 +632,7 @@ def _cmd_remember(argv: list[str]) -> int:
     """`credentials remember <experiment> <set> <profile>` — the picker's `always
     use …?` answer as a command, with the SAME preference file as the interactive
     prompt. Names only, not values; the profile must
-    exist (a remembered typo silently re-asks forever)."""
+    exist (a remembered typo makes the picker ask again forever)."""
     if len(argv) != 3:
         print("usage: reps-runner credentials remember <experiment> <set> <profile>",
               file=sys.stderr)

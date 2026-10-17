@@ -223,10 +223,10 @@ def test_message_source_and_tool_view_survive_only_in_raw_event(event_capture):
 # the only coverage these branches get before live-fire -----------------------------
 
 def test_errored_model_event_preserves_error(event_capture):
-    """The live-fire regression: a failed call's ModelEvent carries `error` as a
+    """The live-fire regression: a failed call's ModelEvent has `error` as a
     plain string, a placeholder empty output message, no usage, no working_time,
     and the provider's error body in call.response (inspect_ai's error branch).
-    The error stays a string, exactly as Inspect records it."""
+    The error stays a string, as Inspect records it."""
     ev = _model_event(
         call=ModelCall.create({"vendor": "wire"}, {"error": "model call failed"}),
         usage=None, reply="", in_id="m1", out_id="m2",

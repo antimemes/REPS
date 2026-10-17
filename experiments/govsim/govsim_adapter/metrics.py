@@ -1,6 +1,6 @@
 """GovSim's persisted environment rows → REPS results.
 
-Everything the paper's headline numbers need lands in ``log_env.json`` (pandas
+Everything the paper's headline numbers use lands in ``log_env.json`` (pandas
 records, rewritten by the env each round). Survival and equality reuse the
 formulas from upstream ``simulation/analysis/plots.py`` (quoted, not imported —
 the analysis stack is not in this env). ``over_usage`` has NO upstream
@@ -10,7 +10,7 @@ sustainability threshold ``(pool_before // 2) // num_agents``, with
 ``num_agents`` = that round's distinct harvester count. Upstream's env keeps a
 *constant* ``num_agents`` (and a threshold fixed at reset), which does not update
 when an outsider joins — thus in ``*_outsider`` configs the two disagree for
-wants inside the gap (e.g. pool 100, 5 harvesters: ours 10, upstream's 12).
+wants in the gap (e.g. pool 100, 5 harvesters: ours 10, upstream's 12).
 The count for each round follows the paper's formula; the divergence is only vs
 upstream's internal bookkeeping.
 """

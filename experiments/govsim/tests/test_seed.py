@@ -70,7 +70,7 @@ def test_explicit_seed_repeats_contended_allocations(tmp_path, allocation):
             results = []
             for _ in range(20):
                 # Demand 25 from a pool of 7. Proportional allocation also
-                # needs random tie-breaking because 7 is not divisible by 5.
+                # must break ties at random because 7 is not divisible by 5.
                 env.internal_global_state["resource_in_pool"] = 7
                 env.internal_global_state["wanted_resource"] = {
                     agent: 5 for agent in env.agents

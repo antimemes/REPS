@@ -1,4 +1,4 @@
-"""The saved timestamp format is fixed-width UTC, including zero microseconds."""
+"""The saved timestamp format is fixed-width UTC, with zero microseconds written."""
 
 from datetime import datetime, timedelta, timezone
 import json

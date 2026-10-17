@@ -22,7 +22,7 @@ let
         (workspace.mkPyprojectOverlay { sourcePreference = "wheel"; })
       ]);
 in
-# mainProgram: the venv carries several bins (reps-runner, reps-emit, python…) —
+# mainProgram: the venv has several bins (reps-runner, reps-emit, python…) —
 # name the canonical one to let lib.getExe (and anything mainProgram-aware)
 # resolve to reps-runner instead of guessing from the derivation name
 (pythonSet.mkVirtualEnv "reps-runner-env" { reps-runner = [ "publish" ]; }).overrideAttrs

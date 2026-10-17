@@ -25,7 +25,7 @@ def run_dir(tmp_path, monkeypatch) -> Path:
     yield tmp_path
     os.chdir(cwd)
     # upstream modules keep module-level state (patched attributes); drop them,
-    # thus the next test re-imports against its run directory
+    # thus the next test imports them again against its run directory
     for name in ("main", "LiteralMessagePassing", "utils", "generate_graphs", "chat_tool"):
         sys.modules.pop(name, None)
     for entry in [p for p in sys.path if str(tmp_path) in p]:

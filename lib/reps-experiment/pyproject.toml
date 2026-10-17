@@ -1,8 +1,8 @@
-# Everything a Python REPS experiment needs beyond the event vocabulary: the
+# Everything a Python REPS experiment must have beyond the event vocabulary: the
 # runner-protocol scaffold (scaffold.py), provider->endpoint routing (providers.py),
 # and the instrumented OpenAI-compat LLM client (llm.py, behind the [llm] extra to
 # keep the base install SDK-free). Split from reps-events to keep the vocabulary
-# package the runner depends on exactly that — the vocabulary.
+# package the runner depends on only that — the vocabulary.
 [project]
 name = "reps-experiment"
 version = "0.1.0"
@@ -14,8 +14,8 @@ dependencies = [
     "reps-providers",
 ]
 
-# reps_experiment.llm needs the OpenAI SDK; experiments that call models depend on
-# `reps-experiment[llm]`, ones that only need the scaffold skip it
+# reps_experiment.llm must have the OpenAI SDK; experiments that call models depend
+# on `reps-experiment[llm]`, ones that use only the scaffold skip it
 [project.optional-dependencies]
 llm = ["openai>=1.60"]
 

@@ -3,7 +3,7 @@
 # $(nix-build …) (classic), and nix-run — must mint IDENTICAL condition identity
 # (source content hash + condition id) for the same experiment and params on the
 # same tree. This guards against eval-path drift (flake store copies, path
-# filtering, arg plumbing) silently fragmenting conditions by entrypoint.
+# filtering, arg plumbing) fragmenting conditions by entrypoint with no warning.
 # Keyless: --dry-run only (no experiment executes, no file is written to the
 # databank).
 #
@@ -31,7 +31,7 @@ fi
 args=("${params[@]}" --dry-run)
 cd "$dir"
 
-# dry-run output carries:  "source:     content:sha256:…"  and
+# dry-run output includes:  "source:     content:sha256:…"  and
 # "condition <abbrev>  (<full-cid>)" — the base seed line is random and ignored
 extract() { awk '/^source:/ { print $2 } /^condition / { gsub(/[()]/, "", $NF); print $NF }'; }
 

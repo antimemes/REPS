@@ -178,7 +178,7 @@ def main() -> int:
     from inspect_evals.metadata import load_listing
 
     # identity fallback for registry-only tasks (no eval.yaml): the package version —
-    # conservative, they re-version on each release
+    # conservative, they get a new version on each release
     pkg_version = f"inspect-evals-{importlib.metadata.version('inspect-evals')}"
     # upstream tags releases vX.Y.Z — source links point at the pinned tag
     pin_tag = f"v{importlib.metadata.version('inspect-evals')}"
@@ -214,8 +214,8 @@ def main() -> int:
                 "dataset_samples": t.dataset_samples,
                 "links": eval_links(ev, pin_tag),
             }
-    # registered but absent from the listing: real and runnable — carry them with
-    # docstring summaries, thus the catalog does not silently drop a task
+    # registered but missing from the listing: real and runnable — carry them with
+    # docstring summaries, thus the catalog does not drop a task without warning
     for name, fn in registered.items():
         if name not in tasks:
             params, kwargs_of, excluded = task_params(fn)
@@ -241,8 +241,8 @@ def main() -> int:
     }
     path = Path(__file__).resolve().parent.parent / "task_catalog.json"
     # comparability diff vs the previous catalog — the advisory seed: identity
-    # deliberately fragments more than necessary on each pin bump, and read-time
-    # pooling re-unifies by default; each DECLARED version bump printed here is a
+    # fragments more than necessary on each pin bump, and read-time pooling
+    # unifies it again by default; each DECLARED version bump printed here is a
     # candidate for a split advisory scoped to that eval (a release note, not an
     # identity input)
     previous = json.loads(path.read_text())["tasks"] if path.exists() else {}

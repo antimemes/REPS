@@ -18,7 +18,7 @@ DEV_HEADER = "[package.metadata.requires-dev]"
 
 
 def replace_once(text, pattern, replacement):
-    """A format change must fail a probe rather than silently make it a no-op."""
+    """A format change must fail a probe, not make it a no-op with no warning."""
     changed, count = re.subn(pattern, replacement, text, count=1, flags=re.MULTILINE)
     assert count == 1 and changed != text, f"Lock probe no longer matches: {pattern}"
     tomllib.loads(changed)
@@ -91,7 +91,7 @@ in builtins.mapAttrs (_: exp: exp.source) {
     probe("lib/reps-inspect/reps_inspect/translate.py", {"inspect-hello", "impossiblebench-swebench"})
     probe("lib/reps-events/tests/test_emit.py", set())
     probe("experiments/govsim/README.md", set())
-    # Cover explicit lock paths and locks inside a declared directory.
+    # Cover explicit lock paths and locks in a declared directory.
     for family, experiment in (("govsim", "govsim"), ("impossiblebench", "impossiblebench-swebench")):
         relative = f"experiments/{family}/uv.lock"
         project = tomllib.loads((checkout / "experiments" / family / "pyproject.toml").read_text())["project"]["name"]

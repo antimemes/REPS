@@ -23,7 +23,7 @@ let
     }) { };
 
   overrides = final: prev:
-    # Legacy setup.py packages need their undeclared build system supplied.
+    # Legacy setup.py packages must have their undeclared build system supplied.
     lib.genAttrs [ "pathfinder" "antlr4-python3-runtime" ] (name:
       prev.${name}.overrideAttrs (old: {
         nativeBuildInputs = (old.nativeBuildInputs or [ ])

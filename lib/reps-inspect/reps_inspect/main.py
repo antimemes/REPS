@@ -36,7 +36,7 @@ def resolve_task(spec: str):
     """`pkg:<module>:<attr>` -> the imported @task callable (how a family selects a
     task function from an installed package, e.g. `pkg:impossiblebench:impossible_swebench`);
     all other specs (registry id or `path/file.py@task_fn`) pass through to Inspect
-    verbatim."""
+    with no change."""
     if spec.startswith("pkg:"):
         modname, sep, attr = spec[4:].partition(":")
         if not sep or not modname or not attr:
@@ -72,7 +72,7 @@ def eval_kwargs(params: Params, log_dir: Path) -> dict[str, Any]:
     return kw
 
 
-def deposit_log(log_obj: Any, run_dir: Path) -> None:  # Any: EvalLog, whose import is deliberately lazy
+def deposit_log(log_obj: Any, run_dir: Path) -> None:  # Any: EvalLog, whose import is lazy
     """Copy the run's `.eval` log into the deposit as an artifact (the irreducible
     Inspect record; the translated events are its secondary rendering)."""
     src = getattr(log_obj, "location", None)
@@ -91,7 +91,7 @@ def deposit_log(log_obj: Any, run_dir: Path) -> None:  # Any: EvalLog, whose imp
 
 
 class PrintStream(io.TextIOBase):
-    """Solver prints, captured at the source and re-emitted as `stdout` events.
+    """Solver prints, captured at the source and emitted again as `stdout` events.
 
     Inspect runs samples concurrently in one process, thus raw prints interleave
     unattributably; capturing at print time lets us read inspect's active-sample
@@ -143,7 +143,7 @@ def _run(params: Params) -> int:
 
     # imported lazily to let a config/param error report cleanly before the heavy
     # numpy/inspect_ai import chain runs
-    # upstream's `eval` signature carries an untyped Scanner param, which strict
+    # upstream's `eval` signature has an untyped Scanner param, which strict
     # counts against anyone importing it — their gap, scoped suppression here
     from inspect_ai import eval as run_eval  # pyright: ignore[reportUnknownVariableType]
     from inspect_ai.hooks import Hooks, hooks
@@ -153,7 +153,7 @@ def _run(params: Params) -> int:
     streamed: set[str] = set()
     live: dict[str, SampleTranscript] = {}
 
-    # STREAM: run_eval blocks through the whole eval, thus emit as it goes — a status
+    # STREAM: run_eval blocks through the full eval, thus emit as it goes — a status
     # when each sample starts, each completed native transcript prefix, and a last
     # reconciliation pass. A raw ModelEvent and its derived call stay adjacent.
     # hook `data` params are Any on purpose: their classes ride the pinned inspect
@@ -193,7 +193,7 @@ def _run(params: Params) -> int:
         Status(detail=f"running inspect eval: task={params.task} model={params.model}")
     )
     # Structured events use the socket; everything the
-    # eval prints is captured and re-emitted as tagged `stdout` events (PrintStream),
+    # eval prints is captured and emitted again as tagged `stdout` events (PrintStream),
     # and inspect's otherwise-silent docker provisioning is narrated as status
     # events (sandbox_status.py)
     try:

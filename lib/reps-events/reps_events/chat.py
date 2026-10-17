@@ -113,7 +113,7 @@ def chat_completion_output(body: dict[str, Any]) -> ModelOutput:
     """Snapshot all choices and usage before caller-facing text is changed.
 
     Accept a parsed provider body or an SDK model_dump. Incomplete usage stays
-    unknown: the usage model invents zero for absent counts. Thus keep partial
+    unknown: the usage model invents zero for missing counts. Thus keep partial
     usage only in the raw response instead of constructing that model.
     """
     choices = [ChatCompletionChoice(

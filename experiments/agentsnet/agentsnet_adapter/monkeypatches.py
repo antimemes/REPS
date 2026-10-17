@@ -1,7 +1,7 @@
 """Where the adapter touches the authors' code, at import time, without editing it.
 
 Each item has a name and replaces an attribute on an upstream module. The
-tree on disk stays verbatim.
+tree on disk is not changed.
 
   swap-chat-model    LiteralMessagePassing.init_chat_model and .ChatOllama ->
                      a factory returning RepsChatModel (llm.py). Upstream's
@@ -16,7 +16,7 @@ tree on disk stays verbatim.
                      on 429s.
   env-ollama         upstream evaluates os.environ['OLLAMA_URI'] as the base_url
                      argument before the (replaced) ChatOllama is called; a
-                     placeholder is set when absent, since routing is REPS's
+                     placeholder is set when missing, since routing is REPS's
                      (the ollama/ credential set), and the argument is ignored.
   dataset-pinned     main.load_dataset (Hugging Face Hub, network) -> a reader of
                      the parquet file package.nix pins by content; upstream's
@@ -25,7 +25,7 @@ tree on disk stays verbatim.
                      upstream's run() seeds `random` from --seed. No step that
                      affects a reply draws from them (graph names come from the
                      dataset; only retry back-off timing uses `random`).
-  seed-forwarded     each completion request carries the run seed (the REPS
+  seed-forwarded     each completion request includes the run seed (the REPS
                      client adds it); upstream sent none.
 
 The fixes behind the patch_crash_on_all_no and better_reprompting params are

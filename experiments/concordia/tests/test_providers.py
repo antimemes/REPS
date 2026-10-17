@@ -49,7 +49,7 @@ def test_azure_takes_the_full_mount_verbatim():
                   "AZUREAI_BASE_URL": "https://myres.openai.azure.com/openai/v1"})
     assert ep.base_url == "https://myres.openai.azure.com/openai/v1"
     assert ep.served_model == "my-gpt5-deployment"
-    # no universal origin — the base-url env var is required
+    # no universal origin — the base-url env var is necessary
     with pytest.raises(ValueError, match="AZUREAI_BASE_URL"):
         resolve("azureai/my-deployment", {"AZUREAI_API_KEY": "k"})
 

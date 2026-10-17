@@ -162,7 +162,7 @@ def main() -> int:
         return preview_cli(sys.argv[2:])
 
     # `reps-runner credentials …` manages the local credential store; it is a standalone
-    # management command, not a run, thus it needs no manifest/experiment env.
+    # management command, not a run, thus a manifest/experiment env is not necessary.
     if sys.argv[1:2] == ["credentials"]:
         from .credentials import credentials_cli
         return credentials_cli(sys.argv[2:])
@@ -236,7 +236,7 @@ def main() -> int:
     # Credential resolution can prompt for first-use setup of an unconfigured
     # built-in (secrets do not touch argv), and the profile
     # picker when named profiles exist. Headless (non-terminal stdin or --non-interactive) it does not
-    # prompt — remembered choice, then default profile, then exit 2 with the fix.
+    # prompt — remembered selection, then default profile, then exit 2 with the fix.
     realized = cond["params"]  # no distributions in the MVP: realized ARE the spec params
     interactive = sys.stdin.isatty() and not args.non_interactive
     selections = dict(_parse_kv(entry, "--credential") for entry in args.credential)

@@ -6,7 +6,7 @@ JSON through the event socket, and execution failures return a nonzero exit code
 after emitting diagnostic evidence and the fallback summary. A config file that
 argv names overrides stdin — the hand-run/debug path, and the seam an
 adapter uses when it reshapes params first (concordia). Each experiment
-repeats that scaffold verbatim, thus it lives here:
+repeats that scaffold with no change, thus it lives here:
 
     def main() -> int:
         return experiment_main(Params, run, prog="my-experiment",
@@ -31,7 +31,7 @@ from reps_events import CustomEvent, Result, emit, emit_producer
 
 
 class SupportsModelValidate(Protocol):
-    """The one method the scaffold needs from a params model CLASS — pydantic's
+    """The one method the scaffold uses from a params model CLASS — pydantic's
     ``model_validate`` shape, without depending on (or requiring) pydantic."""
 
     def model_validate(self, raw: Any, /) -> Any: ...
@@ -42,7 +42,7 @@ def experiment_main(params_model: SupportsModelValidate,
                     description: str | None = None,
                     fallback_summary: dict[str, Any] | None = None,
                     argv: list[str] | None = None) -> int:
-    """The whole main(): read params (stdin, or a config file that argv names),
+    """The full main(): read params (stdin, or a config file that argv names),
     validate them (an object with a pydantic-style ``model_validate``), default
     ``REPS_RUN_DIR``, call ``run(params)``. If `run` raises, the traceback goes
     to stderr, each entry of `fallback_summary` is emitted as a result, and

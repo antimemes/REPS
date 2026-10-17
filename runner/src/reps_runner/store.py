@@ -41,7 +41,7 @@ def write_json_atomic(path: Path, obj: Any) -> None:
 
 
 def find_run(home: Path, run_id: str) -> Path | None:
-    """Locate a run directory by its whole ID. Run ids are globally unique but stored in
+    """Locate a run directory by its full ID. Run ids are globally unique but stored in
     their condition directory, thus the condition segment is globbed."""
     matches = sorted((home / "runs").glob(f"*/{run_id}"))
     return matches[0] if matches else None

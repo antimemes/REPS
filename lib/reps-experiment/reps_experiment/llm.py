@@ -10,7 +10,7 @@ frameworks actually use, ``.chat.completions.create``. In exchange:
     openrouter, azure, azureai; each an OpenAI-compatible mount), and ``mock/...``
     runs keyless and offline with a deterministic responder — the smoke/CI path,
     uniform across experiments (the runner's mock convention);
-  * each call emits one ``llm.call`` event — the verbatim reply, token usage, and
+  * each call emits one ``llm.call`` event — the reply as written, token counts, and
     latency — attributed to the constructing `agent`;
   * run-level generation params apply uniformly: `temperature` overrides (it is the
     run's declared axis), `seed` fills in when the caller passes none, `max_tokens`
@@ -27,7 +27,7 @@ recording and sending. vLLM instead takes ``continue_final_message`` plus
 ``add_generation_prompt=false`` in the request body, whatever the family; other
 providers receive the message as given.
 
-Needs the ``openai`` SDK — depend on ``reps-experiment[llm]``. Import stays inside this
+The ``openai`` SDK is necessary — depend on ``reps-experiment[llm]``. Import stays in this
 module, thus the base package adds no requirement.
 """
 
@@ -96,7 +96,7 @@ def _tool_choice(value: Any) -> ToolChoice:
 
 
 class ServedModelMismatch(SystemExit):
-    """Fatal routing error, deliberately outside harnesses' Exception fallbacks.
+    """Fatal routing error, outside harnesses' Exception fallbacks.
 
     Continuing with a default answer conceals that this condition ran the
     incorrect model. The original response and an error log are emitted before exit.
@@ -184,7 +184,7 @@ class ChatClient:
             self.provider: str | None = None
             self._request = self._mock_create  # unreached (_create short-circuits)
         else:
-            import openai  # the [llm] extra; only this module needs it
+            import openai  # the [llm] extra; only this module uses it
             import httpx
 
             endpoint = resolve(model_id)  # ValueError with the fix in the message
@@ -198,7 +198,7 @@ class ChatClient:
             sdk = openai.OpenAI(
                 api_key=endpoint.api_key, base_url=endpoint.base_url, max_retries=_MAX_RETRIES,
                 # Preserve SDK timeout/connection defaults. Context-local counts
-                # keep overlapping calls independent, including failed calls.
+                # keep overlapping calls independent, failed calls included.
                 http_client=openai.DefaultHttpxClient(event_hooks={"response": [count_retry]}),
             )
 
@@ -280,7 +280,7 @@ class ChatClient:
                 self._emit(event)
         assert response is not None
         # Check the first successful response for each client/model in the run.
-        # The verifier checks each recorded call, including later alias drift.
+        # The verifier checks each recorded call, later alias drift included.
         # Serialize capture with the check, thus overlapping responses cannot race
         # to mark the model checked between another call's emission and check.
         with self._model_lock:

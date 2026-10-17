@@ -12,7 +12,7 @@ def _events(event_capture):
 def test_scene_then_turns_stream_one_at_a_time(event_capture):
     roster = {"Alice", "Bob"}
     assert emit_scene("Alice and Bob meet at a cafe.") == 1
-    # the original action, including speech markers and quotes, is retained
+    # the original action, with speech markers and quotes, is retained
     assert emit_turn(1, "Alice", 'Alice -- "Hi Bob!"', roster) == 1
     assert emit_turn(2, "Bob", "Bob Good to see you.", roster) == 1
 
@@ -52,7 +52,7 @@ def test_semantic_events_from_raw_log(event_capture):
         "Game Master --- Event: x": {"terminate": {"__act__": {"Value": "No"}}},
     })
     turns.drain()
-    # rolling window: step 3 re-lists the old observation plus one new one
+    # rolling window: step 3 lists the old observation again plus one new one
     turns.raw_log.append({
         "Step": 3,
         "Entity [Alice]": {
@@ -67,7 +67,7 @@ def test_semantic_events_from_raw_log(event_capture):
 
     obs = [e for e in events if e["type"] == "custom" and e["kind"] == "concordia.observation"]
     assert [(e["data"]["agent"], e["data"]["text"]) for e in obs] == [
-        ("Alice", "Bob waves."), ("Alice", "Bob sits down.")]  # each exactly one time
+        ("Alice", "Bob waves."), ("Alice", "Bob sits down.")]  # each one time only
 
     percs = [e for e in events if e.get("kind") == "concordia.perception"]
     assert [p["data"]["self"] for p in percs] == ["Alice is warm.", "Alice is curious."]

@@ -2,7 +2,7 @@
 
 Do not fork the pytest worker: event_capture has a receiver thread. This parent
 does no simulation work and uses one numeric thread before forking; each child
-runs main(), including its thread settings, seed and environment.
+runs main(), with its thread settings, seed and environment.
 """
 
 import contextlib

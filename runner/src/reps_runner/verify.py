@@ -168,7 +168,7 @@ def _python_venvs(program: str, seen: set[str] | None = None) -> set[str]:
     """Read Nix wrapper references without executing them or resolving Python symlinks.
 
     A venv's bin/python can link to the base interpreter; its lexical store root
-    is the environment we need to compare. Shell adapters reference that venv's
+    is the environment we must compare. Shell adapters reference that venv's
     console entrypoint. Unavailable or unrecognized launchers stay unaudited.
     """
     root = _store_root(program)
@@ -246,7 +246,7 @@ def verify_run(run_dir: Path, *, manifest: Path | None = None, catalog: Path | N
     except (OSError, ValueError):
         raise VerificationError("run.json is missing or unreadable") from None
     expected = derive_card(records)
-    # A saved v0 cache can predate the new reading. Accept it only if it exactly
+    # A saved v0 cache can predate the new reading. Accept it only if it
     # matches the original stream projection; do not ignore arbitrary card drift.
     if card != expected:
         original_projection = CardProjection()

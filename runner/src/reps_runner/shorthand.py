@@ -4,7 +4,8 @@
 
 JSON parses as JSON; `@path` reads the file (JSON if it parses, if not the raw text is
 the string value); all other input is a bare string. A value that *looks* like JSON
-(`[`/`{` first) but does not parse fails loudly rather than silently becoming a string.
+(`[`/`{` first) but does not parse fails loudly rather than becoming a string with no
+warning.
 """
 
 from __future__ import annotations
@@ -32,7 +33,7 @@ def parse_value(raw: str):
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            return text  # raw text file — the whole file is the (string) value
+            return text  # raw text file — the full file is the (string) value
     if s[0] in "[{":  # unambiguously intended as JSON — fail loudly, not as bare string
         try:
             return json.loads(s)

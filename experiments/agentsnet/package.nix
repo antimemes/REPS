@@ -1,7 +1,7 @@
 # AgentsNet ("Coordination and Collaborative Reasoning in Multi-Agent LLMs",
 # Grötschla, Müller, Tönshoff, Galkin & Perozzi, arXiv:2507.08616) as a REPS
 # experiment: the authors' released code (github.com/floriangroetschla/AgentsNet,
-# MIT, pinned by revision in upstream.json) copied into each run (verbatim unless a fix switch is on) and
+# MIT, pinned by revision in upstream.json) copied into each run (not changed unless a fix switch is on) and
 # driven by a thin adapter in ./agentsnet_adapter, the way prompt-infection wraps
 # its authors' tree. One run is one cell of the authors' sweep: one task on one
 # graph instance from their published dataset (Hugging Face disco-eth/AgentsNet,
@@ -21,7 +21,7 @@ let
   pin = builtins.fromJSON (builtins.readFile ./upstream.json);
   upstream = builtins.fetchGit { inherit (pin) url ref rev; };
   # The graph instances, one parquet file fetched by content hash. Same rule:
-  # the sidecar is outside src, the file is inside.
+  # the sidecar is outside src, the file is in src.
   datasetPin = builtins.fromJSON (builtins.readFile ./dataset.json);
   dataset = builtins.fetchurl { inherit (datasetPin) url sha256; };
 

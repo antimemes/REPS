@@ -1,8 +1,8 @@
 """The config->structure boundary: the params a single Concordia run accepts.
 
 A pydantic model to reject a malformed config cleanly (before the heavy Concordia
-import), with `extra="forbid"` to make an incorrect key an error, not a
-silently-ignored knob.
+import), with `extra="forbid"` to make an incorrect key an error, not a knob that
+is ignored with no warning.
 
 This is the sim program's FULL config surface — roster, premise, game master, and the
 run knobs. The experiment cards in package.nix bake the scenario fields (agents,

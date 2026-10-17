@@ -134,7 +134,7 @@ def run(params: Params) -> None:
     from omegaconf import OmegaConf
     from transformers import set_seed
 
-    # Configuration belongs in the transcript, including on setup failure.
+    # Configuration belongs in the transcript, also when setup fails.
     emit(GovsimConfig(data=ConfigData.model_validate(OmegaConf.to_container(cfg, resolve=True))))
 
     set_seed(seed)  # mirrored from upstream main.py (global python/numpy/torch)
@@ -212,7 +212,7 @@ def run(params: Params) -> None:
         except (ValueError, OSError) as exc:
             if simulation_error is None:
                 raise
-            # Diagnostics are already in the stream. A missing or broken
+            # Diagnostics are in the stream. A missing or broken
             # checkpoint must not replace the original simulation failure.
             simulation_error.add_note(f"Checkpoint ingestion also failed: {exc}")
 

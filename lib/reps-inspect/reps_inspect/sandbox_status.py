@@ -2,17 +2,17 @@
 
 Running with ``display="none"`` (which the JSONL event channel requires) makes
 inspect pass ``--progress quiet`` to each docker compose command and capture the
-output of the long ones. Thus a first run can sit minutes inside a multi-GB
+output of the long ones. Thus a first run can sit minutes in a multi-GB
 image pull with no events on the stream — while the one thing compose prints is
 a harmless "No services to build" warning on stderr. Each such subprocess is,
 however, wrapped in inspect's ``trace_action(logger, "Subprocess", cmd)``, which
 logs structured records (``action``/``detail``/``event``/``duration`` as record
 attributes — no message parsing) at TRACE level. This handler listens on the
 ``inspect_ai`` package logger (it sets ``propagate=False``, thus a root handler
-does not see these) and re-emits just the provisioning commands — docker
+does not see these) and emits just the provisioning commands — docker
 build/pull, plain or compose — as status events with durations. Per-tool-call
-``compose exec`` and ``compose up``/``down`` chatter is deliberately excluded:
-they fire for each sample and the stream is already narrated at that level.
+``compose exec`` and ``compose up``/``down`` chatter is excluded:
+they fire for each sample and the stream is narrated at that level.
 """
 
 from __future__ import annotations
@@ -29,8 +29,8 @@ _VERBS = {"build", "pull"}
 
 def docker_verb(detail: str) -> str | None:
     """`"docker compose pull"` / `"docker build"` for a provisioning command,
-    None for all other commands (including `compose exec`, the per-tool-call
-    path)."""
+    None for all other commands (`compose exec`, the per-tool-call path, is
+    one)."""
     try:
         tokens = shlex.split(detail)
     except ValueError:

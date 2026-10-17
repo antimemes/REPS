@@ -14,8 +14,8 @@
 #             `required` (default true): a value must exist at runtime; consumers
 #             fail early and actionably when it does not. Local OpenAI-compatible
 #             servers (llama.cpp, vLLM, Ollama) can ignore auth, thus openai, vllm
-#             and ollama allow an absent key — the chat client sends a placeholder
-#             bearer when it is absent.
+#             and ollama allow a missing key — the chat client sends a placeholder
+#             bearer when it is missing.
 #   base_url  the endpoint — always the PLAIN API origin the provider's
 #             ecosystem expects for the var. `default` (default "") is offered at
 #             the setup prompt (Enter uses it) and used as the runtime fallback;

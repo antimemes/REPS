@@ -35,8 +35,8 @@ pkgs.mkShell {
     # prose lint (STE) for comments/docstrings/docs; flake input, see flake.nix
     memelint
 
-    # sandboxed experiments (inspect's docker sandbox) need a Docker daemon; the
-    # devshell ships the whole engine (client + compose plugin + dockerd) and
+    # sandboxed experiments (inspect's docker sandbox) must have a Docker daemon;
+    # the devshell ships the full engine (client + compose plugin + dockerd) and
     # `task docker:up` sudo-starts the daemon on the default socket.
     # fuse-overlayfs: dockerd's wrapper does not bundle it, and it is the only
     # storage driver that works when data-root sits on virtiofs (kernel overlayfs

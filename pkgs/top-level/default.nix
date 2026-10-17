@@ -46,7 +46,7 @@ let
 
       # REPS's tools; the reps- prefix keeps them out of the registry's bare namespace.
       # The runner is packaged from its uv.lock (uv2nix) — see runner/default.nix,
-      # including why its workspace import cannot go through reps.cleanImport.
+      # and why its workspace import cannot go through reps.cleanImport.
       reps-runner = final.callPackage ../../runner { };
 
     }

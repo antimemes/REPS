@@ -3,7 +3,7 @@
 ChatClient's default mock lines fail each GovSim parse, which makes each
 gen/find/select fall back to ``ModelWandbWrapper``'s default values (harvest 0,
 limit -1) — a degenerate all-defaults run. This responder keys on the format
-markers GovSim's prompt functions put in the chat (markers are shared verbatim
+markers GovSim's prompt functions put in the chat (markers are the same
 across the fishing/sheep/pollution scenarios) and answers in the exact shapes
 pathfinder's regex parsing consumes, thus the mock run exercises the real
 parse/aggregate paths.

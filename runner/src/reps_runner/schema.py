@@ -145,9 +145,9 @@ class MissingParamsError(SchemaError):
 
 def bind_params(manifest: Manifest, overrides: Params) -> Params:
     """Each param must be bound by the invocation — there are NO experiment-level
-    defaults. A manifest's `initial` values are suggestions only (including the
-    suggested oneliner the CLI prints on this error): they do not
-    silently enter a run, thus an author changing one cannot change the meaning of
+    defaults. A manifest's `initial` values are suggestions only (the suggested
+    oneliner the CLI prints on this error is one): they do not
+    enter a run, thus an author changing one cannot change the meaning of
     an existing oneliner."""
     params_schema = manifest["params"]
     unknown = set(overrides) - set(params_schema)

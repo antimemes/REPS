@@ -1,6 +1,6 @@
 { identityLock, identityImport }:
 let
-  # Deliberately compare bytes, not parsed TOML: all non-dev text is identity.
+  # Compare bytes, not parsed TOML: all non-dev text is identity.
   check = name: input: expected:
     let actual = builtins.readFile (identityLock name (builtins.toFile "input.lock" input));
     in if actual == expected then true

@@ -1,7 +1,7 @@
 """End-to-end: a real keyless mockllm eval through eval -> translate -> summary.
 
 Skipped where inspect_ai cannot import (e.g. a bare venv missing the C++ runtime the
-numpy wheel needs) — the nix build and devshell provide it; these assert the real
+numpy wheel must have) — the nix build and devshell provide it; these assert the real
 Inspect objects continue to map the way test_translate's fakes assume.
 """
 
@@ -121,7 +121,7 @@ def test_provenance_emitted_from_real_log(inspect_ok, tmp_path, capsys, event_ca
 
 
 def test_llm_call_shape(inspect_ok, tmp_path, capsys, event_capture):
-    """llm.call carries typed input/output independently of the raw provider call."""
+    """llm.call has typed input/output independently of the raw provider call."""
     from reps_inspect.translate import emit_all
 
     emit_all(_run_hello(tmp_path), "mockllm/model")
@@ -159,7 +159,7 @@ def test_every_fixture_transcript_event_is_retained_raw(inspect_ok, tmp_path, ev
 
 
 def test_print_stream_buffers_lines(capsys, event_capture):
-    """PrintStream re-emits complete lines as stdout events (partial writes buffer)."""
+    """PrintStream emits complete lines again as stdout events (partial writes buffer)."""
     from reps_inspect.main import PrintStream
 
     ps = PrintStream()

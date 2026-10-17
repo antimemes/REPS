@@ -7,7 +7,7 @@ no network, no files. On top of that:
 * ``get_agent_chain`` maps names to configured persona IDs; ``start_chain``
   attributes framework calls to their query component and records phase/query
   metadata. One backend serves all personas, matching upstream's single-LLM shape.
-* ``log_game`` (the per-step hook each scenario ``run()``/env already calls)
+* ``log_game`` (the per-step hook each scenario ``run()``/env calls)
   collects the round's stats and emits one ``govsim.state`` event for each round;
   its ``resource`` field is the chartable pool series.
 
@@ -98,6 +98,6 @@ class RepsLogger(WandbLogger):
             self._limit = kwargs[_LIMIT]
             self._flush(final=last_log)
         elif last_log and self._collected:
-            # A bare terminal notification after an already flushed round is
+            # A bare terminal notification after a flushed round is
             # not another harvest. In particular, do not chart its regrown pool.
             self._flush(final=True)

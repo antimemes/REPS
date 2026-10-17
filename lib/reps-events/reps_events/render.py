@@ -67,7 +67,7 @@ def hint_paths(hint: RenderHint) -> list[str]:
 
 
 def export_schema(union: Any) -> dict[str, Any]:
-    """Export a payload union, including class render hints on its definitions.
+    """Export a payload union, with class render hints on its definitions.
 
     Standard JSON Schema if/then clauses carry hints that depend on a literal
     field (log severity and captured output channel). They do not constrain data.

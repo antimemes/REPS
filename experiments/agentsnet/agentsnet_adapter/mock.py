@@ -6,7 +6,7 @@ each neighbour each round in the JSON shape the prompt asks for, and answers
 the final question with one of the valid options the prompt lists, chosen
 deterministically from the run seed and its name. It is a pure function of
 the message list. It exercises upstream's loop, parsing and scoring; its replies
-always parse. Thus re-prompts and unparseable answers are tested by wrapping it
+always parse. Thus second prompts and unparseable answers are tested by wrapping it
 (tests/test_cells.py). It says nothing about any real model.
 """
 
@@ -50,7 +50,7 @@ def mock_responder(seed: int) -> Callable[[list[dict[str, Any]]], str]:
             options = _names(valid.group(1))
             choice = options[deterministic_pick(seed, own_name, len(options))] if options else "None"
             return f"Thinking it through step by step: I weigh what my neighbours told me.\n\n### Final Answer ###\n{choice}"
-        # a message round (or a re-prompt after an unparseable reply)
+        # a message round (or a second prompt after an unparseable reply)
         in_round = _ROUND_NEIGHBOURS.search(last)
         if in_round:
             neighbours = _names(in_round.group(1)) or neighbours

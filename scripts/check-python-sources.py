@@ -32,7 +32,7 @@ build-backend = "hatchling.build"
 with tempfile.TemporaryDirectory(prefix="reps-python-sources-") as directory:
     root = Path(directory)
     app = root / "app"
-    # Deliberately use REPS names: the old inRepoOverlay replaced these sources.
+    # Use REPS names: the old inRepoOverlay replaced these sources.
     package(root / "libs/events", "reps-events")
     package(root / "libs/experiment", "reps-experiment")
     package(

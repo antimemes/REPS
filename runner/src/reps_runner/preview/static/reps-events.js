@@ -9,7 +9,7 @@
  *   clear()
  *   streaming (attribute)  shows a live indicator while set.
  *   "expand" (DOM event)   detail {seq}; dispatched when a user opens a record
- *                          the element knows is elided (the record carries
+ *                          the element knows is elided (the record has
  *                          `elided: true`, set by the transport, not by the
  *                          serialized vocabulary). The host fetches and calls replace().
  *
@@ -257,7 +257,7 @@ class RepsEvents extends HTMLElement {
     if (!Array.isArray(records)) records = [records];
     for (const record of records) {
       if (!record || typeof record.seq !== "number") continue;
-      if (this._rows.has(record.seq)) continue;  // a transport can re-send records it has shown
+      if (this._rows.has(record.seq)) continue;  // a transport can send the same records again
       const row = this._buildRow(record);
       const entry = { record, row };
       this._rows.set(record.seq, entry);
@@ -323,7 +323,7 @@ class RepsEvents extends HTMLElement {
       if (!Number.isNaN(t) && (first === null || t < first)) first = t;
     }
     if (first === this._firstTs && first !== null) {
-      // only new rows need their time; the base has not moved
+      // only new rows must have their time set; the base has not moved
       for (const child of this._list.children) {
         const cell = child.querySelector(".time");
         if (!cell.textContent) this._setTime(child, first);

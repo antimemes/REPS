@@ -1,6 +1,6 @@
 """Typed params (pydantic) — the boundary where config becomes structure.
 
-Everything the Inspect run needs arrives as explicit values: which task, which
+Everything the Inspect run must have arrives as explicit values: which task, which
 model, task/model args, and the usual sample/generation limits. This program is
 repo-unaware — it maps these onto `inspect_ai.eval(...)` and translates the
 resulting EvalLog into REPS events (docs/book/src/reference/events.md).

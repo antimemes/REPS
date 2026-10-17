@@ -31,8 +31,8 @@ def assert_run_has_no_secrets(
 
     By default, credential values come from the current process environment. Pass
     a snapshot when the run used a different environment. Empty values carry no
-    secret and are ignored. Decode all files as UTF-8 with replacement, including
-    binary artifacts. Thus ASCII credentials are checked regardless of file type.
+    secret and are ignored. Decode all files, binary artifacts also, as UTF-8 with
+    replacement. Thus ASCII credentials are checked regardless of file type.
     Failure messages identify the file and category, not the matched value.
     This assertion detects leaks; it does not redact or rewrite evidence.
     """
