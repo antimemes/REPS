@@ -142,7 +142,7 @@ def chat_completion_output(body: dict[str, Any]) -> ModelOutput:
 
 
 def content_filtered_without_model(output: ModelOutput) -> bool:
-    """A fully filtered response can contain a choice without identifying a model."""
+    """A fully filtered response can contain a choice that does not identify a model."""
     return not output.model and bool(output.choices) and all(
         choice.stop_reason == "content_filter" for choice in output.choices
     )

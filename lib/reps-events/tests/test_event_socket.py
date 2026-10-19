@@ -38,7 +38,7 @@ def test_concurrent_large_events_are_separate_and_acknowledged(monkeypatch):
 
         with ThreadPoolExecutor(max_workers=8) as pool:
             list(pool.map(send, range(16)))
-        assert len(records) == 16  # acknowledgement follows recording
+        assert len(records) == 16  # the acknowledgement follows the written record
         assert sorted(e.data["id"] for e in records) == list(range(16))
         assert all(e.data["text"] == str(e.data["id"]) * 200000 for e in records)
     assert not Path(path).exists()

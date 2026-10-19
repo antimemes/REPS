@@ -41,10 +41,10 @@ words = [
   "heartbeat",         # the runner's periodic rewrite of run.json that shows a run is live
   "hello",             # the keyless smoke task and app (inspect-hello, hello_task)
   "identity",          # the facts that make runs poolable: experiment, source fingerprint and params (condition identity)
-  "instrumentation",   # the event-recording hooks inside the REPS chat client
+  "instrumentation",   # the hooks that record events inside the REPS chat client
   "interactive",       # a run with a terminal where the runner can prompt (opposite of headless)
   "keyless",           # a configuration for which no API key is necessary (mock model, offline)
-  "knob",              # a parameter a user can change on an experiment; changing one changes the condition id
+  "knob",              # a parameter a user can change on an experiment; a change to one changes the condition id
   "ladder",            # the ordered credential-profile resolution steps (remembered selection, lone default, picker)
   "loopback",          # the local-only network interface (127.0.0.1) the preview serves on
   "manifest",          # the description Nix makes of an experiment's parameters, results and metadata (manifest.json)
@@ -80,7 +80,7 @@ words = [
   "scaffold",          # reps_experiment.scaffold, the experiment-side protocol toolkit (emit, deposit_artifact)
   "schema",            # the JSON Schema of a record kind (event schemas, the memelint.toml schema)
   "scenario",          # an experiment's fixed world setup (GovSim fishery/pasture, a Concordia cafe); baked into the card, not a param
-  "score",             # the number an experiment's scoring code assigns to a run (0 to 1 in AgentsNet)
+  "score",             # the number an experiment's scorer assigns to a run (0 to 1 in AgentsNet)
   "scorer",            # the upstream or Inspect component that computes a sample's score
   "shorthand",         # the runner's CLI value shorthand: JSON, @file, or a bare string
   "simulation",        # one Concordia generative-agent simulation, the thing the concordia experiment runs
@@ -126,7 +126,7 @@ words = [
   "claude",            # Anthropic's model family (claude-haiku-4-5, claude-opus-4-6)
   "cloudflare",        # Cloudflare Workers AI, an OpenAI-compatible model provider
   "compose",           # Docker Compose, the multi-container tool Inspect sandboxes use
-  "concordia",         # Google DeepMind's generative agent-based modeling library, wrapped by the Concordia experiment
+  "concordia",         # Google DeepMind's library for generative agent-based models, wrapped by the Concordia experiment
   "direnv",            # a tool that loads a directory's environment on entry
   "docker",            # the container engine; Inspect's docker sandbox
   "dockerd",           # the Docker daemon
@@ -134,7 +134,7 @@ words = [
   "gcloud",            # Google Cloud's command-line tool
   "gemini",            # Google's Gemini model family (model id prefix)
   "git",               # the version control tool
-  "github",            # GitHub, the code hosting service
+  "github",            # GitHub, the code host
   "google",            # Google as a model provider (google/ model id prefix)
   "grok",              # xAI's Grok model family (grok/ provider prefix)
   "groq",              # Groq, a hosted inference provider
@@ -152,6 +152,7 @@ words = [
   "moonshotai",        # Moonshot AI, the provider prefix for Kimi models
   "nix",               # the Nix package manager and language; the bundled nix list covers .nix files only
   "nix store",         # Nix's /nix/store, where built outputs live; also "store path"
+  "operating system", # the OS under the runner and the experiments (Linux); listed as a phrase
   "npm",               # the Node.js package manager
   "numpy",             # the NumPy array library
   "ollama",            # a local model server
@@ -184,7 +185,7 @@ words = [
   "program",      # the experiment executable the manifest's `program` names; what the runner starts
   "typed",        # typed experiments, params and observations: declared with a pydantic model, not open dicts
   "evidence",     # the recorded facts the verify gate checks and publish carries (events, card, artifacts)
-  "reasoning",    # the model-output part that holds its thinking; `reasoning` settings on a request
+  "reasoning",    # the model-output part that holds its thought before the answer; `reasoning` settings on a request
   "served",       # the served model name: the name an inference engine answers to, distinct from the catalog id
   "remembered",   # the runner's remembered selection: a credential profile kept in preferences.toml
   "built-in",     # a name the program defines itself, not one the user adds (built-in provider names)
@@ -210,3 +211,16 @@ words = [
   "base URL",     # the HTTP origin a provider client prepends to its paths
   "run store",    # the published layout of runs: the local runs/ directory and the S3 bucket
 ]
+
+# The ratchet: the paths in `clean` pass; the rest of the tree reports the same
+# findings as warnings until each directory is cleaned and added here.
+[rules]
+"3.5" = "warning"
+"1.2" = "warning"
+
+[scopes.clean]
+paths = ["lib/reps-events/", "lib/reps-experiment/", "memelint.toml"]
+
+[scopes.clean.rules]
+"3.5" = "error"
+"1.2" = "error"

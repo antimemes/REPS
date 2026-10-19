@@ -23,7 +23,7 @@ class RunEnvironment(Model):
 class RunStart(Event[Literal["run.start"]]):
     """A launch snapshot: identity, inputs, seed and provenance.
 
-    Written before starting the child; it does not assert successful execution.
+    Written before the child starts; it does not assert successful execution.
     Experiment identity belongs to the envelope on each record.
     """
 

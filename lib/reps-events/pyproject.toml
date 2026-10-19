@@ -22,7 +22,7 @@ packages = ["reps_events"]
 
 # Consumers take this package as a non-editable path dep, and uv's default cache
 # key is pyproject.toml alone — a source-only edit here can leave each
-# consumer's venv running (and typechecking) a stale copy until the next relock.
+# consumer's venv on a stale copy (run and typechecked) until the next relock.
 # Keying the wheel on the sources makes `uv sync`/`uv run` pick edits up.
 [tool.uv]
 cache-keys = [{ file = "pyproject.toml" }, { file = "reps_events/**/*.py" }, { file = "reps_events/schema.json" }, { file = "reps_events/py.typed" }]

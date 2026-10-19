@@ -23,7 +23,7 @@ frameworks actually use, ``.chat.completions.create``. In exchange:
 A trailing assistant message is a prefill to continue. Mistral's serving API
 only accepts one flagged ``prefix: True`` (message-level, not a generation
 parameter). Thus the client adds the flag for the Mistral family before
-recording and sending. vLLM instead takes ``continue_final_message`` plus
+it records and sends. vLLM instead takes ``continue_final_message`` plus
 ``add_generation_prompt=false`` in the request body, whatever the family; other
 providers receive the message as given.
 
@@ -98,7 +98,7 @@ def _tool_choice(value: Any) -> ToolChoice:
 class ServedModelMismatch(SystemExit):
     """Fatal routing error, outside harnesses' Exception fallbacks.
 
-    Continuing with a default answer conceals that this condition ran the
+    A default answer in its place would conceal that this condition ran the
     incorrect model. The provider's response and an error log are emitted before
     exit.
     """
@@ -211,7 +211,7 @@ class ChatClient:
                 return cast(Any, sdk.chat.completions.create(**kw))
 
             self._request = request
-        # the one surface frameworks use; duck-typed, thus no SDK subclassing is needed
+        # the one surface frameworks use; duck-typed, thus no SDK subclass is needed
         self.chat = types.SimpleNamespace(
             completions=types.SimpleNamespace(create=self._create)
         )

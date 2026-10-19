@@ -6,7 +6,7 @@
     reps-emit schema [TYPE]
 
 Validates against reps_events and sends one event to REPS_EVENT_SOCKET.
-The runner acknowledges successful recording. Invalid events or failed delivery
+The runner acknowledges each event it records. Invalid events or failed delivery
 return exit 2. Schema commands print JSON Schema without requiring a runner.
 """
 

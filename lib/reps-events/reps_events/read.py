@@ -1,4 +1,4 @@
-"""Typed payload parsing and saved-record readers that migrate before validation."""
+"""Typed payload parsers and saved-record readers that migrate before validation."""
 
 from collections.abc import Iterator
 import json

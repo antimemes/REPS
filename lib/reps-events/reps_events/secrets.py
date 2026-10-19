@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 
 
-# Pytest must not display helper arguments containing the leaked text.
+# Pytest must not display helper arguments that contain the leaked text.
 __tracebackhide__ = True
 
 _CREDENTIAL_NAME = re.compile(r"KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL", re.IGNORECASE)
@@ -70,7 +70,7 @@ def assert_run_has_no_secrets(
         location = str(path.relative_to(root))
         text = path.read_text(encoding="utf-8", errors="replace")
         check(text, location)
-        # Check the decoded values too: JSON escaping must not hide a credential.
+        # Check the decoded values too: JSON escapes must not hide a credential.
         if path.suffix in {".json", ".jsonl"}:
             records = text.splitlines() if path.suffix == ".jsonl" else [text]
             for index, record in enumerate(records, start=1):

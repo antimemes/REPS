@@ -7,6 +7,6 @@ extra's OpenAI SDK, which the base package does not require).
 """
 
 # declared re-exports (`x as x`): the typed-package idiom pyright and ruff
-# understand, replacing the noqa that only ruff could read
+# understand, in place of the noqa that only ruff could read
 from .scaffold import deposit_artifact as deposit_artifact
 from .scaffold import experiment_main as experiment_main

@@ -2,8 +2,8 @@
 
 The protocol (runner side: reps_runner/protocol.py): realized params arrive as
 JSON on stdin, ``REPS_RUN_DIR``/``REPS_SEED`` ride in the env, events leave as
-JSON through the event socket, and execution failures return a nonzero exit code
-after emitting diagnostic evidence and the fallback summary. A config file that
+JSON through the event socket, and execution failures emit diagnostic evidence
+and the fallback summary, then return a nonzero exit code. A config file that
 argv names overrides stdin — the hand-run/debug path, and the seam an
 adapter uses when it reshapes params first (concordia). Each experiment
 repeats that scaffold with no change, thus it lives here:
@@ -75,7 +75,7 @@ def experiment_main(params_model: SupportsModelValidate,
 def deposit_artifact(name: str, text: str, *, filename: str, kind: str,
                      media_type: str | None = None) -> Path:
     """Write `text` into a producer-created ``artifacts/`` directory and emit
-    a caller-namespaced custom event pointing at it (run-dir-relative path). Returns the
+    a caller-namespaced custom event that points at it (run-dir-relative path). Returns the
     written path."""
     art_dir = Path(os.environ.get("REPS_RUN_DIR", ".")) / "artifacts"
     art_dir.mkdir(parents=True, exist_ok=True)

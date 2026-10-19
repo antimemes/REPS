@@ -41,7 +41,7 @@ def event_socket(record: Callable[[ProducerPayload], None]) -> Generator[str]:
                 pass
 
     class Server(socketserver.ThreadingUnixStreamServer):
-        # Closing waits for active handlers (bounded by their socket timeout).
+        # Shutdown waits for active handlers (bounded by their socket timeout).
         daemon_threads = False
         block_on_close = True
         request_queue_size = 128
