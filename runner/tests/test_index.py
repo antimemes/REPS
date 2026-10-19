@@ -84,6 +84,8 @@ def stores(saved, tmp_path, monkeypatch, catalog):
             s3.put_object(Bucket=bucket, Key=key.replace("run.json", "events.jsonl.zst"), Body=b"stream")
         # An unfinished upload is not indexed.
         s3.put_object(Bucket="store-one", Key="prefix/runs/c1-alpha/incomplete/run.json", Body=b"{}")
+        for bucket, spdx in [("store-one", "CC-BY-4.0"), ("store-two", "CC0-1.0")]:
+            s3.put_object(Bucket=bucket, Key="prefix/license.json", Body=f'{{"v":0,"spdx":"{spdx}"}}\n'.encode())
         path = tmp_path / "stores.json"
         value = {"v": 0, "stores": [
             {"s3": "s3://store-one/prefix", "profile": "first", "url": "https://data.example.org/one"},
@@ -116,6 +118,10 @@ def directory_bytes(directory):
     return {path.relative_to(directory): path.read_bytes() for path in directory.rglob("*") if path.is_file()}
 
 
+# Each store reads its license declaration before listing its runs.
+LISTED = ["GetObject", "ListObjectsV2"] * 2
+
+
 def test_second_build_uses_cached_cards_with_identical_output(stores, tmp_path, monkeypatch, capsys, s3_calls):
     s3, _, _, originals, invoke = stores
     class Clock:
@@ -125,7 +131,7 @@ def test_second_build_uses_cached_cards_with_identical_output(stores, tmp_path, 
     monkeypatch.setattr(index, "datetime", Clock)
     first, second = tmp_path / "first", tmp_path / "second"
     assert invoke(first) == 0
-    assert s3_calls.count("GetObject") == 3
+    assert s3_calls.count("GetObject") == 5
     assert s3_calls.count("ListObjectsV2") == 2
     cache = tmp_path / "cache/reps/index"
     assert len(directory_bytes(cache)) == 6
@@ -139,7 +145,7 @@ def test_second_build_uses_cached_cards_with_identical_output(stores, tmp_path, 
 
     s3_calls.clear()
     assert invoke(second) == 0
-    assert s3_calls == ["ListObjectsV2", "ListObjectsV2"]
+    assert s3_calls == LISTED
     assert directory_bytes(first) == directory_bytes(second)
     output = capsys.readouterr()
     assert "2 runs (2 cached, 0 fetched)" in output.out
@@ -149,7 +155,7 @@ def test_second_build_uses_cached_cards_with_identical_output(stores, tmp_path, 
     s3_calls.clear()
     uncached = tmp_path / "uncached"
     assert invoke(uncached, "--no-cache") == 0
-    assert s3_calls.count("GetObject") == 3
+    assert s3_calls.count("GetObject") == 5
     assert directory_bytes(first) == directory_bytes(uncached)
 
 
@@ -159,7 +165,7 @@ def test_same_bucket_with_different_profiles_has_separate_cache_entries(stores, 
     path.write_text(json.dumps(value))
     destination = tmp_path / "index"
     assert invoke(destination) == 0
-    assert s3_calls.count("GetObject") == 4
+    assert s3_calls.count("GetObject") == 6
     assert s3_calls.count("ListObjectsV2") == 2
     cache = tmp_path / "cache/reps/index"
     assert len(directory_bytes(cache)) == 8
@@ -173,7 +179,7 @@ def test_same_bucket_with_different_profiles_has_separate_cache_entries(stores, 
 
     s3_calls.clear()
     assert invoke(destination) == 0
-    assert s3_calls == ["ListObjectsV2", "ListObjectsV2"]
+    assert s3_calls == LISTED
     assert json.loads((destination / "index.json").read_bytes())["runs"] == 4
     output = capsys.readouterr()
     assert output.out.count("2 runs (2 cached, 0 fetched)") == 2
@@ -195,7 +201,7 @@ def test_changed_etag_refetches_only_changed_card(stores, tmp_path, s3_calls):
         s3.put_object(Bucket=bucket, Key=key, Body=updated)
         s3_calls.clear()
         assert invoke(destination) == 0
-        assert s3_calls.count("GetObject") == 1
+        assert s3_calls.count("GetObject") == 3
         assert s3_calls.count("ListObjectsV2") == 2
         assert path.read_bytes() == updated
         assert token.read_text() != old_etag
@@ -221,7 +227,7 @@ def test_deleted_run_is_ignored_without_pruning_cache(stores, tmp_path, s3_calls
         s3_calls.clear()
         capsys.readouterr()
         assert invoke(destination) == 0
-        assert s3_calls == ["ListObjectsV2", "ListObjectsV2"]
+        assert s3_calls == LISTED
         assert json.loads((destination / "index.json").read_bytes())["runs"] == 2
         assert directory_bytes(cache) == before
         assert not capsys.readouterr().err
@@ -253,7 +259,7 @@ def test_no_cache_bypasses_reads_and_writes_with_custom_cache(stores, tmp_path, 
         patch.setattr(Path, "write_bytes", writing)
         s3_calls.clear()
         assert invoke(destination, "--cache-dir", str(cache), "--no-cache") == 0
-    assert s3_calls.count("GetObject") == 3
+    assert s3_calls.count("GetObject") == 5
     assert directory_bytes(cache) == before
 
 
@@ -268,7 +274,7 @@ def test_partial_cache_entry_is_refetched(stores, tmp_path, s3_calls, missing):
     (path if missing == "card" else token).unlink()
     s3_calls.clear()
     assert invoke(destination) == 0
-    assert s3_calls.count("GetObject") == 1
+    assert s3_calls.count("GetObject") == 3
     assert path.read_bytes() == original
     assert token.is_file()
 
@@ -288,7 +294,7 @@ def test_dry_run_uses_cache_without_writing(stores, tmp_path, monkeypatch, s3_ca
     monkeypatch.setattr(Path, "write_bytes", writing)
     s3_calls.clear()
     assert invoke(tmp_path / "dry", "--dry-run") == 0
-    assert s3_calls.count("GetObject") == (0 if warm else 3)
+    assert s3_calls.count("GetObject") == (2 if warm else 5)
     assert s3_calls.count("ListObjectsV2") == 2
     assert directory_bytes(cache) == before
     assert cache.exists() is warm
@@ -320,7 +326,7 @@ def test_interrupted_cache_write_leaves_no_matching_etag(stores, tmp_path, monke
     assert not token.exists()
     s3_calls.clear()
     assert invoke(destination) == 0
-    assert s3_calls.count("GetObject") == 1
+    assert s3_calls.count("GetObject") == 3
     assert path.read_bytes() == original
     assert token.is_file()
 
@@ -331,7 +337,7 @@ def test_unavailable_cache_does_not_drop_runs(stores, tmp_path, s3_calls):
     cache.write_bytes(b"keep")
     destination = tmp_path / "index"
     assert invoke(destination, "--cache-dir", str(cache)) == 0
-    assert s3_calls.count("GetObject") == 3
+    assert s3_calls.count("GetObject") == 5
     assert json.loads((destination / "index.json").read_bytes())["runs"] == 3
     assert cache.read_bytes() == b"keep"
 
@@ -351,7 +357,7 @@ def test_missing_listing_etag_never_reuses_cached_card(stores, tmp_path, monkeyp
     assert not (tmp_path / "cache/reps/index/first" / bucket / key).exists()
     s3_calls.clear()
     assert invoke(destination) == 0
-    assert s3_calls.count("GetObject") == 1
+    assert s3_calls.count("GetObject") == 3
 
 
 def test_two_stores_wrap_values_and_open_only_source_clients(stores, tmp_path, monkeypatch):
@@ -379,7 +385,10 @@ def test_two_stores_wrap_values_and_open_only_source_clients(stores, tmp_path, m
     assert invoke(destination) == 0
     root = json.loads((destination / "index.json").read_bytes())
     assert root == {"v": 0, "experiments": [{"name": "alpha", "runs": 2}, {"name": "beta", "runs": 1}],
-                    "runs": 3, "built_at": "2026-09-18T12:00:00.000000Z"}
+                    "runs": 3, "stores": [{"url": "https://data.example.org/one", "license": "CC-BY-4.0"},
+                                          {"url": "https://data.example.org/two", "license": "CC0-1.0"}],
+                    "built_at": "2026-09-18T12:00:00.000000Z"}
+    assert list(root) == ["v", "experiments", "runs", "stores", "built_at"]
     rows = [json.loads(line) for name in ["alpha", "beta"] for line in (destination / f"experiments/{name}/index.jsonl").read_bytes().splitlines()]
     for row in rows:
         assert set(row) == {"store", "card"}
@@ -791,3 +800,35 @@ def test_bad_and_disappearing_cards_warn_without_blocking_healthy_stores(stores,
     assert "STORE s3://store-one/prefix 2 runs" in output.out
     assert "STORE s3://store-two/prefix 1 runs" in output.out
     assert json.loads((destination / "index.json").read_bytes())["runs"] == 3
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+@pytest.mark.parametrize("body, warning", [
+    (None, "index: WARNING: s3://store-two/prefix declares no license\n"),
+    (b'{"v":0,"spdx":"MIT License"}', "index: WARNING: s3://store-two/prefix/license.json: malformed license "
+                                      'declaration; expected {"v":0,"spdx":"<SPDX identifier>"}\n'),
+    *[(f'{{"v":0,"spdx":"{spdx}"}}\n'.encode(),
+       f"index: WARNING: s3://store-two/prefix/license.json: {spdx} is not a license; license.json must name one\n")
+      for spdx in ["NONE", "NOASSERTION"]],
+])
+def test_store_licenses_are_logged_and_copied_into_the_root(stores, tmp_path, capsys, dry_run, body, warning):
+    s3, _, _, _, invoke = stores
+    if body is None:
+        s3.delete_object(Bucket="store-two", Key="prefix/license.json")
+    else:
+        s3.put_object(Bucket="store-two", Key="prefix/license.json", Body=body)
+    destination = tmp_path / "index"
+    assert invoke(destination, *(["--dry-run"] if dry_run else [])) == 0
+    output = capsys.readouterr()
+    assert output.err == warning
+    assert [line for line in output.out.splitlines() if line.startswith("LICENSE ")] == [
+        "LICENSE s3://store-one/prefix CC-BY-4.0", "LICENSE s3://store-two/prefix undeclared",
+    ]
+    assert "STORE s3://store-two/prefix 1 runs" in output.out
+    if dry_run:
+        assert not destination.exists()
+    else:
+        assert json.loads((destination / "index.json").read_bytes())["stores"] == [
+            {"url": "https://data.example.org/one", "license": "CC-BY-4.0"},
+            {"url": "https://data.example.org/two", "license": None},
+        ]

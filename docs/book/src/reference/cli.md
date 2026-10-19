@@ -20,15 +20,16 @@ Pass these options to the named experiment app:
 | `--seed INTEGER` | Run seed in `0..2147483647`, recorded unchanged. A random non-negative 31-bit seed is chosen when omitted. |
 | `--publish s3://BUCKET/PREFIX` | Publish the terminal run after a passing verification audit; publishing failures do not change the run exit code. |
 | `--profile NAME` | Select an AWS profile with `--publish`; omitted means boto3 default resolution. The name cannot contain `=`. |
+| `--license SPDX` | With `--publish`, the SPDX identifier the prefix declares in `license.json`; it must match an existing declaration. `NONE` writes no declaration and publishes under an existing one with a warning; `NOASSERTION` is refused. Omitted means the existing declaration, then a terminal prompt. Resolved before the run starts. See [Declare the license](../running/publishing.md#declare-the-license). |
 | `--credential SET=NAME` | Select a saved profile for a credential set used by this run. Repeat for multiple sets. |
 | `--data-dir DIR` | Write runs to this data directory, overriding `REPS_DATA_DIR`. |
 | `--json` | Print each recorded event, including its run metadata, to stdout as one JSON line as it happens. Events are also saved normally; diagnostics go to stderr. |
-| `--non-interactive` | Never prompt for input. Fail if required credentials or profile selections cannot be resolved automatically. Non-terminal stdin also disables prompts. |
+| `--non-interactive` | Never prompt for input. Fail if required credentials, profile selections or the `--publish` license cannot be resolved automatically. Non-terminal stdin also disables prompts. |
 | `--dry-run` | Print resolved inputs, condition ID and run seed; do not execute or resolve credentials. Checks parameter names and types; list-length bounds are checked when executing. |
 | `--describe` | Print the experiment manifest as JSON and exit without requiring parameter bindings. |
 | `-h`, `--help` | Print usage. |
 
-Each invocation executes one run. The runner returns exit code `2` for input or credential-resolution errors handled before execution. After execution it returns `0` if the run completed, `1` if it failed or timed out, or `130` if interrupted. Inspect `run.end` or saved `run.json` for the process outcome, and summaries and events for evaluation results.
+Each invocation executes one run. The runner returns exit code `2` for input, credential-resolution or license-resolution errors handled before execution. After execution it returns `0` if the run completed, `1` if it failed or timed out, or `130` if interrupted. Inspect `run.end` or saved `run.json` for the process outcome, and summaries and events for evaluation results.
 
 ## How are parameter values read?
 
@@ -51,14 +52,19 @@ These are syntax examples; the keys must exist in the selected experiment. Unkno
 
 ```text
 reps-runner publish --to s3://<bucket>/<prefix> [STEM ...] [--experiment X]
-  [--profile NAME] [--data-dir DIR] [--dry-run]
+  [--profile NAME] [--license SPDX] [--data-dir DIR] [--dry-run]
 ```
 
 Stems select `<condition>-<experiment>` or `<condition>-<experiment>/<run>`.
 Without stems, all runs are considered, optionally filtered by experiment.
 `--dry-run` verifies, prints exact keys and sizes, and writes nothing.
 Verification resolves manifests as `reps-runner verify` does. Each run uploads
-only its compressed stream and card under `runs/`. See [Publishing](../running/publishing.md).
+only its compressed stream and card under `runs/`. Before any run uploads, the
+command writes the prefix's `license.json` once, from `--license` or a terminal
+prompt. An existing declaration must match `--license`. `--license NONE` writes
+nothing and warns when a declaration exists. This also happens when no runs are
+selected.
+See [Publishing](../running/publishing.md) and [Declare the license](../running/publishing.md#declare-the-license).
 
 ## Build a derived index
 
@@ -69,8 +75,9 @@ reps-runner index --stores FILE --catalog DIR --to DIR [--dry-run]
 The store list provides source profiles, public URLs and optional filters.
 `--catalog` supplies the manifest directory (`<name>.json` and `assets/<name>/`);
 only indexed experiments' manifests, hints and assets are exported. Each
-invocation deletes and rewrites `DIR`, writing `index.json` last. The site deploys
-this directory. Dry-run prints filtered store counts, files and sizes without
+invocation deletes and rewrites `DIR`, writing `index.json` last, with each
+store's declared license under `stores`. The site deploys this directory.
+Dry-run prints store licenses, filtered store counts, files and sizes without
 creating or deleting anything. See [Build and serve an index](../running/publishing.md#build-and-serve-an-index).
 
 ## Credential commands

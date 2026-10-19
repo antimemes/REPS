@@ -110,10 +110,12 @@ may leave a stale card; it never makes that card more authoritative than the str
 ## Published runs
 
 The final run path is `runs/<condition>-<experiment>/<run>/` for both local and
-published runs. The bucket contains only `runs/` under the selected prefix:
+published runs. Under the selected prefix, the bucket contains only `runs/` and
+`license.json`:
 
 ```text
 PREFIX/
+  license.json
   runs/CONDITION_ID-EXPERIMENT/RUN_ID/
     run.json
     events.jsonl.zst
@@ -124,10 +126,17 @@ level-19 zstd frame named `events.jsonl.zst`, with `Content-Type: application/zs
 The workspace is local and never published. Indexes are derived, live outside
 experiment buckets, and are specified separately.
 
+`license.json` is `{"v":0,"spdx":"<SPDX identifier>"}` with
+`Content-Type: application/json`: one license for every run under the prefix.
+The first publish with a license writes it; it is never replaced, and a publish
+naming a different identifier fails before any run uploads. A prefix can be
+undeclared: `--license NONE` writes no `license.json`.
+
 Condition identity lives on the cards and `run.start`; conditions are groupings
 of cards on `condition`. Terminal runs must pass verification before upload.
 Both destination run keys are checked with HEAD; if either exists, the run is
-refused without overwriting it. A changed immutable object uses a new prefix.
+refused without overwriting it. A changed immutable object or license uses a new
+prefix.
 Compression does not change `(run, seq)` record addresses.
 See [Publishing](../running/publishing.md) for commands and profile setup.
 
@@ -135,8 +144,11 @@ See [Publishing](../running/publishing.md) for commands and profile setup.
 
 Indexes live outside experiment buckets and are rebuilt in full from complete
 `runs/` object pairs. The root `index.json` has `v: 0`, `experiments` containing
-`{name, runs}` entries, total `runs`, and `built_at` in the stream's UTC timestamp
-format. Each `experiments/<experiment>/index.jsonl` contains rows of
+`{name, runs}` entries, total `runs`, `stores`, and `built_at` in the stream's UTC
+timestamp format. `stores` has one `{url, license}` entry per store, in store-list
+order; `license` is `null` when a store declares none or its declaration is
+malformed or names `NONE` or `NOASSERTION`. Each
+`experiments/<experiment>/index.jsonl` contains rows of
 `{"store":"<public HTTPS base>","card":<run.json as a JSON value>}`.
 Card values are compactly re-serialized; the objects under `runs/` remain
 byte-authoritative. Index objects are replaceable and never authoritative.

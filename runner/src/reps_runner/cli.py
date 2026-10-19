@@ -78,6 +78,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="AWS profile for --publish (default: boto3's normal resolution)")
     p.add_argument("--publish", metavar="s3://BUCKET/PREFIX",
                    help="publish the terminal run after verification")
+    p.add_argument("--license", metavar="SPDX",
+                   help="license for --publish, declared once for the prefix, or NONE to declare none; "
+                        "resolved before the run starts")
     p.add_argument("--seed", type=seed, metavar="N",
                    help="run seed in 0..2147483647, recorded unchanged (random if omitted)")
     p.add_argument("--data-dir", metavar="DIR",
@@ -172,9 +175,11 @@ def main() -> int:
     if args.profile is not None and "=" in args.profile:
         parser.error("AWS --profile NAME cannot contain =; use --credential SET=NAME for credentials")
     if args.publish:
-        from .publish import parse_target, PublishError
+        from .publish import check_spdx, parse_target, PublishError
         try:
             parse_target(args.publish)
+            if args.license is not None:
+                args.license = check_spdx(args.license)
         except PublishError as exc:
             parser.error(str(exc))
 
@@ -239,6 +244,14 @@ def main() -> int:
     # prompt — remembered selection, then default profile, then exit 2 with the fix.
     realized = cond["params"]  # no distributions in the MVP: realized ARE the spec params
     interactive = sys.stdin.isatty() and not args.non_interactive
+    spdx = None
+    if args.publish:
+        from .publish import failure, resolve_license
+        try:
+            spdx = resolve_license(args.publish, args.license, profile=args.profile, interactive=interactive)
+        except Exception as exc:
+            _log(f"publish: {failure(exc)}")
+            return 2
     selections = dict(_parse_kv(entry, "--credential") for entry in args.credential)
     try:
         credential_env = credentials.resolve_run_credentials(
@@ -291,7 +304,7 @@ def main() -> int:
     if args.publish:
         from .publish import publish_run, failure
         try:
-            publish_run(store.dir, args.publish, profile=args.profile,
+            publish_run(store.dir, args.publish, profile=args.profile, license=spdx,
                         manifest=Path(manifest_path), log=_log)
         except Exception as exc:
             _log(f"publish failed: {failure(exc)}")

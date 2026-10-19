@@ -306,6 +306,32 @@ def test_aws_profile_rejects_credential_syntax(monkeypatch, capsys, command):
     assert "AWS --profile NAME cannot contain =" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("command", [["--publish", "s3://throwaway/prefix"], ["publish", "--to", "s3://throwaway/prefix"]])
+@pytest.mark.parametrize("value", ["openai=work", "CC BY 4.0", "", "x" * 65, "+CC-BY-4.0", ".hidden"])
+def test_license_accepts_only_spdx_identifiers(monkeypatch, capsys, command, value):
+    import sys
+    from reps_runner import cli
+
+    monkeypatch.setattr(sys, "argv", ["reps-runner", *command, "--license", value])
+    with pytest.raises(SystemExit) as exc:
+        cli.main()
+    assert exc.value.code == 2
+    assert f"--license must be an SPDX license identifier, not {value!r}" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("command", [["--publish", "s3://throwaway/prefix"], ["publish", "--to", "s3://throwaway/prefix"]])
+@pytest.mark.parametrize("value", ["NOASSERTION", "noassertion"])
+def test_license_rejects_noassertion_and_points_at_none(monkeypatch, capsys, command, value):
+    import sys
+    from reps_runner import cli
+
+    monkeypatch.setattr(sys, "argv", ["reps-runner", *command, "--license", value])
+    with pytest.raises(SystemExit) as exc:
+        cli.main()
+    assert exc.value.code == 2
+    assert "--license NOASSERTION is not accepted; pass --license NONE" in capsys.readouterr().err
+
+
 def test_credential_selections_reach_resolver(run_cli, monkeypatch):
     from reps_runner import cli
 

@@ -20,7 +20,7 @@ from botocore.exceptions import ClientError
 from reps_events import Json
 from reps_events.models.base import serialize_utc_datetime
 
-from .publish import PublishError, Target, failure, parse_target
+from .publish import PublishError, Target, failure, parse_license, parse_target
 
 if TYPE_CHECKING:
     from mypy_boto3_s3.client import S3Client
@@ -170,10 +170,29 @@ def encode(value: Any) -> bytes:
     return (json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
 
 
-def collect(stores: list[Store], cache: Path | None = None, dry_run: bool = False) -> dict[str, list[bytes]]:
+def store_license(s3: S3Client, store: Store) -> str | None:
+    where = f"s3://{store.target.bucket}/{store.target.prefix}"
+    key = store.target.key("license.json")
+    body = get(s3, store.target, key)
+    spdx = None
+    if body is None:
+        print(f"index: WARNING: {where} declares no license", file=sys.stderr)
+    else:
+        try:
+            spdx = parse_license(body)
+        except PublishError as error:
+            print(f"index: WARNING: s3://{store.target.bucket}/{key}: {error}", file=sys.stderr)
+    print(f"LICENSE {where} {spdx or 'undeclared'}")
+    return spdx
+
+
+def collect(stores: list[Store], cache: Path | None = None,
+            dry_run: bool = False) -> tuple[dict[str, list[bytes]], list[dict[str, str | None]]]:
     grouped: dict[str, list[bytes]] = {}
+    licenses: list[dict[str, str | None]] = []
     for store in stores:
         s3 = client(store.profile)
+        licenses.append({"url": store.url, "license": store_license(s3, store)})
         prefix = store.target.key("runs/")
         objects = keys(s3, store.target, prefix)
         exclusions = {run: exclusion for exclusion in store.exclude for run in exclusion.runs}
@@ -226,7 +245,7 @@ def collect(stores: list[Store], cache: Path | None = None, dry_run: bool = Fals
             print(f"index: WARNING: excluded run {run} not found in "
                   f"s3://{store.target.bucket}/{store.target.prefix}", file=sys.stderr)
         print(f"STORE s3://{store.target.bucket}/{store.target.prefix} {count} runs ({cached} cached, {fetched} fetched)")
-    return grouped
+    return grouped, licenses
 
 
 def read_catalog(directory: Path, names: list[str]) -> tuple[dict[str, Json], dict[str, Path]]:
@@ -263,13 +282,13 @@ def build(stores: list[Store], directory: Path, catalog: Path, dry_run: bool, ca
     if not catalog.is_dir():
         raise PublishError(f"--catalog must be an existing directory: {catalog}")
     # Read each source before the first destination projection is replaced.
-    grouped = collect(stores, cache, dry_run)
+    grouped, licenses = collect(stores, cache, dry_run)
     manifests, assets = read_catalog(catalog, list(grouped))
     objects = {f"experiments/{name}/index.jsonl": b"".join(rows)
                for name, rows in sorted(grouped.items())}
     objects["catalog.json"] = encode(manifests)
     root = {"v": 0, "experiments": [{"name": name, "runs": len(rows)} for name, rows in sorted(grouped.items())],
-            "runs": sum(len(rows) for rows in grouped.values()),
+            "runs": sum(len(rows) for rows in grouped.values()), "stores": licenses,
             "built_at": serialize_utc_datetime(datetime.now(timezone.utc))}
     objects["index.json"] = encode(root)  # advertise the rebuilt shards last
     if not dry_run:

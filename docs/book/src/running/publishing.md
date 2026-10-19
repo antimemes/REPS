@@ -2,7 +2,8 @@
 
 REPS publishes verified terminal runs to an S3 bucket at a target supplied by you.
 There are no built-in hosts, provider presets, saved remotes, or target
-environment variables. The bucket contains only `runs/` under the selected prefix.
+environment variables. Under the selected prefix, the bucket contains only `runs/`
+and, when the prefix declares a license, its `license.json`.
 
 ## Set up an AWS profile
 
@@ -35,6 +36,10 @@ The run's data directory still follows `--data-dir`, `REPS_DATA_DIR`, then the
 `--profile NAME` selects the AWS profile for publication. Model credentials
 use `--credential SET=NAME`; both flags can appear in the same command.
 
+`--license SPDX` [declares the license](#declare-the-license). The license is
+resolved before the run starts; if it cannot be resolved, the command exits `2`
+without running.
+
 Publication requires a terminal state, a pinned clean `provenance.fetch_ref`, and
 a passing [verify audit](model.md#how-do-i-audit-the-first-real-run).
 An unpinned run is refused, including with `--dry-run`; a later release label
@@ -58,7 +63,8 @@ Each run is verified independently; a rejected run does not stop the batch.
 The command returns a nonzero exit code if any run fails to publish.
 
 `--dry-run` verifies and prints the exact object keys and byte sizes, including
-compressed streams. It checks the bucket for existing run keys but writes nothing.
+compressed streams. It reads the license declaration and checks the bucket for
+existing run keys but writes nothing.
 Verification resolves the manifest in the same way as `reps-runner verify`: from
 `REPS_MANIFEST`, then the experiment's file in `REPS_MANIFESTS`, or a manifest catalog
 built from the current checkout.
@@ -66,8 +72,8 @@ built from the current checkout.
 Publication checks both destination run keys with HEAD. If either already exists,
 it refuses to overwrite that run, including a partial upload. Other runs continue.
 Choose a new prefix when you need different immutable objects.
-The publisher uses only `HeadObject` and `PutObject`: it uploads the stream
-first and the card last.
+The publisher uses only `HeadObject`, `GetObject` and `PutObject`: it reads the
+license declaration, then uploads each stream first and its card last.
 
 Each run uploads exactly these two objects:
 
@@ -81,11 +87,63 @@ The stream is compressed at zstd level 19 in a single frame with
 The card is copied byte-for-byte with `Content-Type: application/json`.
 Workspaces are never uploaded. See the [published layout](../reference/layout.md#published-runs).
 
+## Declare the license
+
+A prefix declares at most one license for all runs under it, in
+`<prefix>/license.json`:
+
+```json
+{"v":0,"spdx":"CC-BY-4.0"}
+```
+
+`spdx` is an [SPDX license identifier](https://spdx.org/licenses/). The experiment
+command (with `--publish`) and `reps-runner publish` both accept `--license SPDX`.
+Without it, an existing declaration applies. If the prefix declares none, a
+terminal shows this menu:
+
+```text
+1) CC-BY-4.0 (default)
+2) CC0-1.0
+3) CC-BY-SA-4.0
+4) CC-BY-NC-SA-4.0
+5) CC-BY-NC-ND-4.0
+6) No license
+7) Other: an identifier from https://spdx.org/licenses/<id>.html
+```
+
+Enter a number or type an identifier; an empty answer selects `CC-BY-4.0`.
+Without a terminal, or with the experiment command's `--non-interactive`, the
+command fails when the prefix declares none and `--license` is absent. Each
+publish logs the license in effect as `LICENSE s3://BUCKET/PREFIX SPDX`.
+
+`--license NONE`, or option 6, publishes without a license. It writes no
+`license.json` and logs `LICENSE s3://BUCKET/PREFIX undeclared`, and the index
+records `null` for the store. If the prefix already declares a license, `NONE`
+warns (`publish: WARNING: … declares SPDX; publishing under it`) and the runs
+publish under that declaration. `NOASSERTION` is refused; use `NONE`. A
+hand-written `license.json` that names `NONE` or `NOASSERTION` declares nothing:
+the index records `null` with a warning, and the publisher refuses the prefix.
+
+The declaration is written once, before the first run uploads, and never replaced.
+Repeating the declared identifier is accepted. A different identifier other than
+`NONE` fails before any run uploads: the batch publishes nothing, and the
+experiment command does not start the run. To change the license, choose a new
+prefix.
+
+To declare the license of an existing prefix, publish from an empty data directory:
+
+```bash
+nix run .#reps-runner -- publish --to s3://my-bucket/reps-v1 --profile research --license CC-BY-4.0 --data-dir "$(mktemp -d)"
+```
+
+The index copies each store's declaration into `index.json`.
+
 ## Build and serve an index
 
-Experiment buckets contain only `runs/`. A separate, replaceable index lets a
-static site discover those runs. Write `stores.yaml` yourself; REPS does not infer
-a public URL from an S3 address. Store lists accept YAML (`.yaml` or `.yml`) or JSON.
+Experiment buckets contain only `runs/` and `license.json`. A separate, replaceable
+index lets a static site discover those runs. Write `stores.yaml` yourself; REPS
+does not infer a public URL from an S3 address. Store lists accept YAML (`.yaml` or
+`.yml`) or JSON.
 `data.example.org` below is an example store hostname.
 
 ```yaml
@@ -117,6 +175,9 @@ Store profiles select source credentials. The index command writes to a local
 directory that the site deploys.
 The index reads only `ListObjectsV2` and `GetObject`, using each store's profile
 without endpoint, region or client-configuration overrides.
+Every rebuild reads each store's `license.json` and logs
+`LICENSE s3://BUCKET/PREFIX SPDX`, or `undeclared` with a warning when the
+declaration is absent or malformed.
 
 Run cards are cached under `$XDG_CACHE_HOME/reps/index` (or `~/.cache/reps/index`),
 keyed by profile (`default` when omitted), bucket, full object key and the listed
@@ -143,8 +204,8 @@ credentials.
 The site's catalog is derived from the index, so an experiment with no published
 runs never appears.
 
-`--dry-run` prints each store's filtered run count and the files and sizes it
-would write, without creating or deleting anything. Every invocation rebuilds
+`--dry-run` prints each store's license and filtered run count and the files and
+sizes it would write, without creating or deleting anything. Every invocation rebuilds
 the whole index from complete run-object pairs. It deletes the output directory
 and rewrites it in full, writing `index.json` last. Shards for experiments no
 longer present are removed, together with their catalog entries and assets.
@@ -153,7 +214,10 @@ so healthy runs can still be indexed. Failure to list a store aborts the rebuild
 before replacing the destination.
 
 The root `index.json` lists experiment names, their run counts, the total count,
-and `built_at`. Each `experiments/<experiment>/index.jsonl` contains one row
+`stores` and `built_at`. `stores` has one
+`{"url":"<public HTTPS base>","license":"<SPDX identifier>"}` entry per store, in
+store-list order; `license` is `null` for an undeclared or malformed declaration.
+Each `experiments/<experiment>/index.jsonl` contains one row
 `{"store":"<public HTTPS base>","card":<run.json as a JSON value>}` per run.
 The card is compactly re-serialized with Unicode retained and key order
 preserved. This derived cache is never authoritative. Read the original card and

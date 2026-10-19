@@ -30,10 +30,11 @@ The final layout for local and published stores is `runs/<condition>-<experiment
 
 ## 5. Published layout
 
-An experiment bucket contains only `runs/` under a caller-selected S3 prefix. Publication preserves the final `runs/<condition>-<experiment>/<run>/` structure. Conditions remain groupings of cards; no separate condition object is published.
+An experiment bucket contains only `runs/` and `license.json` under a caller-selected S3 prefix. Publication preserves the final `runs/<condition>-<experiment>/<run>/` structure. Conditions remain groupings of cards; no separate condition object is published.
 
 ```text
 <prefix>/
+  license.json
   runs/
     <condition>-<experiment>/
       <run>/
@@ -42,6 +43,8 @@ An experiment bucket contains only `runs/` under a caller-selected S3 prefix. Pu
 ```
 
 Each `events.jsonl.zst` is one level-19 zstd frame, preserving the original JSONL bytes when decompressed, with `Content-Type: application/zstd`. `run.json` is the full local card, copied byte-for-byte with `Content-Type: application/json`. Workspaces are never published. Indexes are derived, live outside experiment buckets, and follow [§7](#7-indexes).
+
+A prefix may be undeclared. When declared, `license.json` names one license for every run under the prefix: `{"v":0,"spdx":"<SPDX identifier>"}` plus a newline, with `Content-Type: application/json`. Its `v`, like the `v` on the store list and `index.json` in [§7](#7-indexes), is that format's own shape version, independent of the record `v` in [RFC 0002](0002-schema-versioning.md): it starts at 0 and is bumped when the shape changes so that a reader of the old shape would misread the new one; the `license.json` reader rejects unknown keys, so a new field there is such a change. It is written once, before the first run uploads, and never replaced. Repeating the declared identifier is accepted; a different one fails before any run uploads. The SPDX word `NONE` publishes without a declaration and writes nothing; against a declared prefix it warns and publishes under the declaration. The publisher never writes `NONE` or `NOASSERTION`. A changed license uses a new prefix, as a changed run object does. The experiment command resolves the license before the run starts, so a prompt never follows a long run.
 
 Publication requires a terminal state, a pinned clean `fetch_ref`, and a passing `verify` audit, including model identity checks. Failures are reported per run without aborting other publications. An upload is refused if either destination run key exists. The stream is uploaded first, then the card; partial uploads are never overwritten. Publication errors do not change run state or exit code.
 
@@ -83,6 +86,6 @@ catalog.json
 catalog/assets/<experiment>/
 ```
 
-`index.json` has shape `{"v":0,"experiments":[{"name":"govsim","runs":1}],"runs":1,"built_at":"<UTC timestamp>"}`. Counts count rows; `built_at` uses the stream's six-fractional-digit UTC format. Each shard row has shape `{"store":"<public HTTPS base>","card":<run.json as a JSON value>}`. The index adds no fields to the card; its re-serialized value never substitutes for the original card bytes in raw display. Only indexed experiments contribute manifests, shared and versioned hints, and README assets. Missing manifests warn and leave run-only experiments visible. An experiment without indexed runs is absent.
+`index.json` has shape `{"v":0,"experiments":[{"name":"govsim","runs":1}],"runs":1,"stores":[{"url":"<public HTTPS base>","license":"CC-BY-4.0"}],"built_at":"<UTC timestamp>"}`. Counts count rows; `built_at` uses the stream's six-fractional-digit UTC format. `stores` copies each store's `license.json` in store-list order; an absent or malformed declaration, or one naming `NONE` or `NOASSERTION`, warns and records `null`. Each shard row has shape `{"store":"<public HTTPS base>","card":<run.json as a JSON value>}`. The index adds no fields to the card; its re-serialized value never substitutes for the original card bytes in raw display. Only indexed experiments contribute manifests, shared and versioned hints, and README assets. Missing manifests warn and leave run-only experiments visible. An experiment without indexed runs is absent.
 
 The [publishing guide](../book/src/running/publishing.md) covers commands, deployment and browser behavior.

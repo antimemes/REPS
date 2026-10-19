@@ -1,6 +1,6 @@
 """Publish verified terminal runs through the user's ordinary boto3 configuration.
 
-Uses only HeadObject and PutObject.
+Uses only HeadObject, GetObject and PutObject.
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 if TYPE_CHECKING:
     from mypy_boto3_s3.client import S3Client
+from reps_events import Json
 import zstandard
 
 from .store import condition_name, resolve_data_dir
@@ -28,6 +29,65 @@ from .verify import VerificationError, verify_run
 
 class PublishError(ValueError):
     """A publishing failure safe to report without credential values."""
+
+
+SPDX = re.compile(r"[A-Za-z0-9][A-Za-z0-9.+-]{0,63}")
+NONE = "NONE"
+LICENSES = ("CC-BY-4.0", "CC0-1.0", "CC-BY-SA-4.0", "CC-BY-NC-SA-4.0", "CC-BY-NC-ND-4.0", NONE)
+
+
+def check_spdx(value: str) -> str:
+    """A valid --license value; any case of NONE becomes NONE, which writes no declaration."""
+    if value.upper() == "NOASSERTION":
+        raise PublishError("--license NOASSERTION is not accepted; pass --license NONE to publish without a license")
+    if not SPDX.fullmatch(value):
+        raise PublishError(f"--license must be an SPDX license identifier, not {value!r}")
+    return NONE if value.upper() == NONE else value
+
+
+def license_body(spdx: str) -> bytes:
+    return (json.dumps({"v": 0, "spdx": spdx}, separators=(",", ":")) + "\n").encode()
+
+
+def parse_license(body: bytes) -> str:
+    try:
+        value: Json = json.loads(body)
+    except ValueError:
+        value = None
+    spdx = value.get("spdx") if isinstance(value, dict) else None
+    if not (isinstance(value, dict) and set(value) == {"v", "spdx"} and type(value["v"]) is int
+            and value["v"] == 0 and isinstance(spdx, str) and SPDX.fullmatch(spdx)):
+        raise PublishError('malformed license declaration; expected {"v":0,"spdx":"<SPDX identifier>"}')
+    if spdx.upper() in {NONE, "NOASSERTION"}:
+        raise PublishError(f"{spdx} is not a license; license.json must name one")
+    return spdx
+
+
+def ask(prompt: str) -> str:
+    print(prompt, end="", file=sys.stderr, flush=True)
+    return input().strip()
+
+
+def prompt_license(where: str) -> str:
+    choices = {str(number): spdx for number, spdx in enumerate(LICENSES, 1)}
+    other = str(len(choices) + 1)
+    print(f"{where} declares no license. Choose the license for runs published there:", file=sys.stderr)
+    for number, spdx in choices.items():
+        print(f"  {number}) {'No license' if spdx == NONE else spdx}{' (default)' if number == '1' else ''}",
+              file=sys.stderr)
+    print(f"  {other}) Other: an identifier from https://spdx.org/licenses/<id>.html", file=sys.stderr)
+    while True:
+        choice = ask(f"license [1-{other} or SPDX id]: ") or "1"
+        if choice in choices:
+            return choices[choice]
+        if choice == other:
+            choice = ask("SPDX identifier (https://spdx.org/licenses/<id>.html): ")
+        if re.search(r"[A-Za-z]", choice):
+            try:
+                return check_spdx(choice)
+            except PublishError:
+                pass
+        print(f"enter 1-{other} or an SPDX identifier", file=sys.stderr)
 
 
 @dataclass(frozen=True)
@@ -102,6 +162,53 @@ class Publisher:
                 return False
             raise
 
+    def get(self, key: str) -> bytes | None:
+        try:
+            response = self.s3.get_object(Bucket=self.target.bucket, Key=key)
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") in {"404", "NoSuchKey", "NotFound"}:
+                return None
+            raise
+        try:
+            return response["Body"].read()
+        finally:
+            response["Body"].close()
+
+    def resolve_license(self, requested: str | None, interactive: bool = False) -> tuple[str, bool]:
+        """The license in effect and whether the target already declares it."""
+        key = self.target.key("license.json")
+        body = self.get(key)
+        if body is None:
+            if requested is not None:
+                return requested, False
+            if interactive:
+                return prompt_license(f"s3://{self.target.bucket}/{self.target.prefix}"), False
+            raise PublishError("target declares no license; pass --license SPDX")
+        try:
+            declared = parse_license(body)
+        except PublishError as error:
+            raise PublishError(f"s3://{self.target.bucket}/{key}: {error}") from None
+        if requested == NONE:
+            print(f"publish: WARNING: s3://{self.target.bucket}/{key} declares {declared}; publishing under it",
+                  file=sys.stderr)
+        elif requested is not None and requested != declared:
+            raise PublishError(f"s3://{self.target.bucket}/{key} declares {declared}, not {requested}; "
+                               f"pass --license {declared} or choose a new prefix")
+        return declared, True
+
+    def declare_license(self, requested: str | None, *, interactive: bool = False, preview: bool = False,
+                        log: Callable[[str], None] = print) -> str:
+        """Write the prefix's license declaration once; an existing one is never replaced. NONE writes none."""
+        spdx, declared = self.resolve_license(requested, interactive)
+        if not declared and spdx != NONE:
+            key, body = self.target.key("license.json"), license_body(spdx)
+            log(f"{'PLAN' if preview else 'PUT'} s3://{self.target.bucket}/{key} {len(body)} bytes")
+            if not preview:
+                self.s3.put_object(Bucket=self.target.bucket, Key=key, Body=body,
+                                   ContentType="application/json")
+        log(f"LICENSE s3://{self.target.bucket}/{self.target.prefix} {'undeclared' if spdx == NONE else spdx}")
+        return spdx
+
     def upload_run(self, directory: Path, *, manifest: Path | None = None, preview: bool = False,
                    log: Callable[[str], None] = print) -> None:
         card: dict[str, Any] = json.loads((directory / "run.json").read_bytes())
@@ -148,14 +255,23 @@ def publish_cli(argv: list[str]) -> int:
     parser.add_argument("stems", nargs="*", metavar="STEM")
     parser.add_argument("--experiment")
     parser.add_argument("--profile", metavar="NAME", help="AWS profile (default: boto3's normal resolution)")
+    parser.add_argument("--license", metavar="SPDX",
+                        help="license declared once for the prefix, or NONE to declare none "
+                             "(default: the declared one; prompted on a terminal)")
     parser.add_argument("--data-dir")
     parser.add_argument("--dry-run", action="store_true", help="verify and print exact object keys and sizes; write nothing")
     args = parser.parse_args(argv)
     if args.profile is not None and "=" in args.profile:
         parser.error("AWS --profile NAME cannot contain =; use --credential SET=NAME for credentials")
+    if args.license is not None:
+        try:
+            args.license = check_spdx(args.license)
+        except PublishError as error:
+            parser.error(str(error))
     try:
         publisher = Publisher(args.to, args.profile)
         paths = select_runs(resolve_data_dir(args.data_dir), args.stems, args.experiment)
+        publisher.declare_license(args.license, interactive=sys.stdin.isatty(), preview=args.dry_run)
     except Exception as error:
         print(f"publish: FAIL: {failure(error)}", file=sys.stderr)
         return 1
@@ -169,8 +285,15 @@ def publish_cli(argv: list[str]) -> int:
     return int(failed)
 
 
-def publish_run(directory: Path, to: str, *, profile: str | None = None,
+def resolve_license(to: str, requested: str | None, *, profile: str | None = None,
+                    interactive: bool = False) -> str:
+    """The license publish_run will declare, resolved before the run starts."""
+    return Publisher(to, profile).resolve_license(requested, interactive)[0]
+
+
+def publish_run(directory: Path, to: str, *, profile: str | None = None, license: str | None = None,
                 manifest: Path | None = None, log: Callable[[str], None] = print) -> None:
     """Publish the verified run from one completed invocation."""
     publisher = Publisher(to, profile)
+    publisher.declare_license(license, log=log)
     publisher.upload_run(directory, manifest=manifest, log=log)
