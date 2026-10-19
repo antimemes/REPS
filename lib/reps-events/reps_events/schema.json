@@ -2104,7 +2104,7 @@
     },
     "RunStart": {
       "additionalProperties": false,
-      "description": "A launch snapshot: identity, inputs, seed and provenance.\n\nWritten before starting the child; it does not assert successful execution.\nExperiment identity belongs to the envelope on each record.",
+      "description": "A launch snapshot: identity, inputs, seed and provenance.\n\nWritten before the child starts; it does not assert successful execution.\nExperiment identity belongs to the envelope on each record.",
       "properties": {
         "type": {
           "const": "run.start",
