@@ -1,5 +1,5 @@
 # CI runs exactly what `task ci` runs locally, through the same flake-pinned dev
-# shell — one toolchain (uv, python, pyright, mdbook all from flake.lock),
+# shell — one toolchain (uv, python, pyright, mdbook, memelint all from flake.lock),
 # no action-installed versions to keep in sync, and a green `task ci` on a dev
 # machine predicts a green run here. Keyless throughout — mockllm/mock only, no
 # provider credentials, no docker experiments.

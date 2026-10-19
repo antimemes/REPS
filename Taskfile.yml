@@ -47,6 +47,11 @@ tasks:
       - cd lib/reps-inspect && uv run -q pytest -q
       - nix flake check -L
 
+  prose:
+    desc: memelint (Simplified Technical English) over comments and docstrings; memelint.toml holds the glossary, the rule severities and the clean-path scope
+    cmds:
+      - memelint check
+
   typecheck:
     desc: pyright STRICT (per-package pyrightconfig.json) over the shared libs + runner package sources (not tests — rejection tests pass garbage deliberately); through `uv run` so stale path-dep venv copies resync first. The policy script gates the escapes pyright can't police (ignore-rule + cast allowlists).
     cmds:
@@ -140,6 +145,7 @@ tasks:
     desc: the full check surface, cheap checks first — CI runs exactly this (ci.yml is setup + `nix-shell --run 'task ci'`), so a green run here predicts a green CI, modulo the runner's OS
     cmds:
       - task: lock:check
+      - task: prose
       - task: typecheck
       - python scripts/check-python-sources.py
       - python scripts/check-experiment-identity.py
