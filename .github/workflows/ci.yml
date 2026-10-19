@@ -40,15 +40,20 @@ jobs:
             experimental-features = nix-command flakes
             keep-outputs = true
             keep-env-derivations = true
-      # keyspace `nix-1`: bumped 2026-07-29 — the previous workflow saved a store
-      # pruned mid-closure (referrer drvs kept, input drvs gone), and a restored
-      # partial store fails ALL evals with "store path …drv does not exist"; keys
-      # are immutable, so only a new keyspace escapes it. The gcroots step below
-      # keeps future saves closure-coherent.
+            auto-optimise-store = false
+      # auto-optimise-store: the installer defaults it to true on Linux; a
+      # deduplicated store saves as hard links into /nix/store/.links, which
+      # cache-nix-action skips on restore (the dir already exists), so every
+      # restore of such a cache fails with "Cannot hard link" and leaves a
+      # broken store.
+      # keyspace `nix-2`: bumped 2026-10-19 — every `nix-1` cache was saved with
+      # auto-optimise-store on and cannot be restored; keys are immutable, so
+      # only a new keyspace escapes it. The gcroots step below keeps saves
+      # closure-coherent.
       - uses: nix-community/cache-nix-action@v7
         with:
-          primary-key: nix-1-${{ runner.os }}-${{ hashFiles('flake.lock', '**/uv.lock') }}
-          restore-prefixes-first-match: nix-1-${{ runner.os }}-
+          primary-key: nix-2-${{ runner.os }}-${{ hashFiles('flake.lock', '**/uv.lock') }}
+          restore-prefixes-first-match: nix-2-${{ runner.os }}-
           gc-max-store-size-linux: 5G
       # the nix store cache covers the built environments; these cover what the
       # devshell's own uv downloads at `uv run` time
