@@ -46,11 +46,20 @@ def event_socket(record: Callable[[ProducerPayload], None]) -> Generator[str]:
         block_on_close = True
         request_queue_size = 128
 
-    # /tmp keeps the pathname short on macOS and Linux, even if the run
-    # directory or the platform's default temporary directory has a long name.
-    with tempfile.TemporaryDirectory(prefix="reps-", dir="/tmp") as directory:
+    # The platform temporary directory (TMPDIR) so sandboxes can redirect it.
+    # Python checks the pathname against the platform's sun_path size on bind.
+    with tempfile.TemporaryDirectory(prefix="reps-") as directory:
         path = str(Path(directory) / "events.sock")
-        with Server(path, Handler) as server:
+        try:
+            server = Server(path, Handler)
+        except OSError as error:
+            if error.errno is None and "path too long" in str(error):
+                raise RuntimeError(
+                    f"event socket path {path!r} is {len(path.encode())} bytes, over "
+                    "this platform's Unix socket limit; set TMPDIR to a shorter directory"
+                ) from error
+            raise
+        with server:
             thread = threading.Thread(
                 target=server.serve_forever, kwargs={"poll_interval": 0.05}
             )

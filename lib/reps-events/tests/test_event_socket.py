@@ -138,3 +138,30 @@ def test_python_non_utf8_bytes_fail_before_delivery(monkeypatch):
         emit(Result(name="still_working", value=1))
     assert len(records) == 1
     assert records[0].name == "still_working"
+
+
+def test_socket_lives_under_tmpdir(monkeypatch):
+    import tempfile
+
+    # pytest's tmp_path can itself be too long for a socket; use a short one.
+    with tempfile.TemporaryDirectory(prefix="reps-test-") as short:
+        monkeypatch.setattr(tempfile, "tempdir", None)
+        monkeypatch.setenv("TMPDIR", short)
+        with event_socket(lambda event: None) as path:
+            assert Path(path).parent.parent == Path(short)
+            assert Path(path).parent.name.startswith("reps-")
+        assert list(Path(short).iterdir()) == []
+
+
+def test_overlong_socket_path_names_the_fix(monkeypatch, tmp_path):
+    import tempfile
+
+    deep = tmp_path / ("x" * 200)
+    deep.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(deep))
+    with pytest.raises(RuntimeError, match="set TMPDIR to a shorter directory") as info:
+        with event_socket(lambda event: None):
+            pass
+    assert str(deep) in str(info.value)
+    assert isinstance(info.value.__cause__, OSError)
+    assert list(deep.iterdir()) == []
